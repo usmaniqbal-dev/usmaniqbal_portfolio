@@ -1,0 +1,41 @@
+import { NextResponse } from "next/server";
+import { requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
+import { addBlock, reorderSections } from "@/lib/builder-actions";
+import { getSiteContent, saveSiteContent } from "@/lib/content-store";
+import type { BuilderBlock } from "@/types/site-content";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+// Returns blocks and sections for the default page builder canvas.
+export async function GET() {
+  if (!(await requireAdminSession())) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const content = await getSiteContent();
+  const page = content.builder.pages.find((item) => item.id === "home-page");
+  return NextResponse.json({ blocks: page?.blocks || [], sections: page?.sections || [] });
+}
+
+// Adds blocks or reorders sections from the drag and drop builder.
+export async function POST(request: Request) {
+  const denied = await requireAdminMutation(request);
+
+  if (denied) {
+    return denied;
+  }
+
+  const body = (await request.json()) as { action?: string; block?: BuilderBlock; sectionIds?: string[] };
+  const content = await getSiteContent();
+
+  if (body.action === "reorder-sections" && body.sectionIds) {
+    return NextResponse.json(await saveSiteContent(reorderSections(content, body.sectionIds)));
+  }
+
+  if (body.action === "add-block" && body.block) {
+    return NextResponse.json(await saveSiteContent(addBlock(content, body.block)));
+  }
+
+  return NextResponse.json({ message: "Unsupported block action." }, { status: 400 });
+}

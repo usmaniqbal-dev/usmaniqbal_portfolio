@@ -1,0 +1,1574 @@
+{
+  "owner": {
+    "name": "Usman Iqbal",
+    "title": "Salesforce Administrator & Developer",
+    "bio": "I work across Salesforce administration, Salesforce development, CRM customization, automation, reports, dashboards, websites, AI bots, and Android apps. My focus is helping businesses move faster with systems that are clean, reliable, and easy to use.",
+    "email": "hello@nuraxtech.com",
+    "location": "Pakistan",
+    "phone": "+92 300 0000000",
+    "availability": "Available for new CRM and automation projects"
+  },
+  "skills": [
+    {
+      "id": "salesforce-admin",
+      "name": "Salesforce Admin",
+      "category": "CRM",
+      "level": 95,
+      "accent": "#22f0a8",
+      "icon": ""
+    },
+    {
+      "id": "salesforce-development",
+      "name": "Salesforce Development",
+      "category": "Apex / Flow",
+      "level": 90,
+      "accent": "#22d3ee",
+      "icon": ""
+    },
+    {
+      "id": "salesforce-crm",
+      "name": "Salesforce CRM",
+      "category": "CRM Strategy",
+      "level": 94,
+      "accent": "#54f7c7",
+      "icon": ""
+    },
+    {
+      "id": "litify",
+      "name": "Litify",
+      "category": "Legal CRM",
+      "level": 82,
+      "accent": "#76e4f7",
+      "icon": ""
+    },
+    {
+      "id": "hubspot",
+      "name": "HubSpot",
+      "category": "CRM",
+      "level": 86,
+      "accent": "#ff7a59",
+      "icon": ""
+    },
+    {
+      "id": "zoho-crm",
+      "name": "Zoho CRM",
+      "category": "CRM",
+      "level": 84,
+      "accent": "#35d399",
+      "icon": ""
+    },
+    {
+      "id": "gohighlevel",
+      "name": "Go High Level CRM",
+      "category": "Automation",
+      "level": 83,
+      "accent": "#10b981",
+      "icon": ""
+    },
+    {
+      "id": "dynamics",
+      "name": "Microsoft Dynamics",
+      "category": "Enterprise CRM",
+      "level": 78,
+      "accent": "#58a6ff",
+      "icon": ""
+    },
+    {
+      "id": "oracle-cx",
+      "name": "Oracle CX",
+      "category": "Customer Experience",
+      "level": 76,
+      "accent": "#f97316",
+      "icon": ""
+    },
+    {
+      "id": "html-css-js",
+      "name": "HTML, CSS, JavaScript",
+      "category": "Frontend",
+      "level": 92,
+      "accent": "#facc15",
+      "icon": ""
+    },
+    {
+      "id": "react-next",
+      "name": "React / Next.js",
+      "category": "Web Apps",
+      "level": 88,
+      "accent": "#38bdf8",
+      "icon": ""
+    },
+    {
+      "id": "python",
+      "name": "Python",
+      "category": "Automation",
+      "level": 84,
+      "accent": "#22c55e",
+      "icon": ""
+    },
+    {
+      "id": "sql",
+      "name": "SQL",
+      "category": "Database",
+      "level": 82,
+      "accent": "#60a5fa",
+      "icon": ""
+    },
+    {
+      "id": "firebase",
+      "name": "Firebase",
+      "category": "Backend",
+      "level": 80,
+      "accent": "#f59e0b",
+      "icon": ""
+    },
+    {
+      "id": "android",
+      "name": "Android Development",
+      "category": "Mobile",
+      "level": 78,
+      "accent": "#a3e635",
+      "icon": ""
+    },
+    {
+      "id": "ai-bots",
+      "name": "AI Bots / Chatbots",
+      "category": "AI Automation",
+      "level": 90,
+      "accent": "#2dd4bf",
+      "icon": ""
+    },
+    {
+      "name": "Salesforce Admin",
+      "level": "95",
+      "category": "CRM",
+      "description": "Salesforce Admin skill in CRM."
+    },
+    {
+      "name": "Salesforce Development",
+      "level": "90",
+      "category": "Apex / Flow",
+      "description": "Salesforce Development skill in Apex / Flow."
+    },
+    {
+      "name": "Salesforce CRM",
+      "level": "94",
+      "category": "CRM Strategy",
+      "description": "Salesforce CRM skill in CRM Strategy."
+    },
+    {
+      "name": "Litify",
+      "level": "82",
+      "category": "Legal CRM",
+      "description": "Litify skill in Legal CRM."
+    },
+    {
+      "name": "HubSpot",
+      "level": "86",
+      "category": "CRM",
+      "description": "HubSpot skill in CRM."
+    },
+    {
+      "name": "Zoho CRM",
+      "level": "84",
+      "category": "CRM",
+      "description": "Zoho CRM skill in CRM."
+    },
+    {
+      "name": "Go High Level CRM",
+      "level": "83",
+      "category": "Automation",
+      "description": "Go High Level CRM skill in Automation."
+    },
+    {
+      "name": "Microsoft Dynamics",
+      "level": "78",
+      "category": "Enterprise CRM",
+      "description": "Microsoft Dynamics skill in Enterprise CRM."
+    },
+    {
+      "name": "Oracle CX",
+      "level": "76",
+      "category": "Customer Experience",
+      "description": "Oracle CX skill in Customer Experience."
+    },
+    {
+      "name": "HTML, CSS, JavaScript",
+      "level": "92",
+      "category": "Frontend",
+      "description": "HTML, CSS, JavaScript skill in Frontend."
+    },
+    {
+      "name": "React / Next.js",
+      "level": "88",
+      "category": "Web Apps",
+      "description": "React / Next.js skill in Web Apps."
+    },
+    {
+      "name": "Python",
+      "level": "84",
+      "category": "Automation",
+      "description": "Python skill in Automation."
+    },
+    {
+      "name": "SQL",
+      "level": "82",
+      "category": "Database",
+      "description": "SQL skill in Database."
+    },
+    {
+      "name": "Firebase",
+      "level": "80",
+      "category": "Backend",
+      "description": "Firebase skill in Backend."
+    },
+    {
+      "name": "Android Development",
+      "level": "78",
+      "category": "Mobile",
+      "description": "Android Development skill in Mobile."
+    },
+    {
+      "name": "AI Bots / Chatbots",
+      "level": "90",
+      "category": "AI Automation",
+      "description": "AI Bots / Chatbots skill in AI Automation."
+    },
+    {
+      "name": "Salesforce Admin",
+      "level": "95",
+      "category": "CRM",
+      "description": "Salesforce Admin skill in CRM."
+    },
+    {
+      "name": "Salesforce Development",
+      "level": "90",
+      "category": "Apex / Flow",
+      "description": "Salesforce Development skill in Apex / Flow."
+    },
+    {
+      "name": "Salesforce CRM",
+      "level": "94",
+      "category": "CRM Strategy",
+      "description": "Salesforce CRM skill in CRM Strategy."
+    },
+    {
+      "name": "Litify",
+      "level": "82",
+      "category": "Legal CRM",
+      "description": "Litify skill in Legal CRM."
+    },
+    {
+      "name": "HubSpot",
+      "level": "86",
+      "category": "CRM",
+      "description": "HubSpot skill in CRM."
+    },
+    {
+      "name": "Zoho CRM",
+      "level": "84",
+      "category": "CRM",
+      "description": "Zoho CRM skill in CRM."
+    },
+    {
+      "name": "Go High Level CRM",
+      "level": "83",
+      "category": "Automation",
+      "description": "Go High Level CRM skill in Automation."
+    },
+    {
+      "name": "Microsoft Dynamics",
+      "level": "78",
+      "category": "Enterprise CRM",
+      "description": "Microsoft Dynamics skill in Enterprise CRM."
+    },
+    {
+      "name": "Oracle CX",
+      "level": "76",
+      "category": "Customer Experience",
+      "description": "Oracle CX skill in Customer Experience."
+    },
+    {
+      "name": "HTML, CSS, JavaScript",
+      "level": "92",
+      "category": "Frontend",
+      "description": "HTML, CSS, JavaScript skill in Frontend."
+    },
+    {
+      "name": "React / Next.js",
+      "level": "88",
+      "category": "Web Apps",
+      "description": "React / Next.js skill in Web Apps."
+    },
+    {
+      "name": "Python",
+      "level": "84",
+      "category": "Automation",
+      "description": "Python skill in Automation."
+    },
+    {
+      "name": "SQL",
+      "level": "82",
+      "category": "Database",
+      "description": "SQL skill in Database."
+    },
+    {
+      "name": "Firebase",
+      "level": "80",
+      "category": "Backend",
+      "description": "Firebase skill in Backend."
+    },
+    {
+      "name": "Android Development",
+      "level": "78",
+      "category": "Mobile",
+      "description": "Android Development skill in Mobile."
+    },
+    {
+      "name": "AI Bots / Chatbots",
+      "level": "90",
+      "category": "AI Automation",
+      "description": "AI Bots / Chatbots skill in AI Automation."
+    },
+    {
+      "name": "Salesforce Admin",
+      "level": "95",
+      "category": "CRM",
+      "description": "Salesforce Admin skill in CRM."
+    },
+    {
+      "name": "Salesforce Development",
+      "level": "90",
+      "category": "Apex / Flow",
+      "description": "Salesforce Development skill in Apex / Flow."
+    },
+    {
+      "name": "Salesforce CRM",
+      "level": "94",
+      "category": "CRM Strategy",
+      "description": "Salesforce CRM skill in CRM Strategy."
+    },
+    {
+      "name": "Litify",
+      "level": "82",
+      "category": "Legal CRM",
+      "description": "Litify skill in Legal CRM."
+    },
+    {
+      "name": "HubSpot",
+      "level": "86",
+      "category": "CRM",
+      "description": "HubSpot skill in CRM."
+    },
+    {
+      "name": "Zoho CRM",
+      "level": "84",
+      "category": "CRM",
+      "description": "Zoho CRM skill in CRM."
+    },
+    {
+      "name": "Go High Level CRM",
+      "level": "83",
+      "category": "Automation",
+      "description": "Go High Level CRM skill in Automation."
+    },
+    {
+      "name": "Microsoft Dynamics",
+      "level": "78",
+      "category": "Enterprise CRM",
+      "description": "Microsoft Dynamics skill in Enterprise CRM."
+    },
+    {
+      "name": "Oracle CX",
+      "level": "76",
+      "category": "Customer Experience",
+      "description": "Oracle CX skill in Customer Experience."
+    },
+    {
+      "name": "HTML, CSS, JavaScript",
+      "level": "92",
+      "category": "Frontend",
+      "description": "HTML, CSS, JavaScript skill in Frontend."
+    },
+    {
+      "name": "React / Next.js",
+      "level": "88",
+      "category": "Web Apps",
+      "description": "React / Next.js skill in Web Apps."
+    },
+    {
+      "name": "Python",
+      "level": "84",
+      "category": "Automation",
+      "description": "Python skill in Automation."
+    },
+    {
+      "name": "SQL",
+      "level": "82",
+      "category": "Database",
+      "description": "SQL skill in Database."
+    },
+    {
+      "name": "Firebase",
+      "level": "80",
+      "category": "Backend",
+      "description": "Firebase skill in Backend."
+    },
+    {
+      "name": "Android Development",
+      "level": "78",
+      "category": "Mobile",
+      "description": "Android Development skill in Mobile."
+    },
+    {
+      "name": "AI Bots / Chatbots",
+      "level": "90",
+      "category": "AI Automation",
+      "description": "AI Bots / Chatbots skill in AI Automation."
+    },
+    {
+      "id": "salesforce-admin",
+      "name": "Salesforce Admin",
+      "category": "CRM",
+      "level": 95,
+      "accent": "#22f0a8",
+      "icon": ""
+    },
+    {
+      "id": "salesforce-development",
+      "name": "Salesforce Development",
+      "category": "Apex / Flow",
+      "level": 90,
+      "accent": "#22d3ee",
+      "icon": ""
+    },
+    {
+      "id": "salesforce-crm",
+      "name": "Salesforce CRM",
+      "category": "CRM Strategy",
+      "level": 94,
+      "accent": "#54f7c7",
+      "icon": ""
+    },
+    {
+      "id": "litify",
+      "name": "Litify",
+      "category": "Legal CRM",
+      "level": 82,
+      "accent": "#76e4f7",
+      "icon": ""
+    },
+    {
+      "id": "hubspot",
+      "name": "HubSpot",
+      "category": "CRM",
+      "level": 86,
+      "accent": "#ff7a59",
+      "icon": ""
+    },
+    {
+      "id": "zoho-crm",
+      "name": "Zoho CRM",
+      "category": "CRM",
+      "level": 84,
+      "accent": "#35d399",
+      "icon": ""
+    },
+    {
+      "id": "gohighlevel",
+      "name": "Go High Level CRM",
+      "category": "Automation",
+      "level": 83,
+      "accent": "#10b981",
+      "icon": ""
+    },
+    {
+      "id": "dynamics",
+      "name": "Microsoft Dynamics",
+      "category": "Enterprise CRM",
+      "level": 78,
+      "accent": "#58a6ff",
+      "icon": ""
+    },
+    {
+      "id": "oracle-cx",
+      "name": "Oracle CX",
+      "category": "Customer Experience",
+      "level": 76,
+      "accent": "#f97316",
+      "icon": ""
+    },
+    {
+      "id": "html-css-js",
+      "name": "HTML, CSS, JavaScript",
+      "category": "Frontend",
+      "level": 92,
+      "accent": "#facc15",
+      "icon": ""
+    },
+    {
+      "id": "react-next",
+      "name": "React / Next.js",
+      "category": "Web Apps",
+      "level": 88,
+      "accent": "#38bdf8",
+      "icon": ""
+    },
+    {
+      "id": "python",
+      "name": "Python",
+      "category": "Automation",
+      "level": 84,
+      "accent": "#22c55e",
+      "icon": ""
+    },
+    {
+      "id": "sql",
+      "name": "SQL",
+      "category": "Database",
+      "level": 82,
+      "accent": "#60a5fa",
+      "icon": ""
+    },
+    {
+      "id": "firebase",
+      "name": "Firebase",
+      "category": "Backend",
+      "level": 80,
+      "accent": "#f59e0b",
+      "icon": ""
+    },
+    {
+      "id": "android",
+      "name": "Android Development",
+      "category": "Mobile",
+      "level": 78,
+      "accent": "#a3e635",
+      "icon": ""
+    },
+    {
+      "id": "ai-bots",
+      "name": "AI Bots / Chatbots",
+      "category": "AI Automation",
+      "level": 90,
+      "accent": "#2dd4bf",
+      "icon": ""
+    },
+    {
+      "name": "Salesforce Admin",
+      "level": "95",
+      "category": "CRM",
+      "description": "Salesforce Admin skill in CRM."
+    },
+    {
+      "name": "Salesforce Development",
+      "level": "90",
+      "category": "Apex / Flow",
+      "description": "Salesforce Development skill in Apex / Flow."
+    },
+    {
+      "name": "Salesforce CRM",
+      "level": "94",
+      "category": "CRM Strategy",
+      "description": "Salesforce CRM skill in CRM Strategy."
+    },
+    {
+      "name": "Litify",
+      "level": "82",
+      "category": "Legal CRM",
+      "description": "Litify skill in Legal CRM."
+    },
+    {
+      "name": "HubSpot",
+      "level": "86",
+      "category": "CRM",
+      "description": "HubSpot skill in CRM."
+    },
+    {
+      "name": "Zoho CRM",
+      "level": "84",
+      "category": "CRM",
+      "description": "Zoho CRM skill in CRM."
+    },
+    {
+      "name": "Go High Level CRM",
+      "level": "83",
+      "category": "Automation",
+      "description": "Go High Level CRM skill in Automation."
+    },
+    {
+      "name": "Microsoft Dynamics",
+      "level": "78",
+      "category": "Enterprise CRM",
+      "description": "Microsoft Dynamics skill in Enterprise CRM."
+    },
+    {
+      "name": "Oracle CX",
+      "level": "76",
+      "category": "Customer Experience",
+      "description": "Oracle CX skill in Customer Experience."
+    },
+    {
+      "name": "HTML, CSS, JavaScript",
+      "level": "92",
+      "category": "Frontend",
+      "description": "HTML, CSS, JavaScript skill in Frontend."
+    },
+    {
+      "name": "React / Next.js",
+      "level": "88",
+      "category": "Web Apps",
+      "description": "React / Next.js skill in Web Apps."
+    },
+    {
+      "name": "Python",
+      "level": "84",
+      "category": "Automation",
+      "description": "Python skill in Automation."
+    },
+    {
+      "name": "SQL",
+      "level": "82",
+      "category": "Database",
+      "description": "SQL skill in Database."
+    },
+    {
+      "name": "Firebase",
+      "level": "80",
+      "category": "Backend",
+      "description": "Firebase skill in Backend."
+    },
+    {
+      "name": "Android Development",
+      "level": "78",
+      "category": "Mobile",
+      "description": "Android Development skill in Mobile."
+    },
+    {
+      "name": "AI Bots / Chatbots",
+      "level": "90",
+      "category": "AI Automation",
+      "description": "AI Bots / Chatbots skill in AI Automation."
+    }
+  ],
+  "projects": [
+    {
+      "id": "nuraxtech-website",
+      "title": "NURAXTECH Website",
+      "description": "A premium brand website for CRM, automation, web, AI bot, and app development services.",
+      "image": "",
+      "tags": [
+        "Brand",
+        "Web",
+        "CRM"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "id": "salesforce-crm-automation",
+      "title": "Salesforce CRM Automation",
+      "description": "Automated lead assignment, reminders, dashboards, and workflow logic for sales teams.",
+      "image": "",
+      "tags": [
+        "Salesforce",
+        "Flow",
+        "Automation"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "id": "jotform-salesforce",
+      "title": "Jotform to Salesforce Lead Integration",
+      "description": "A direct lead capture pipeline that sends validated Jotform submissions into Salesforce.",
+      "image": "",
+      "tags": [
+        "Jotform",
+        "Salesforce",
+        "API"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "id": "student-management",
+      "title": "Android Student Management System",
+      "description": "A mobile system for student records, attendance, academic data, and administrative tasks.",
+      "image": "",
+      "tags": [
+        "Android",
+        "Firebase",
+        "Admin"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "id": "ai-revenue-checker",
+      "title": "AI Revenue Checker Bot",
+      "description": "A smart bot that checks revenue data, answers business questions, and flags insights.",
+      "image": "",
+      "tags": [
+        "AI Bot",
+        "Analytics",
+        "Automation"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "id": "store-pos",
+      "title": "Store Management POS System",
+      "description": "Inventory, sales, reports, and daily store operations in one clean management system.",
+      "image": "",
+      "tags": [
+        "POS",
+        "Reports",
+        "SQL"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "id": "formfill-pro",
+      "title": "FormFill Pro PDF Automation",
+      "description": "Automated PDF generation and form filling for repeat documents and business paperwork.",
+      "image": "",
+      "tags": [
+        "PDF",
+        "Automation",
+        "Forms"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "id": "portfolio-website",
+      "title": "Portfolio Website",
+      "description": "A fast, responsive portfolio with smooth animations, modern design, and editable content.",
+      "image": "",
+      "tags": [
+        "Next.js",
+        "Tailwind",
+        "Admin"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "title": "NURAXTECH Website",
+      "description": "A premium brand website for CRM, automation, web, AI bot, and app development services.",
+      "techStack": [
+        "Brand",
+        "Web",
+        "CRM"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Salesforce CRM Automation",
+      "description": "Automated lead assignment, reminders, dashboards, and workflow logic for sales teams.",
+      "techStack": [
+        "Salesforce",
+        "Flow",
+        "Automation"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Jotform to Salesforce Lead Integration",
+      "description": "A direct lead capture pipeline that sends validated Jotform submissions into Salesforce.",
+      "techStack": [
+        "Jotform",
+        "Salesforce",
+        "API"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Android Student Management System",
+      "description": "A mobile system for student records, attendance, academic data, and administrative tasks.",
+      "techStack": [
+        "Android",
+        "Firebase",
+        "Admin"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "AI Revenue Checker Bot",
+      "description": "A smart bot that checks revenue data, answers business questions, and flags insights.",
+      "techStack": [
+        "AI Bot",
+        "Analytics",
+        "Automation"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Store Management POS System",
+      "description": "Inventory, sales, reports, and daily store operations in one clean management system.",
+      "techStack": [
+        "POS",
+        "Reports",
+        "SQL"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "FormFill Pro PDF Automation",
+      "description": "Automated PDF generation and form filling for repeat documents and business paperwork.",
+      "techStack": [
+        "PDF",
+        "Automation",
+        "Forms"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Portfolio Website",
+      "description": "A fast, responsive portfolio with smooth animations, modern design, and editable content.",
+      "techStack": [
+        "Next.js",
+        "Tailwind",
+        "Admin"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "NURAXTECH Website",
+      "description": "A premium brand website for CRM, automation, web, AI bot, and app development services.",
+      "techStack": [
+        "Brand",
+        "Web",
+        "CRM"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Salesforce CRM Automation",
+      "description": "Automated lead assignment, reminders, dashboards, and workflow logic for sales teams.",
+      "techStack": [
+        "Salesforce",
+        "Flow",
+        "Automation"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Jotform to Salesforce Lead Integration",
+      "description": "A direct lead capture pipeline that sends validated Jotform submissions into Salesforce.",
+      "techStack": [
+        "Jotform",
+        "Salesforce",
+        "API"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Android Student Management System",
+      "description": "A mobile system for student records, attendance, academic data, and administrative tasks.",
+      "techStack": [
+        "Android",
+        "Firebase",
+        "Admin"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "AI Revenue Checker Bot",
+      "description": "A smart bot that checks revenue data, answers business questions, and flags insights.",
+      "techStack": [
+        "AI Bot",
+        "Analytics",
+        "Automation"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Store Management POS System",
+      "description": "Inventory, sales, reports, and daily store operations in one clean management system.",
+      "techStack": [
+        "POS",
+        "Reports",
+        "SQL"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "FormFill Pro PDF Automation",
+      "description": "Automated PDF generation and form filling for repeat documents and business paperwork.",
+      "techStack": [
+        "PDF",
+        "Automation",
+        "Forms"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Portfolio Website",
+      "description": "A fast, responsive portfolio with smooth animations, modern design, and editable content.",
+      "techStack": [
+        "Next.js",
+        "Tailwind",
+        "Admin"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "NURAXTECH Website",
+      "description": "A premium brand website for CRM, automation, web, AI bot, and app development services.",
+      "techStack": [],
+      "liveUrl": "",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Salesforce CRM Automation",
+      "description": "Automated lead assignment, reminders, dashboards, and workflow logic for sales teams.",
+      "techStack": [],
+      "liveUrl": "",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Jotform to Salesforce Lead Integration",
+      "description": "A direct lead capture pipeline that sends validated Jotform submissions into Salesforce.",
+      "techStack": [],
+      "liveUrl": "",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Android Student Management System",
+      "description": "A mobile system for student records, attendance, academic data, and administrative tasks.",
+      "techStack": [],
+      "liveUrl": "",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "AI Revenue Checker Bot",
+      "description": "A smart bot that checks revenue data, answers business questions, and flags insights.",
+      "techStack": [],
+      "liveUrl": "",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Store Management POS System",
+      "description": "Inventory, sales, reports, and daily store operations in one clean management system.",
+      "techStack": [],
+      "liveUrl": "",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "FormFill Pro PDF Automation",
+      "description": "Automated PDF generation and form filling for repeat documents and business paperwork.",
+      "techStack": [],
+      "liveUrl": "",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Portfolio Website",
+      "description": "A fast, responsive portfolio with smooth animations, modern design, and editable content.",
+      "techStack": [],
+      "liveUrl": "",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "id": "nuraxtech-website",
+      "title": "NURAXTECH Website",
+      "description": "A premium brand website for CRM, automation, web, AI bot, and app development services.",
+      "image": "",
+      "tags": [
+        "Brand",
+        "Web",
+        "CRM"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "id": "salesforce-crm-automation",
+      "title": "Salesforce CRM Automation",
+      "description": "Automated lead assignment, reminders, dashboards, and workflow logic for sales teams.",
+      "image": "",
+      "tags": [
+        "Salesforce",
+        "Flow",
+        "Automation"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "id": "jotform-salesforce",
+      "title": "Jotform to Salesforce Lead Integration",
+      "description": "A direct lead capture pipeline that sends validated Jotform submissions into Salesforce.",
+      "image": "",
+      "tags": [
+        "Jotform",
+        "Salesforce",
+        "API"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "id": "student-management",
+      "title": "Android Student Management System",
+      "description": "A mobile system for student records, attendance, academic data, and administrative tasks.",
+      "image": "",
+      "tags": [
+        "Android",
+        "Firebase",
+        "Admin"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "id": "ai-revenue-checker",
+      "title": "AI Revenue Checker Bot",
+      "description": "A smart bot that checks revenue data, answers business questions, and flags insights.",
+      "image": "",
+      "tags": [
+        "AI Bot",
+        "Analytics",
+        "Automation"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "id": "store-pos",
+      "title": "Store Management POS System",
+      "description": "Inventory, sales, reports, and daily store operations in one clean management system.",
+      "image": "",
+      "tags": [
+        "POS",
+        "Reports",
+        "SQL"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "id": "formfill-pro",
+      "title": "FormFill Pro PDF Automation",
+      "description": "Automated PDF generation and form filling for repeat documents and business paperwork.",
+      "image": "",
+      "tags": [
+        "PDF",
+        "Automation",
+        "Forms"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "id": "portfolio-website",
+      "title": "Portfolio Website",
+      "description": "A fast, responsive portfolio with smooth animations, modern design, and editable content.",
+      "image": "",
+      "tags": [
+        "Next.js",
+        "Tailwind",
+        "Admin"
+      ],
+      "url": "#",
+      "githubUrl": ""
+    },
+    {
+      "title": "NURAXTECH Website",
+      "description": "A premium brand website for CRM, automation, web, AI bot, and app development services.",
+      "techStack": [
+        "Brand",
+        "Web",
+        "CRM"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Salesforce CRM Automation",
+      "description": "Automated lead assignment, reminders, dashboards, and workflow logic for sales teams.",
+      "techStack": [
+        "Salesforce",
+        "Flow",
+        "Automation"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Jotform to Salesforce Lead Integration",
+      "description": "A direct lead capture pipeline that sends validated Jotform submissions into Salesforce.",
+      "techStack": [
+        "Jotform",
+        "Salesforce",
+        "API"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Android Student Management System",
+      "description": "A mobile system for student records, attendance, academic data, and administrative tasks.",
+      "techStack": [
+        "Android",
+        "Firebase",
+        "Admin"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "AI Revenue Checker Bot",
+      "description": "A smart bot that checks revenue data, answers business questions, and flags insights.",
+      "techStack": [
+        "AI Bot",
+        "Analytics",
+        "Automation"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Store Management POS System",
+      "description": "Inventory, sales, reports, and daily store operations in one clean management system.",
+      "techStack": [
+        "POS",
+        "Reports",
+        "SQL"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "FormFill Pro PDF Automation",
+      "description": "Automated PDF generation and form filling for repeat documents and business paperwork.",
+      "techStack": [
+        "PDF",
+        "Automation",
+        "Forms"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    },
+    {
+      "title": "Portfolio Website",
+      "description": "A fast, responsive portfolio with smooth animations, modern design, and editable content.",
+      "techStack": [
+        "Next.js",
+        "Tailwind",
+        "Admin"
+      ],
+      "liveUrl": "#",
+      "githubUrl": "",
+      "highlights": []
+    }
+  ],
+  "experience": [],
+  "education": [],
+  "services": [
+    {
+      "id": "salesforce-crm-setup",
+      "title": "Salesforce CRM Setup",
+      "description": "Objects, fields, page layouts, users, security, pipelines, and clean CRM foundations.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "salesforce-automation",
+      "title": "Salesforce Automation",
+      "description": "Flows, approvals, alerts, assignments, reminders, and end-to-end workflow automation.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "reports-dashboards",
+      "title": "Reports & Dashboards",
+      "description": "Executive-ready dashboards, business metrics, sales visibility, and reporting systems.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "litify-customization",
+      "title": "Litify Customization",
+      "description": "Matter management, intake flows, legal CRM customization, and process optimization.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "website-development",
+      "title": "Website Development",
+      "description": "Responsive business websites, landing pages, portfolios, and modern web experiences.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "android-app-development",
+      "title": "Android App Development",
+      "description": "Android apps for operations, student systems, business tracking, and internal tools.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "ai-bots-development",
+      "title": "AI Bots Development",
+      "description": "Custom chatbots, lead qualification assistants, automation agents, and support bots.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "crm-integrations",
+      "title": "CRM Integrations",
+      "description": "Jotform, websites, forms, APIs, and third-party tools connected into CRM workflows.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "business-automation",
+      "title": "Business Automation",
+      "description": "Automated pipelines, document workflows, notifications, data sync, and admin systems.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "portfolio-websites",
+      "title": "Portfolio Websites",
+      "description": "Premium personal brands, developer portfolios, service pages, and lead-focused websites.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "title": "Salesforce CRM Setup",
+      "description": "Objects, fields, page layouts, users, security, pipelines, and clean CRM foundations.",
+      "price": ""
+    },
+    {
+      "title": "Salesforce Automation",
+      "description": "Flows, approvals, alerts, assignments, reminders, and end-to-end workflow automation.",
+      "price": ""
+    },
+    {
+      "title": "Reports & Dashboards",
+      "description": "Executive-ready dashboards, business metrics, sales visibility, and reporting systems.",
+      "price": ""
+    },
+    {
+      "title": "Litify Customization",
+      "description": "Matter management, intake flows, legal CRM customization, and process optimization.",
+      "price": ""
+    },
+    {
+      "title": "Website Development",
+      "description": "Responsive business websites, landing pages, portfolios, and modern web experiences.",
+      "price": ""
+    },
+    {
+      "title": "Android App Development",
+      "description": "Android apps for operations, student systems, business tracking, and internal tools.",
+      "price": ""
+    },
+    {
+      "title": "AI Bots Development",
+      "description": "Custom chatbots, lead qualification assistants, automation agents, and support bots.",
+      "price": ""
+    },
+    {
+      "title": "CRM Integrations",
+      "description": "Jotform, websites, forms, APIs, and third-party tools connected into CRM workflows.",
+      "price": ""
+    },
+    {
+      "title": "Business Automation",
+      "description": "Automated pipelines, document workflows, notifications, data sync, and admin systems.",
+      "price": ""
+    },
+    {
+      "title": "Portfolio Websites",
+      "description": "Premium personal brands, developer portfolios, service pages, and lead-focused websites.",
+      "price": ""
+    },
+    {
+      "title": "Salesforce CRM Setup",
+      "description": "Objects, fields, page layouts, users, security, pipelines, and clean CRM foundations.",
+      "price": ""
+    },
+    {
+      "title": "Salesforce Automation",
+      "description": "Flows, approvals, alerts, assignments, reminders, and end-to-end workflow automation.",
+      "price": ""
+    },
+    {
+      "title": "Reports & Dashboards",
+      "description": "Executive-ready dashboards, business metrics, sales visibility, and reporting systems.",
+      "price": ""
+    },
+    {
+      "title": "Litify Customization",
+      "description": "Matter management, intake flows, legal CRM customization, and process optimization.",
+      "price": ""
+    },
+    {
+      "title": "Website Development",
+      "description": "Responsive business websites, landing pages, portfolios, and modern web experiences.",
+      "price": ""
+    },
+    {
+      "title": "Android App Development",
+      "description": "Android apps for operations, student systems, business tracking, and internal tools.",
+      "price": ""
+    },
+    {
+      "title": "AI Bots Development",
+      "description": "Custom chatbots, lead qualification assistants, automation agents, and support bots.",
+      "price": ""
+    },
+    {
+      "title": "CRM Integrations",
+      "description": "Jotform, websites, forms, APIs, and third-party tools connected into CRM workflows.",
+      "price": ""
+    },
+    {
+      "title": "Business Automation",
+      "description": "Automated pipelines, document workflows, notifications, data sync, and admin systems.",
+      "price": ""
+    },
+    {
+      "title": "Portfolio Websites",
+      "description": "Premium personal brands, developer portfolios, service pages, and lead-focused websites.",
+      "price": ""
+    },
+    {
+      "title": "Salesforce CRM Setup",
+      "description": "Objects, fields, page layouts, users, security, pipelines, and clean CRM foundations.",
+      "price": ""
+    },
+    {
+      "title": "Salesforce Automation",
+      "description": "Flows, approvals, alerts, assignments, reminders, and end-to-end workflow automation.",
+      "price": ""
+    },
+    {
+      "title": "Reports & Dashboards",
+      "description": "Executive-ready dashboards, business metrics, sales visibility, and reporting systems.",
+      "price": ""
+    },
+    {
+      "title": "Litify Customization",
+      "description": "Matter management, intake flows, legal CRM customization, and process optimization.",
+      "price": ""
+    },
+    {
+      "title": "Website Development",
+      "description": "Responsive business websites, landing pages, portfolios, and modern web experiences.",
+      "price": ""
+    },
+    {
+      "title": "Android App Development",
+      "description": "Android apps for operations, student systems, business tracking, and internal tools.",
+      "price": ""
+    },
+    {
+      "title": "AI Bots Development",
+      "description": "Custom chatbots, lead qualification assistants, automation agents, and support bots.",
+      "price": ""
+    },
+    {
+      "title": "CRM Integrations",
+      "description": "Jotform, websites, forms, APIs, and third-party tools connected into CRM workflows.",
+      "price": ""
+    },
+    {
+      "title": "Business Automation",
+      "description": "Automated pipelines, document workflows, notifications, data sync, and admin systems.",
+      "price": ""
+    },
+    {
+      "title": "Portfolio Websites",
+      "description": "Premium personal brands, developer portfolios, service pages, and lead-focused websites.",
+      "price": ""
+    },
+    {
+      "id": "salesforce-crm-setup",
+      "title": "Salesforce CRM Setup",
+      "description": "Objects, fields, page layouts, users, security, pipelines, and clean CRM foundations.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "salesforce-automation",
+      "title": "Salesforce Automation",
+      "description": "Flows, approvals, alerts, assignments, reminders, and end-to-end workflow automation.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "reports-dashboards",
+      "title": "Reports & Dashboards",
+      "description": "Executive-ready dashboards, business metrics, sales visibility, and reporting systems.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "litify-customization",
+      "title": "Litify Customization",
+      "description": "Matter management, intake flows, legal CRM customization, and process optimization.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "website-development",
+      "title": "Website Development",
+      "description": "Responsive business websites, landing pages, portfolios, and modern web experiences.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "android-app-development",
+      "title": "Android App Development",
+      "description": "Android apps for operations, student systems, business tracking, and internal tools.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "ai-bots-development",
+      "title": "AI Bots Development",
+      "description": "Custom chatbots, lead qualification assistants, automation agents, and support bots.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "crm-integrations",
+      "title": "CRM Integrations",
+      "description": "Jotform, websites, forms, APIs, and third-party tools connected into CRM workflows.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "business-automation",
+      "title": "Business Automation",
+      "description": "Automated pipelines, document workflows, notifications, data sync, and admin systems.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "id": "portfolio-websites",
+      "title": "Portfolio Websites",
+      "description": "Premium personal brands, developer portfolios, service pages, and lead-focused websites.",
+      "icon": "",
+      "image": ""
+    },
+    {
+      "title": "Salesforce CRM Setup",
+      "description": "Objects, fields, page layouts, users, security, pipelines, and clean CRM foundations.",
+      "price": ""
+    },
+    {
+      "title": "Salesforce Automation",
+      "description": "Flows, approvals, alerts, assignments, reminders, and end-to-end workflow automation.",
+      "price": ""
+    },
+    {
+      "title": "Reports & Dashboards",
+      "description": "Executive-ready dashboards, business metrics, sales visibility, and reporting systems.",
+      "price": ""
+    },
+    {
+      "title": "Litify Customization",
+      "description": "Matter management, intake flows, legal CRM customization, and process optimization.",
+      "price": ""
+    },
+    {
+      "title": "Website Development",
+      "description": "Responsive business websites, landing pages, portfolios, and modern web experiences.",
+      "price": ""
+    },
+    {
+      "title": "Android App Development",
+      "description": "Android apps for operations, student systems, business tracking, and internal tools.",
+      "price": ""
+    },
+    {
+      "title": "AI Bots Development",
+      "description": "Custom chatbots, lead qualification assistants, automation agents, and support bots.",
+      "price": ""
+    },
+    {
+      "title": "CRM Integrations",
+      "description": "Jotform, websites, forms, APIs, and third-party tools connected into CRM workflows.",
+      "price": ""
+    },
+    {
+      "title": "Business Automation",
+      "description": "Automated pipelines, document workflows, notifications, data sync, and admin systems.",
+      "price": ""
+    },
+    {
+      "title": "Portfolio Websites",
+      "description": "Premium personal brands, developer portfolios, service pages, and lead-focused websites.",
+      "price": ""
+    }
+  ],
+  "testimonials": [],
+  "contact": {
+    "email": "hello@nuraxtech.com",
+    "github": "https://github.com/",
+    "linkedin": "https://www.linkedin.com/",
+    "twitter": "",
+    "website": ""
+  },
+  "faq": [
+    {
+      "question": "What services do you offer?",
+      "answer": "I offer Salesforce CRM setup, automation, reports, dashboards, integrations, websites, Android apps, and AI bot development."
+    }
+  ],
+  "customQA": []
+}

@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "position": "bottom-right",
+  "bubbleColor": "#16f2a4",
+  "windowTitle": "AI Assistant",
+  "botName": "Usman's AI Assistant",
+  "botAvatar": "/images/usman-profile.png",
+  "welcomeMessage": "Hi, I am Usman's AI assistant. Ask me about skills, projects, services, or availability.",
+  "placeholder": "Ask me about my work...",
+  "primaryColor": "#16f2a4",
+  "hiddenPages": [],
+  "showSuggestions": true,
+  "suggestions": [
+    "What are your skills?",
+    "Tell me about your projects",
+    "What services do you offer?",
+    "How can I contact you?"
+  ],
+  "lastTrainedAt": ""
+}

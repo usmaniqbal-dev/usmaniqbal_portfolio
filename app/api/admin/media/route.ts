@@ -1,0 +1,32 @@
+import { NextResponse } from "next/server";
+import { requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
+import { getSiteContent, saveSiteContent } from "@/lib/content-store";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+// Returns uploaded media metadata for the Media Manager.
+export async function GET() {
+  if (!(await requireAdminSession())) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const content = await getSiteContent();
+  return NextResponse.json(content.builder.media);
+}
+
+// Removes a media record from the builder library.
+export async function DELETE(request: Request) {
+  const denied = await requireAdminMutation(request);
+
+  if (denied) {
+    return denied;
+  }
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  const content = await getSiteContent();
+  const saved = await saveSiteContent({ ...content, builder: { ...content.builder, media: content.builder.media.filter((item) => item.id !== id) } });
+
+  return NextResponse.json(saved.builder.media);
+}
