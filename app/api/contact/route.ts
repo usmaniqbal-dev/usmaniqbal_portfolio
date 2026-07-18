@@ -32,6 +32,10 @@ async function readSubmissions() {
   const stored = await getStoredJson<unknown[]>("contact-submissions");
   if (stored) return stored;
 
+  if (process.env.VERCEL) {
+    return [];
+  }
+
   try {
     const raw = await readFile(submissionsFile, "utf8");
     return JSON.parse(raw) as unknown[];
@@ -67,7 +71,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
   if (process.env.VERCEL) {
-    return NextResponse.json({ message: "Contact storage is not configured." }, { status: 503 });
+    return NextResponse.json({ message: "Contact storage requires Neon PostgreSQL. Add DATABASE_URL from the Vercel Neon integration." }, { status: 503 });
   }
 
   await mkdir(path.dirname(submissionsFile), { recursive: true });

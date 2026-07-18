@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
+import { adminSetupErrorResponse, requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
 import { getSiteContent, saveSiteContent } from "@/lib/content-store";
 import type { SiteContent } from "@/types/site-content";
 
@@ -24,22 +24,26 @@ export async function POST(request: Request) {
     return denied;
   }
 
-  const body = (await request.json()) as { versionId?: string };
-  const content = await getSiteContent();
-  const version = content.builder.versionHistory.find((item) => item.id === body.versionId);
+  try {
+    const body = (await request.json()) as { versionId?: string };
+    const content = await getSiteContent();
+    const version = content.builder.versionHistory.find((item) => item.id === body.versionId);
 
-  if (!version) {
-    return NextResponse.json({ message: "Version not found." }, { status: 404 });
-  }
-
-  const restored = version.snapshotData as SiteContent;
-  const saved = await saveSiteContent({
-    ...restored,
-    builder: {
-      ...restored.builder,
-      versionHistory: content.builder.versionHistory.map((item) => (item.id === version.id ? { ...item, restoredAt: new Date().toISOString() } : item))
+    if (!version) {
+      return NextResponse.json({ message: "Version not found." }, { status: 404 });
     }
-  });
 
-  return NextResponse.json(saved);
+    const restored = version.snapshotData as SiteContent;
+    const saved = await saveSiteContent({
+      ...restored,
+      builder: {
+        ...restored.builder,
+        versionHistory: content.builder.versionHistory.map((item) => (item.id === version.id ? { ...item, restoredAt: new Date().toISOString() } : item))
+      }
+    });
+
+    return NextResponse.json(saved);
+  } catch (error) {
+    return adminSetupErrorResponse(error);
+  }
 }

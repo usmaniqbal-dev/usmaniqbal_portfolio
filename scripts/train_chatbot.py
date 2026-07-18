@@ -1,8 +1,8 @@
 """Train the local portfolio chatbot knowledge base and embeddings.
 
 This script reads portfolio data from /data JSON files, the existing .data
-fallback content file, and MySQL when configured. It writes a structured
-knowledge base and sentence-transformer embeddings for retrieval.
+fallback content file, and Neon PostgreSQL when DATABASE_URL is configured.
+It writes a structured knowledge base and sentence-transformer embeddings for retrieval.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import pickle
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
-import mysql.connector
+import psycopg
 import numpy as np
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
@@ -68,31 +68,25 @@ def collect_json_documents() -> List[Any]:
     return documents
 
 
-def collect_mysql_documents() -> List[Any]:
-    """Collect JSON portfolio content from MySQL when MYSQL_* env vars exist."""
-    required = ["MYSQL_HOST", "MYSQL_USER", "MYSQL_DATABASE"]
-    if not all(os.getenv(key) for key in required):
+def collect_postgres_documents() -> List[Any]:
+    """Collect JSON portfolio content from Neon PostgreSQL when DATABASE_URL exists."""
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
         return []
 
     try:
-        connection = mysql.connector.connect(
-            host=os.getenv("MYSQL_HOST"),
-            port=int(os.getenv("MYSQL_PORT", "3306")),
-            user=os.getenv("MYSQL_USER"),
-            password=os.getenv("MYSQL_PASSWORD", ""),
-            database=os.getenv("MYSQL_DATABASE"),
-        )
-        cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT content FROM site_content")
-        rows = cursor.fetchall()
-        cursor.close()
-        connection.close()
+        with psycopg.connect(database_url) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT content FROM site_content")
+                site_rows = cursor.fetchall()
+                cursor.execute("SELECT value FROM app_data")
+                app_rows = cursor.fetchall()
     except Exception:
         return []
 
     documents: List[Any] = []
-    for row in rows:
-        value = row.get("content")
+    for row in [*site_rows, *app_rows]:
+        value = row[0]
         if isinstance(value, str):
             documents.append(json.loads(value))
         elif value:
@@ -182,12 +176,12 @@ def merge_knowledge_document(kb: KnowledgeBase, document: Dict[str, Any]) -> Non
 
 
 def build_knowledge_base() -> KnowledgeBase:
-    """Build a structured knowledge base from JSON and MySQL portfolio data."""
+    """Build a structured knowledge base from JSON and Neon PostgreSQL portfolio data."""
     load_dotenv(ROOT_DIR / ".env.local")
     DATA_DIR.mkdir(exist_ok=True)
     kb = empty_knowledge_base()
 
-    for document in [*collect_json_documents(), *collect_mysql_documents()]:
+    for document in [*collect_json_documents(), *collect_postgres_documents()]:
         if not isinstance(document, dict):
             continue
         merge_knowledge_document(kb, document)

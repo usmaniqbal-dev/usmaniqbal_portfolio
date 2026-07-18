@@ -1,19 +1,19 @@
 # Usman Iqbal Portfolio
 
+Modern Next.js 15 portfolio website for Usman Iqbal / NURAXTECH. It includes a protected admin panel, editable website content, Vercel Blob media uploads, Neon PostgreSQL persistence, and a floating chatbot powered from the website data.
+
 Admin credentials are configured through `.env.local` for development and Vercel Environment Variables for production. Never commit real credentials.
 
-Modern portfolio website for Usman Iqbal / NURAXTECH. It includes an admin panel, editable website content, MySQL support, and a floating chatbot that answers from the website data only.
+For full production setup and GitHub/Vercel commands, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
-For production setup, GitHub CI, Vercel Blob, and deployment commands, see [DEPLOYMENT.md](./DEPLOYMENT.md).
-
-## 1. Project Run Karna
+## Local Development
 
 ```bash
 npm install
 npm run dev
 ```
 
-Website open karein:
+Website:
 
 ```text
 http://localhost:3000
@@ -25,9 +25,9 @@ Admin panel:
 http://localhost:3000/admin1122
 ```
 
-## 2. Environment File Banana
+## Environment Variables
 
-Project root mein `.env.local` file banayein ya `.env.example` copy karein.
+Create `.env.local` in the project root or copy `.env.example`.
 
 ```env
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
@@ -36,11 +36,8 @@ ADMIN_USERNAME=adminusman
 ADMIN_PASSWORD=replace-with-a-strong-password
 AUTH_SECRET=replace-with-a-random-secret-at-least-32-characters
 
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-MYSQL_USER=root
-MYSQL_PASSWORD=
-MYSQL_DATABASE=usman_portfolio
+DATABASE_URL=postgresql://user:password@host/database?sslmode=require
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_replace_me
 
 CHATBOT_API_URL=http://localhost:8000
 CHATBOT_ADMIN_KEY=replace-with-a-secret-chatbot-admin-key
@@ -48,132 +45,59 @@ CHATBOT_ADMIN_KEY=replace-with-a-secret-chatbot-admin-key
 
 Important:
 
-- `ADMIN_PASSWORD` kam az kam 8 characters ka hona chahiye.
-- `AUTH_SECRET` kam az kam 32 characters ka strong random text hona chahiye.
-- Chatbot ke liye kisi OpenAI ya external AI API key ki zaroorat nahi hai.
+- `DATABASE_URL` should come from the Vercel Neon integration in production.
+- `BLOB_READ_WRITE_TOKEN` should come from the connected Vercel Blob store.
+- `ADMIN_PASSWORD` should be strong and at least 8 characters.
+- `AUTH_SECRET` should be random and at least 32 characters.
+- Local development can use `.data` and `data/*.json` only when `DATABASE_URL` is absent.
+- Vercel production does not use local JSON files as persistent storage.
 
-## 3. MySQL Database Connect Karna
+## Storage
 
-### Step 1: MySQL install/start karein
+The app automatically creates these Neon PostgreSQL tables when `DATABASE_URL` is configured:
 
-Apne system mein MySQL Server start hona chahiye. Local development ke liye default host usually `localhost` aur port `3306` hota hai.
+```sql
+CREATE TABLE IF NOT EXISTS site_content (
+  id INTEGER PRIMARY KEY,
+  content JSONB NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
-### Step 2: Database aur tables create karein
-
-Project root se ye command run karein:
-
-```bash
-mysql -u root -p < scripts/schema.sql
+CREATE TABLE IF NOT EXISTS app_data (
+  data_key TEXT PRIMARY KEY,
+  value JSONB NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 ```
 
-Password poocha jaye to apna MySQL root password enter karein. Agar root password blank hai to sirf Enter press karein.
+Persistent admin and application data is stored in Neon PostgreSQL, including website content, builder settings, pages, themes, templates, publish/version history, media metadata and Blob URLs, chatbot settings, chatbot analytics, and contact submissions.
 
-### Step 3: `.env.local` mein MySQL details match karein
+Admin-uploaded images, documents, icons, PDFs, and supported media files are stored in Vercel Blob. The generated Blob URL and metadata are saved in Neon PostgreSQL.
 
-```env
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-MYSQL_USER=root
-MYSQL_PASSWORD=your_mysql_password
-MYSQL_DATABASE=usman_portfolio
-```
+## Chatbot Setup
 
-### Step 4: Website restart karein
-
-`.env.local` change karne ke baad development server restart karein:
-
-```bash
-npm run dev
-```
-
-Jab `MYSQL_HOST`, `MYSQL_USER`, aur `MYSQL_DATABASE` set honge to website editable content MySQL mein save karegi. Agar MySQL config missing ho to website local `.data/site-content.json` fallback use karegi.
-
-## 4. Chatbot Setup
-
-Chatbot website ke apne content, admin content, `.data` JSON files, aur MySQL data se train hota hai. Ismein external AI API key use nahi hoti.
-
-### Step 1: Python dependencies install karein
+The chatbot answers from portfolio content and does not require an OpenAI API key.
 
 ```bash
 cd scripts
 pip install -r requirements.txt
-```
-
-### Step 2: Chatbot train karein
-
-```bash
 python train_chatbot.py
-```
-
-Ye command `data/knowledge-base.json` aur `data/embeddings.pkl` generate karegi.
-
-### Step 3: Chatbot server start karein
-
-```bash
 python chatbot_server.py
 ```
 
-Server default URL:
-
-```text
-http://localhost:8000
-```
-
-### Step 4: Next.js website bhi running honi chahiye
-
-Dusre terminal mein:
+Then run the portfolio in another terminal:
 
 ```bash
 npm run dev
 ```
 
-Chatbot user panel mein side par neechy floating button ki form mein show hota hai. User us par click karke website ki skills, services, projects, contact, about, experience, aur available content ke baare mein puch sakta hai.
+The local trainer reads Neon PostgreSQL when `DATABASE_URL` is available; otherwise it reads local development JSON files.
 
-## 5. Chatbot Retrain Kab Karna Hai
-
-Jab bhi admin panel se content update karein, projects/services/skills change karein, ya MySQL data update ho, chatbot ko dobara train karein:
+## Verification
 
 ```bash
-cd scripts
-python train_chatbot.py
-```
-
-Admin chatbot page se bhi retrain kiya ja sakta hai:
-
-```text
-http://localhost:3000/admin/chatbot
-```
-
-Iske liye `.env.local` mein `CHATBOT_ADMIN_KEY` aur running Python chatbot server required hai.
-
-## 6. Production
-
-```bash
+npm run typecheck
 npm run build
-npm run start
 ```
 
-Production mein:
-
-- `NEXT_PUBLIC_SITE_URL` ko live domain par set karein.
-- `ADMIN_PASSWORD`, `AUTH_SECRET`, `MYSQL_PASSWORD`, aur `CHATBOT_ADMIN_KEY` strong rakhein.
-- MySQL database ka backup schedule zaroor rakhein.
-
-
-
-
-admin pannel men kuch changin karni hy 
-ye buttons Must hony chahiyen
-Dashboard
-Edit Website
-Page Manager
-Theme Manager
-Setting 
-Publish Manager
-Logout 
-jo ky already hen aur in men kuch bhi change nai hona chahiye bilkul kuch bhi change na ho just ye buttons aur inki functionalites delete kar do sirf ye neechy waly hi buttons aur 
-Content Manager
-Page Manager
-Template Manager
-AI Tools
-Media Manager 
+Use Node.js 20 or 22 for production parity with Vercel.

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
+import { adminSetupErrorResponse, requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
 import { getSiteContent, saveSiteContent } from "@/lib/content-store";
 
 export const runtime = "nodejs";
@@ -23,10 +23,14 @@ export async function DELETE(request: Request) {
     return denied;
   }
 
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-  const content = await getSiteContent();
-  const saved = await saveSiteContent({ ...content, builder: { ...content.builder, media: content.builder.media.filter((item) => item.id !== id) } });
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    const content = await getSiteContent();
+    const saved = await saveSiteContent({ ...content, builder: { ...content.builder, media: content.builder.media.filter((item) => item.id !== id) } });
 
-  return NextResponse.json(saved.builder.media);
+    return NextResponse.json(saved.builder.media);
+  } catch (error) {
+    return adminSetupErrorResponse(error);
+  }
 }

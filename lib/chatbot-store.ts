@@ -74,12 +74,14 @@ async function readJson<T>(filePath: string, dataKey: string, fallback: T): Prom
     return { ...fallback, ...stored } as T;
   }
 
+  if (process.env.VERCEL) {
+    return fallback;
+  }
+
   try {
     return { ...fallback, ...(JSON.parse(await readFile(filePath, "utf8")) as Partial<T>) } as T;
   } catch {
-    if (!process.env.VERCEL) {
-      await writeJson(filePath, dataKey, fallback);
-    }
+    await writeJson(filePath, dataKey, fallback);
     return fallback;
   }
 }
@@ -90,7 +92,7 @@ async function writeJson(filePath: string, dataKey: string, payload: unknown) {
     return;
   }
   if (process.env.VERCEL) {
-    throw new Error("A remote DATABASE_URL is required to save chatbot data on Vercel.");
+    throw new Error("Chatbot storage requires Neon PostgreSQL. Add DATABASE_URL from the Vercel Neon integration, then redeploy.");
   }
   await mkdir(dataDirectory, { recursive: true });
   await writeFile(filePath, JSON.stringify(payload, null, 2), "utf8");
@@ -118,7 +120,7 @@ export async function saveKnowledgeBase(knowledge: KnowledgeBase) {
   return knowledge;
 }
 
-// Loads basic chatbot analytics from disk.
+// Loads basic chatbot analytics.
 export async function getChatbotAnalytics() {
   return readJson(analyticsPath, "chatbot-analytics", { totalConversationsToday: 0, mostAskedQuestions: [], averageResponseTimeMs: 0, events: [] });
 }

@@ -4,5 +4,5 @@ sentence-transformers
 scikit-learn
 numpy
 python-dotenv
-mysql-connector-python
+psycopg[binary]
 requests

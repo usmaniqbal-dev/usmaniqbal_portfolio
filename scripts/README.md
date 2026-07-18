@@ -36,22 +36,17 @@ npm run dev
 http://localhost:3000/admin/chatbot
 ```
 
-## Required Environment Variables
+## Environment Variables
 
 Set these in `.env.local` from the project root:
 
 ```env
 CHATBOT_API_URL=http://localhost:8000
 CHATBOT_ADMIN_KEY=your_secret_admin_key
-
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-MYSQL_USER=root
-MYSQL_PASSWORD=
-MYSQL_DATABASE=usman_portfolio
+DATABASE_URL=postgresql://user:password@host/database?sslmode=require
 ```
 
-MySQL variables are optional for local testing, but required if you want the chatbot to train from database content.
+`DATABASE_URL` is optional for local testing. When it is present, the trainer reads portfolio content from Neon PostgreSQL. When it is absent, the trainer reads local development JSON files.
 
 ## Retraining
 

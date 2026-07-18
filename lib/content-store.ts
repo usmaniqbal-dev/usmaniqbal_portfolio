@@ -2,7 +2,7 @@ import "server-only";
 
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
-import mysql from "mysql2/promise";
+import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 import { defaultContent } from "@/lib/default-content";
 import { defaultBuilder } from "@/lib/builder-defaults";
 import { validateSiteContent } from "@/lib/validate";
@@ -11,76 +11,81 @@ import type { SiteContent } from "@/types/site-content";
 const dataDirectory = path.join(process.cwd(), ".data");
 const dataFile = path.join(dataDirectory, "site-content.json");
 
-let pool: mysql.Pool | null = null;
-let mysqlReady = false;
-let mysqlUnavailable = false;
-let mysqlWarningShown = false;
+let sqlClient: NeonQueryFunction<false, false> | null = null;
+let postgresReady = false;
+let postgresUnavailable = false;
+let postgresWarningShown = false;
 
-function hasMysqlConfig() {
+function isProductionBuild() {
+  return process.env.NEXT_PHASE === "phase-production-build";
+}
+
+function hasDatabaseConfig() {
   if (process.env.NEXT_PHASE === "phase-production-build") {
     return false;
   }
 
-  return Boolean(
-    (process.env.DATABASE_URL || (process.env.MYSQL_HOST && process.env.MYSQL_USER && process.env.MYSQL_DATABASE)) &&
-    !mysqlUnavailable
-  );
+  return Boolean(process.env.DATABASE_URL && !postgresUnavailable);
 }
 
-function getPool() {
-  if (!pool) {
-    const databaseUrl = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL) : null;
-    const urlSslMode = databaseUrl?.searchParams.get("ssl-mode")?.toLowerCase();
-    const usesSsl = process.env.MYSQL_SSL === "true" || Boolean(urlSslMode && urlSslMode !== "disabled");
-
-    pool = mysql.createPool({
-      host: databaseUrl?.hostname || process.env.MYSQL_HOST,
-      port: Number(databaseUrl?.port || process.env.MYSQL_PORT || 3306),
-      user: databaseUrl ? decodeURIComponent(databaseUrl.username) : process.env.MYSQL_USER,
-      password: databaseUrl ? decodeURIComponent(databaseUrl.password) : process.env.MYSQL_PASSWORD,
-      database: databaseUrl ? decodeURIComponent(databaseUrl.pathname.replace(/^\//, "")) : process.env.MYSQL_DATABASE,
-      ssl: usesSsl ? {} : undefined,
-      waitForConnections: true,
-      connectionLimit: 4,
-      enableKeepAlive: true,
-      namedPlaceholders: true
-    });
+function getSql() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is missing. Connect Neon to this Vercel project so persistent admin storage can use PostgreSQL.");
   }
 
-  return pool;
+  if (!sqlClient) {
+    sqlClient = neon(process.env.DATABASE_URL);
+  }
+
+  return sqlClient;
 }
 
-async function ensureMysqlTable() {
-  if (mysqlReady) {
+export function isDatabaseConfigured() {
+  return hasDatabaseConfig();
+}
+
+function createDatabaseSetupError(action: string) {
+  return new Error(`${action} requires Neon PostgreSQL. Add DATABASE_URL from the Vercel Neon integration, then redeploy.`);
+}
+
+export async function assertDatabaseReady(action: string) {
+  if (!hasDatabaseConfig() || !(await ensurePostgresTables())) {
+    throw createDatabaseSetupError(action);
+  }
+}
+
+async function ensurePostgresTables() {
+  if (postgresReady) {
     return true;
   }
 
   try {
-    await getPool().execute(`
+    const sql = getSql();
+    await sql`
       CREATE TABLE IF NOT EXISTS site_content (
-        id INT PRIMARY KEY,
-        content JSON NOT NULL,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        id INTEGER PRIMARY KEY,
+        content JSONB NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
-    `);
-    await getPool().execute(`
+    `;
+    await sql`
       CREATE TABLE IF NOT EXISTS app_data (
-        data_key VARCHAR(100) PRIMARY KEY,
-        value JSON NOT NULL,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        data_key TEXT PRIMARY KEY,
+        value JSONB NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
-    `);
+    `;
 
-    mysqlReady = true;
+    postgresReady = true;
     return true;
   } catch (error) {
-    mysqlUnavailable = true;
-    mysqlReady = false;
-    pool = null;
+    postgresUnavailable = true;
+    postgresReady = false;
+    sqlClient = null;
 
-    if (!mysqlWarningShown) {
-      mysqlWarningShown = true;
-      console.warn("MySQL is configured but unavailable. Falling back to local .data/site-content.json storage.", error);
+    if (!postgresWarningShown) {
+      postgresWarningShown = true;
+      console.warn("Neon PostgreSQL is configured but unavailable. Local development can fall back to .data; Vercel requires a working DATABASE_URL.", error);
     }
 
     return false;
@@ -130,16 +135,14 @@ function normalizeContent(content: Partial<SiteContent>): SiteContent {
 }
 
 async function readLocalContent() {
+  if (process.env.VERCEL || isProductionBuild()) {
+    return defaultContent;
+  }
+
   try {
     const raw = await readFile(dataFile, "utf8");
     return normalizeContent(JSON.parse(raw) as Partial<SiteContent>);
   } catch {
-    // Vercel Functions have no persistent project filesystem. The checked-in
-    // defaults keep the public site available until a production DB is linked.
-    if (process.env.VERCEL || process.env.NEXT_PHASE === "phase-production-build") {
-      return defaultContent;
-    }
-
     await mkdir(dataDirectory, { recursive: true });
     await writeFile(dataFile, JSON.stringify(defaultContent, null, 2), "utf8");
     return defaultContent;
@@ -148,7 +151,7 @@ async function readLocalContent() {
 
 async function saveLocalContent(content: SiteContent) {
   if (process.env.VERCEL) {
-    throw new Error("Persistent admin editing requires DATABASE_URL or remote MYSQL_* variables on Vercel.");
+    throw createDatabaseSetupError("Persistent admin editing");
   }
 
   await mkdir(dataDirectory, { recursive: true });
@@ -156,16 +159,16 @@ async function saveLocalContent(content: SiteContent) {
 }
 
 export async function getSiteContent(): Promise<SiteContent> {
-  if (!hasMysqlConfig()) {
+  if (!hasDatabaseConfig()) {
     return readLocalContent();
   }
 
-  if (!(await ensureMysqlTable())) {
+  if (!(await ensurePostgresTables())) {
     return readLocalContent();
   }
 
   try {
-    const [rows] = await getPool().query<mysql.RowDataPacket[]>("SELECT content FROM site_content WHERE id = 1 LIMIT 1");
+    const rows = await getSql()`SELECT content FROM site_content WHERE id = 1 LIMIT 1`;
     const firstRow = rows[0];
 
     if (!firstRow) {
@@ -175,13 +178,13 @@ export async function getSiteContent(): Promise<SiteContent> {
 
     return normalizeContent(parseContentValue(firstRow.content));
   } catch (error) {
-    mysqlUnavailable = true;
-    mysqlReady = false;
-    pool = null;
+    postgresUnavailable = true;
+    postgresReady = false;
+    sqlClient = null;
 
-    if (!mysqlWarningShown) {
-      mysqlWarningShown = true;
-      console.warn("Could not read from MySQL. Falling back to local .data/site-content.json storage.", error);
+    if (!postgresWarningShown) {
+      postgresWarningShown = true;
+      console.warn("Could not read from Neon PostgreSQL. Local development can fall back to .data; Vercel requires a working DATABASE_URL.", error);
     }
 
     return readLocalContent();
@@ -191,31 +194,32 @@ export async function getSiteContent(): Promise<SiteContent> {
 export async function saveSiteContent(content: SiteContent) {
   const normalized = validateSiteContent(normalizeContent(content));
 
-  if (!hasMysqlConfig()) {
+  if (!hasDatabaseConfig()) {
     await saveLocalContent(normalized);
     return normalized;
   }
 
-  if (!(await ensureMysqlTable())) {
+  if (!(await ensurePostgresTables())) {
     await saveLocalContent(normalized);
     return normalized;
   }
 
   try {
-    await getPool().execute(
-      `INSERT INTO site_content (id, content)
-       VALUES (1, :content)
-       ON DUPLICATE KEY UPDATE content = :content`,
-      { content: JSON.stringify(normalized) }
-    );
+    await getSql()`
+      INSERT INTO site_content (id, content, updated_at)
+      VALUES (1, ${JSON.stringify(normalized)}::jsonb, NOW())
+      ON CONFLICT (id) DO UPDATE
+      SET content = EXCLUDED.content,
+          updated_at = NOW()
+    `;
   } catch (error) {
-    mysqlUnavailable = true;
-    mysqlReady = false;
-    pool = null;
+    postgresUnavailable = true;
+    postgresReady = false;
+    sqlClient = null;
 
-    if (!mysqlWarningShown) {
-      mysqlWarningShown = true;
-      console.warn("Could not save to MySQL. Local development will use .data storage; Vercel requires a remote database.", error);
+    if (!postgresWarningShown) {
+      postgresWarningShown = true;
+      console.warn("Could not save to Neon PostgreSQL. Local development can use .data storage; Vercel requires Neon DATABASE_URL.", error);
     }
 
     await saveLocalContent(normalized);
@@ -227,12 +231,12 @@ export async function saveSiteContent(content: SiteContent) {
 // Reads auxiliary JSON documents (chatbot settings, analytics, etc.) from the
 // same managed database used by the admin builder.
 export async function getStoredJson<T>(key: string): Promise<T | null> {
-  if (!hasMysqlConfig() || !(await ensureMysqlTable())) {
+  if (!hasDatabaseConfig() || !(await ensurePostgresTables())) {
     return null;
   }
 
   try {
-    const [rows] = await getPool().query<mysql.RowDataPacket[]>("SELECT value FROM app_data WHERE data_key = ? LIMIT 1", [key]);
+    const rows = await getSql()`SELECT value FROM app_data WHERE data_key = ${key} LIMIT 1`;
     const value = rows[0]?.value;
     if (!value) return null;
     return (typeof value === "string" ? JSON.parse(value) : value) as T;
@@ -242,18 +246,19 @@ export async function getStoredJson<T>(key: string): Promise<T | null> {
   }
 }
 
-// Returns false during local development without MySQL so callers can retain
+// Returns false during local development without Neon so callers can retain
 // their checked-in JSON fallback. Vercel callers should treat false as a setup error.
 export async function saveStoredJson(key: string, value: unknown): Promise<boolean> {
-  if (!hasMysqlConfig() || !(await ensureMysqlTable())) {
+  if (!hasDatabaseConfig() || !(await ensurePostgresTables())) {
     return false;
   }
 
-  await getPool().execute(
-    `INSERT INTO app_data (data_key, value)
-     VALUES (?, ?)
-     ON DUPLICATE KEY UPDATE value = VALUES(value)`,
-    [key, JSON.stringify(value)]
-  );
+  await getSql()`
+    INSERT INTO app_data (data_key, value, updated_at)
+    VALUES (${key}, ${JSON.stringify(value)}::jsonb, NOW())
+    ON CONFLICT (data_key) DO UPDATE
+    SET value = EXCLUDED.value,
+        updated_at = NOW()
+  `;
   return true;
 }

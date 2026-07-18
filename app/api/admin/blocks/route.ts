@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
+import { adminSetupErrorResponse, requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
 import { addBlock, reorderSections } from "@/lib/builder-actions";
 import { getSiteContent, saveSiteContent } from "@/lib/content-store";
 import type { BuilderBlock } from "@/types/site-content";
@@ -26,16 +26,20 @@ export async function POST(request: Request) {
     return denied;
   }
 
-  const body = (await request.json()) as { action?: string; block?: BuilderBlock; sectionIds?: string[] };
-  const content = await getSiteContent();
+  try {
+    const body = (await request.json()) as { action?: string; block?: BuilderBlock; sectionIds?: string[] };
+    const content = await getSiteContent();
 
-  if (body.action === "reorder-sections" && body.sectionIds) {
-    return NextResponse.json(await saveSiteContent(reorderSections(content, body.sectionIds)));
+    if (body.action === "reorder-sections" && body.sectionIds) {
+      return NextResponse.json(await saveSiteContent(reorderSections(content, body.sectionIds)));
+    }
+
+    if (body.action === "add-block" && body.block) {
+      return NextResponse.json(await saveSiteContent(addBlock(content, body.block)));
+    }
+
+    return NextResponse.json({ message: "Unsupported block action." }, { status: 400 });
+  } catch (error) {
+    return adminSetupErrorResponse(error);
   }
-
-  if (body.action === "add-block" && body.block) {
-    return NextResponse.json(await saveSiteContent(addBlock(content, body.block)));
-  }
-
-  return NextResponse.json({ message: "Unsupported block action." }, { status: 400 });
 }

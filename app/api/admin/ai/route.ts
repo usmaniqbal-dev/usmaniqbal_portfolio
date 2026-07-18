@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminMutation } from "@/lib/admin-api";
+import { adminSetupErrorResponse, requireAdminMutation } from "@/lib/admin-api";
 import { createLocalAIResponse } from "@/lib/builder-actions";
 import { getSiteContent, saveSiteContent } from "@/lib/content-store";
 import { sanitizeText } from "@/lib/sanitize";
@@ -35,27 +35,31 @@ export async function POST(request: Request) {
 
   calls.set(ip, { ...current, count: current.count + 1 });
 
-  const body = (await request.json()) as { type?: string; prompt?: string; usedFor?: string };
-  const type = sanitizeText(body.type || "content");
-  const prompt = sanitizeText(body.prompt || "");
-  const generatedText = await generateAIText(type, prompt);
-  const content = await getSiteContent();
-  const aiRecord = {
-    id: crypto.randomUUID(),
-    type,
-    prompt,
-    generatedText,
-    usedFor: sanitizeText(body.usedFor || type),
-    createdAt: new Date().toISOString()
-  };
+  try {
+    const body = (await request.json()) as { type?: string; prompt?: string; usedFor?: string };
+    const type = sanitizeText(body.type || "content");
+    const prompt = sanitizeText(body.prompt || "");
+    const generatedText = await generateAIText(type, prompt);
+    const content = await getSiteContent();
+    const aiRecord = {
+      id: crypto.randomUUID(),
+      type,
+      prompt,
+      generatedText,
+      usedFor: sanitizeText(body.usedFor || type),
+      createdAt: new Date().toISOString()
+    };
 
-  await saveSiteContent({
-    ...content,
-    builder: {
-      ...content.builder,
-      aiContent: [aiRecord, ...content.builder.aiContent].slice(0, 50)
-    }
-  });
+    await saveSiteContent({
+      ...content,
+      builder: {
+        ...content.builder,
+        aiContent: [aiRecord, ...content.builder.aiContent].slice(0, 50)
+      }
+    });
 
-  return NextResponse.json(aiRecord);
+    return NextResponse.json(aiRecord);
+  } catch (error) {
+    return adminSetupErrorResponse(error);
+  }
 }

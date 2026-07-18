@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
+import { adminSetupErrorResponse, requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
 import { getSiteContent, saveSiteContent } from "@/lib/content-store";
 import type { BuilderPage } from "@/types/site-content";
 
@@ -24,11 +24,15 @@ export async function POST(request: Request) {
     return denied;
   }
 
-  const page = (await request.json()) as BuilderPage;
-  const content = await getSiteContent();
-  const exists = content.builder.pages.some((item) => item.id === page.id);
-  const pages = exists ? content.builder.pages.map((item) => (item.id === page.id ? page : item)) : [page, ...content.builder.pages];
-  const saved = await saveSiteContent({ ...content, builder: { ...content.builder, pages } });
+  try {
+    const page = (await request.json()) as BuilderPage;
+    const content = await getSiteContent();
+    const exists = content.builder.pages.some((item) => item.id === page.id);
+    const pages = exists ? content.builder.pages.map((item) => (item.id === page.id ? page : item)) : [page, ...content.builder.pages];
+    const saved = await saveSiteContent({ ...content, builder: { ...content.builder, pages } });
 
-  return NextResponse.json(saved.builder.pages);
+    return NextResponse.json(saved.builder.pages);
+  } catch (error) {
+    return adminSetupErrorResponse(error);
+  }
 }

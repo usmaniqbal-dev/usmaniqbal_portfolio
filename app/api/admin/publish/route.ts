@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
+import { adminSetupErrorResponse, requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
 import { applyPublishAction } from "@/lib/builder-actions";
 import { getSiteContent, saveSiteContent } from "@/lib/content-store";
 
@@ -28,9 +28,13 @@ export async function POST(request: Request) {
     return denied;
   }
 
-  const body = (await request.json()) as { action?: string };
-  const content = await getSiteContent();
-  const saved = await saveSiteContent(applyPublishAction(content, body.action || "draft"));
+  try {
+    const body = (await request.json()) as { action?: string };
+    const content = await getSiteContent();
+    const saved = await saveSiteContent(applyPublishAction(content, body.action || "draft"));
 
-  return NextResponse.json(saved);
+    return NextResponse.json(saved);
+  } catch (error) {
+    return adminSetupErrorResponse(error);
+  }
 }

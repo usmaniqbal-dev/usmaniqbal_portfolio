@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { cookieName, verifySessionToken } from "@/lib/auth";
-import { requireAdminMutation } from "@/lib/admin-api";
+import { adminSetupErrorResponse, requireAdminMutation } from "@/lib/admin-api";
 import { getSiteContent, saveSiteContent } from "@/lib/content-store";
 import type { SiteContent } from "@/types/site-content";
 
@@ -28,17 +28,21 @@ export async function PUT(request: Request) {
     return denied;
   }
 
-  const content = (await request.json()) as SiteContent;
-  const saved = await saveSiteContent({
-    ...content,
-    builder: {
-      ...content.builder,
-      settings: {
-        ...content.builder.settings,
-        draftUpdatedAt: new Date().toISOString()
+  try {
+    const content = (await request.json()) as SiteContent;
+    const saved = await saveSiteContent({
+      ...content,
+      builder: {
+        ...content.builder,
+        settings: {
+          ...content.builder.settings,
+          draftUpdatedAt: new Date().toISOString()
+        }
       }
-    }
-  });
+    });
 
-  return NextResponse.json(saved);
+    return NextResponse.json(saved);
+  } catch (error) {
+    return adminSetupErrorResponse(error);
+  }
 }

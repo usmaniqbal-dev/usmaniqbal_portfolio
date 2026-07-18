@@ -32,3 +32,19 @@ export async function requireAdminMutation(request: Request) {
 export function createCsrfToken() {
   return crypto.randomUUID();
 }
+
+export function adminSetupErrorResponse(error: unknown) {
+  const message = error instanceof Error ? error.message : "Admin storage setup failed.";
+  const isSetupError =
+    message.includes("Neon PostgreSQL") ||
+    message.includes("DATABASE_URL") ||
+    message.includes("Vercel Blob") ||
+    message.includes("BLOB_READ_WRITE_TOKEN");
+
+  if (isSetupError) {
+    return NextResponse.json({ message }, { status: 503 });
+  }
+
+  console.error("Admin request failed.", error);
+  return NextResponse.json({ message: "Admin request failed. Check the server logs and deployment configuration." }, { status: 500 });
+}
