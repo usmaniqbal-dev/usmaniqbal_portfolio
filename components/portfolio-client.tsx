@@ -66,6 +66,9 @@ const publicTheme = {
   text: "#ffffff"
 };
 
+const LOADER_MAX_MS = 1280;
+const DEFER_3D_MS = 180;
+
 const Global3DBackground = dynamic(() => import("@/components/animations/Global3DBackground"), {
   ssr: false,
   loading: () => <div className="pointer-events-none fixed inset-0 z-0 bg-animated-fallback" aria-hidden />
@@ -79,6 +82,7 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
   const [menuOpen, setMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [effectsReady, setEffectsReady] = useState(false);
 
   useEffect(() => {
     const savedMode = window.localStorage.getItem("nuraxtech-portfolio-theme");
@@ -91,10 +95,19 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
       return;
     }
 
-    // Allow every character to finish its one-by-one reveal before opening the site.
-    const timeout = window.setTimeout(() => setLoading(false), 2000);
+    const timeout = window.setTimeout(() => setLoading(false), LOADER_MAX_MS);
     return () => window.clearTimeout(timeout);
   }, [shouldAnimate]);
+
+  useEffect(() => {
+    if (!shouldAnimate || loading) {
+      setEffectsReady(false);
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setEffectsReady(true), DEFER_3D_MS);
+    return () => window.clearTimeout(timeout);
+  }, [loading, shouldAnimate]);
 
   useEffect(() => {
     setContent(initialContent);
@@ -177,7 +190,11 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
   return (
     <main className={`site-shell flex min-h-screen flex-col overflow-hidden text-white ${darkMode ? "dark-mode" : "light-mode"}`} style={style}>
       <AnimatePresence>{loading ? <LoadingExperience /> : null}</AnimatePresence>
-      <Global3DBackground primary={publicTheme.primary} secondary={publicTheme.secondary} enabled={shouldAnimate} />
+      {effectsReady ? (
+        <Global3DBackground primary={publicTheme.primary} secondary={publicTheme.secondary} enabled={shouldAnimate} />
+      ) : (
+        <div className="pointer-events-none fixed inset-0 z-0 bg-animated-fallback" aria-hidden />
+      )}
       <div className="site-grid pointer-events-none fixed inset-0 opacity-80" />
       <div className="pointer-events-none fixed inset-x-0 top-0 h-px glow-line opacity-70" />
       <FloatingNav menuOpen={menuOpen} setMenuOpen={setMenuOpen} darkMode={darkMode} toggleColorMode={toggleColorMode} />
@@ -245,7 +262,7 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
             </motion.div>
           </motion.div>
 
-          <div className="h-full"><HeroVisual imageSrc={heroImageSrc} shouldAnimate={shouldAnimate} dragConstraints={heroSectionRef} /></div>
+          <div className="h-full"><HeroVisual imageSrc={heroImageSrc} shouldAnimate={shouldAnimate && !loading} dragConstraints={heroSectionRef} /></div>
         </div>
       </section>
 
@@ -490,7 +507,7 @@ function LoadingExperience() {
                 className="loader-letter"
                 initial={{ opacity: 0, y: 26, rotateX: -55, rotateY: -28, scale: 0.72, filter: "blur(7px)" }}
                 animate={{ opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1, filter: "blur(0px)" }}
-                transition={{ delay: 0.08 + index * 0.17, duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ delay: 0.06 + index * 0.055, duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               >
                 {letter}
               </motion.span>
@@ -503,7 +520,7 @@ function LoadingExperience() {
                 className="loader-letter"
                 initial={{ opacity: 0, y: 26, rotateX: -55, rotateY: -28, scale: 0.72, filter: "blur(7px)" }}
                 animate={{ opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1, filter: "blur(0px)" }}
-                transition={{ delay: 0.08 + (index + firstName.length) * 0.17, duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ delay: 0.06 + (index + firstName.length) * 0.055, duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               >
                 {letter}
               </motion.span>
@@ -514,13 +531,13 @@ function LoadingExperience() {
         <motion.div
           initial={{ scaleX: 0.35, opacity: 0.65 }}
           animate={{ scaleX: 1, opacity: 1 }}
-          transition={{ delay: 1.42, duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ delay: 0.68, duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           className="loader-name-rule mt-5 h-px w-[min(72vw,420px)] origin-center"
         />
         <motion.p
           initial={{ opacity: 0.55, y: 3 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.52, duration: 0.26 }}
+          transition={{ delay: 0.74, duration: 0.2 }}
           className="mt-4 text-[10px] font-semibold uppercase tracking-[0.42em] text-white/55 sm:text-xs"
         >
           CRM · Automation · Web · AI
@@ -530,7 +547,7 @@ function LoadingExperience() {
           <motion.div
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
-            transition={{ duration: 1.9, ease: [0.65, 0, 0.35, 1] }}
+            transition={{ duration: 1.05, ease: [0.65, 0, 0.35, 1] }}
             className="loader-progress h-full origin-left rounded-full"
           />
         </div>

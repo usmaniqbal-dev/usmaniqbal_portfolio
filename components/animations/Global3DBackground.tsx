@@ -15,13 +15,13 @@ type Global3DBackgroundProps = {
 export default function Global3DBackground({ primary, secondary, enabled }: Global3DBackgroundProps) {
   const webgl = useWebGLSupported();
 
-  if (!enabled || webgl === false) {
+  if (!enabled || webgl !== true) {
     return <div className="pointer-events-none fixed inset-0 z-0 bg-animated-fallback" aria-hidden />;
   }
 
   return (
     <div className="pointer-events-none fixed inset-0 z-0 opacity-80" aria-hidden>
-      <Canvas camera={{ position: [0, 0, 8], fov: 45 }} dpr={1} gl={{ antialias: false, powerPreference: "high-performance" }}>
+      <Canvas camera={{ position: [0, 0, 8], fov: 45 }} dpr={1} gl={{ antialias: false, alpha: false, powerPreference: "high-performance" }}>
         <ambientLight intensity={0.6} />
         <ParticleField primary={primary} secondary={secondary} />
       </Canvas>
@@ -35,7 +35,7 @@ function ParticleField({ primary, secondary }: { primary: string; secondary: str
   const eased = useRef({ x: 0, y: 0 });
   const primaryColor = useMemo(() => new THREE.Color(primary), [primary]);
   const secondaryColor = useMemo(() => new THREE.Color(secondary), [secondary]);
-  const particleCount = 320;
+  const particleCount = 160;
 
   const { positions, colors, sizes } = useMemo(() => {
     const nextPositions = new Float32Array(particleCount * 3);

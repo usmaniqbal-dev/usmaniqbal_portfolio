@@ -10,6 +10,7 @@ import type { SiteContent } from "@/types/site-content";
 
 const dataDirectory = path.join(process.cwd(), ".data");
 const dataFile = path.join(dataDirectory, "site-content.json");
+const DATABASE_READ_TIMEOUT_MS = 900;
 
 let sqlClient: NeonQueryFunction<false, false> | null = null;
 let postgresReady = false;
@@ -38,6 +39,23 @@ function getSql() {
   }
 
   return sqlClient;
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T | null> {
+  let timeout: NodeJS.Timeout | undefined;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<null>((resolve) => {
+        timeout = setTimeout(() => resolve(null), timeoutMs);
+      })
+    ]);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  }
 }
 
 export function isDatabaseConfigured() {
@@ -163,12 +181,21 @@ export async function getSiteContent(): Promise<SiteContent> {
     return readLocalContent();
   }
 
-  if (!(await ensurePostgresTables())) {
+  const databaseReady = await withTimeout(ensurePostgresTables(), DATABASE_READ_TIMEOUT_MS);
+  if (!databaseReady) {
+    postgresUnavailable = true;
     return readLocalContent();
   }
 
   try {
-    const rows = await getSql()`SELECT content FROM site_content WHERE id = 1 LIMIT 1`;
+    const rows = await withTimeout(getSql()`SELECT content FROM site_content WHERE id = 1 LIMIT 1`, DATABASE_READ_TIMEOUT_MS);
+    if (!rows) {
+      postgresUnavailable = true;
+      postgresReady = false;
+      sqlClient = null;
+      return readLocalContent();
+    }
+
     const firstRow = rows[0];
 
     if (!firstRow) {
