@@ -62,6 +62,10 @@ export function isDatabaseConfigured() {
   return hasDatabaseConfig();
 }
 
+export function getContentStorageMode() {
+  return hasDatabaseConfig() ? "Neon PostgreSQL" : "local .data JSON";
+}
+
 function createDatabaseSetupError(action: string) {
   return new Error(`${action} requires Neon PostgreSQL. Add DATABASE_URL from the Vercel Neon integration, then redeploy.`);
 }
@@ -164,7 +168,11 @@ async function readLocalContent() {
 
   try {
     const raw = await readFile(dataFile, "utf8");
-    return normalizeContent(JSON.parse(raw) as Partial<SiteContent>);
+    const normalized = normalizeContent(JSON.parse(raw) as Partial<SiteContent>);
+    if (JSON.stringify(normalized, null, 2) !== raw.trim()) {
+      await writeFile(dataFile, JSON.stringify(normalized, null, 2), "utf8");
+    }
+    return normalized;
   } catch {
     await mkdir(dataDirectory, { recursive: true });
     await writeFile(dataFile, JSON.stringify(defaultContent, null, 2), "utf8");

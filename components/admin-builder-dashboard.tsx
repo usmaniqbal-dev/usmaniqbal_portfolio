@@ -29,6 +29,7 @@ type SessionState = {
   authenticated: boolean;
   configured: boolean;
   csrfToken?: string;
+  storageMode?: string;
   message?: string;
 };
 
@@ -273,7 +274,7 @@ export default function AdminBuilderDashboard() {
           </header>
 
           <div className="p-4 sm:p-6">
-            {view === "dashboard" ? <DashboardView templates={content.builder.templates.length} activeTheme={activeTheme?.name || "None"} lastPublished={content.builder.settings.lastPublishedAt} mediaCount={mediaCount} /> : null}
+            {view === "dashboard" ? <DashboardView templates={content.builder.templates.length} activeTheme={activeTheme?.name || "None"} lastPublished={content.builder.settings.lastPublishedAt} mediaCount={mediaCount} storageMode={session.storageMode || "Unknown"} /> : null}
             {view === "content" ? (
               <EditWebsiteManager
                 content={content}
@@ -324,16 +325,17 @@ function LoginScreen({ session, username, password, setUsername, setPassword, lo
   );
 }
 
-function DashboardView({ templates, activeTheme, lastPublished, mediaCount }: { templates: number; activeTheme: string; lastPublished: string; mediaCount: number }) {
+function DashboardView({ templates, activeTheme, lastPublished, mediaCount, storageMode }: { templates: number; activeTheme: string; lastPublished: string; mediaCount: number; storageMode: string }) {
   const cards = [
     ["Total templates", String(templates)],
     ["Active theme", activeTheme],
     ["Last published", lastPublished ? new Date(lastPublished).toLocaleString() : "Not published yet"],
-    ["Media files", String(mediaCount)]
+    ["Media files", String(mediaCount)],
+    ["Content source", storageMode]
   ];
 
   return (
-    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
       {cards.map(([label, value]) => (
         <div key={label} className="rounded-[8px] border border-white/10 bg-white/[0.04] p-5">
           <p className="text-sm font-bold uppercase text-white/42">{label}</p>
