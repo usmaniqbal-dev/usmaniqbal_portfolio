@@ -2,6 +2,26 @@ import type { SiteContent } from "@/types/site-content";
 import { defaultBuilder } from "@/lib/builder-defaults";
 
 export const defaultContent: SiteContent = {
+  seo: {
+    title: "Usman Iqbal | Salesforce Administrator & Developer",
+    description:
+      "Official portfolio of Usman Iqbal, Salesforce Administrator, Salesforce Developer, CRM specialist, web developer, and AI bots developer at NURAXTECH.",
+    keywords: [
+      "Usman Iqbal",
+      "Usman",
+      "About Usman Iqbal",
+      "Usman Iqbal portfolio",
+      "Salesforce Administrator Usman Iqbal",
+      "Salesforce Developer Usman Iqbal",
+      "NURAXTECH",
+      "CRM Specialist",
+      "Web Developer",
+      "AI Bots Developer"
+    ],
+    canonicalUrl: "",
+    ogImage: "/images/usman-profile.png",
+    author: "Usman Iqbal"
+  },
   home: {
     title: "I'm Usman Iqbal",
     subtitle: "Salesforce Administrator & Developer",

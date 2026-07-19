@@ -105,6 +105,9 @@ export type ResponsiveStyles = {
 };
 
 export type WebsiteSettings = {
+  siteName: string;
+  logoUrl: string;
+  logoLink: string;
   globalFont: string;
   primaryColor: string;
   secondaryColor: string;
@@ -120,6 +123,15 @@ export type WebsiteSettings = {
   activeTheme: string;
   lastPublishedAt: string;
   draftUpdatedAt: string;
+};
+
+export type SeoSettings = {
+  title: string;
+  description: string;
+  keywords: string[];
+  canonicalUrl: string;
+  ogImage: string;
+  author: string;
 };
 
 export type BuilderTheme = {
@@ -257,6 +269,7 @@ export type BuilderState = {
 };
 
 export type SiteContent = {
+  seo: SeoSettings;
   home: HomeContent;
   about: AboutContent;
   skills: SkillContent[];

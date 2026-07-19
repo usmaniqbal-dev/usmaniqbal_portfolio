@@ -1,32 +1,50 @@
 import type { Metadata } from "next";
 import ChatbotWidget from "@/components/chatbot/ChatbotWidget";
+import { getSiteContent } from "@/lib/content-store";
 import "./globals.css";
 
 const deploymentUrl = process.env.NEXT_PUBLIC_SITE_URL ||
   (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
 
-export const metadata: Metadata = {
-  metadataBase: new URL(deploymentUrl),
-  title: "Usman Iqbal | Salesforce Administrator & Developer",
-  description:
-    "Usman Iqbal is a Salesforce Administrator & Developer, CRM specialist, web developer, and AI bots developer at NURAXTECH.",
-  keywords: [
-    "Usman Iqbal",
-    "NURAXTECH",
-    "Salesforce Administrator",
-    "Salesforce Developer",
-    "CRM Specialist",
-    "Web Developer",
-    "AI Bots Developer"
-  ],
-  openGraph: {
-    title: "Usman Iqbal | Salesforce Administrator & Developer",
-    description:
-      "Salesforce CRM, automation, web development, AI bots, and modern business solutions.",
-    type: "website",
-    images: ["/images/usman-profile.png"]
-  }
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const content = await getSiteContent();
+  const siteUrl = content.seo.canonicalUrl || deploymentUrl;
+  const title = content.seo.title || content.builder.pages[0]?.metaTitle || "Usman Iqbal | Salesforce Administrator & Developer";
+  const description = content.seo.description || content.builder.pages[0]?.metaDescription || content.about.description;
+  const image = content.seo.ogImage || content.builder.settings.logoUrl || content.home.profileImage || "/images/usman-profile.png";
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title,
+    description,
+    keywords: content.seo.keywords,
+    authors: [{ name: content.seo.author || "Usman Iqbal" }],
+    alternates: { canonical: siteUrl },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      url: siteUrl,
+      siteName: content.builder.settings.siteName || "Usman Iqbal",
+      images: [image]
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image]
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large"
+      }
+    }
+  };
+}
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

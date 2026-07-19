@@ -128,6 +128,11 @@ function normalizeContent(content: Partial<SiteContent>): SiteContent {
   return {
     ...defaultContent,
     ...content,
+    seo: {
+      ...defaultContent.seo,
+      ...content.seo,
+      keywords: Array.isArray(content.seo?.keywords) ? content.seo.keywords : defaultContent.seo.keywords
+    },
     home: { ...defaultContent.home, ...content.home },
     about: { ...defaultContent.about, ...content.about },
     skills: Array.isArray(content.skills) ? content.skills : defaultContent.skills,

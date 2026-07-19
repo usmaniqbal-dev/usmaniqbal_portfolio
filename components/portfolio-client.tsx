@@ -57,14 +57,6 @@ const navItems = [
 ];
 
 const serviceIcons = [Database, Zap, Layers3, Settings2, Code2, BriefcaseBusiness, Bot, Sparkles];
-const publicTheme = {
-  primary: "#ff7417",
-  secondary: "#8f5bff",
-  accent: "#158cff",
-  background: "#050a24",
-  card: "rgba(8, 17, 49, 0.72)",
-  text: "#ffffff"
-};
 
 const LOADER_MAX_MS = 1280;
 const DEFER_3D_MS = 180;
@@ -157,13 +149,16 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
     });
   }
 
+  const activeBuilderTheme = content.builder.themes.find((theme) => theme.isActive);
+  const themePrimary = content.theme.primary || activeBuilderTheme?.primaryColor || content.builder.settings.primaryColor;
+  const themeSecondary = content.theme.secondary || activeBuilderTheme?.secondaryColor || content.builder.settings.secondaryColor;
   const style = {
-    "--primary": publicTheme.primary,
-    "--secondary": publicTheme.secondary,
-    "--accent": publicTheme.accent,
-    "--builder-bg": publicTheme.background,
-    "--builder-text": publicTheme.text,
-    "--builder-card": publicTheme.card
+    "--primary": themePrimary,
+    "--secondary": themeSecondary,
+    "--accent": content.theme.accent || activeBuilderTheme?.accentColor || "#a7f3d0",
+    "--builder-bg": activeBuilderTheme?.backgroundColor || content.builder.settings.backgroundColor,
+    "--builder-text": activeBuilderTheme?.textColor || content.builder.settings.textColor,
+    "--builder-card": activeBuilderTheme?.cardColor || content.builder.settings.cardColor
   } as React.CSSProperties;
 
   const activeTemplate = content.builder.templates.find((template) => template.isActive);
@@ -191,13 +186,13 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
     <main className={`site-shell flex min-h-screen flex-col overflow-hidden text-white ${darkMode ? "dark-mode" : "light-mode"}`} style={style}>
       <AnimatePresence>{loading ? <LoadingExperience /> : null}</AnimatePresence>
       {effectsReady ? (
-        <Global3DBackground primary={publicTheme.primary} secondary={publicTheme.secondary} enabled={shouldAnimate} />
+        <Global3DBackground primary={themePrimary} secondary={themeSecondary} enabled={shouldAnimate} />
       ) : (
         <div className="pointer-events-none fixed inset-0 z-0 bg-animated-fallback" aria-hidden />
       )}
       <div className="site-grid pointer-events-none fixed inset-0 opacity-80" />
       <div className="pointer-events-none fixed inset-x-0 top-0 h-px glow-line opacity-70" />
-      <FloatingNav menuOpen={menuOpen} setMenuOpen={setMenuOpen} darkMode={darkMode} toggleColorMode={toggleColorMode} />
+      <FloatingNav menuOpen={menuOpen} setMenuOpen={setMenuOpen} darkMode={darkMode} toggleColorMode={toggleColorMode} siteName={content.builder.settings.siteName} logoUrl={content.builder.settings.logoUrl} logoLink={content.builder.settings.logoLink} />
 
       <section ref={heroSectionRef} id="home" className="hero-showcase relative min-h-[100svh] px-5 pb-8 pt-28 sm:px-8 lg:h-[100svh] lg:min-h-0 lg:overflow-hidden lg:px-12 lg:pb-4 lg:pt-28" style={homeStyle}>
         {heroBackgroundType === "image" && heroBackgroundUrl ? <div className="absolute inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroBackgroundUrl})` }} /> : null}
@@ -387,21 +382,30 @@ function FloatingNav({
   menuOpen,
   setMenuOpen,
   darkMode,
-  toggleColorMode
+  toggleColorMode,
+  siteName,
+  logoUrl,
+  logoLink
 }: {
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
   darkMode: boolean;
   toggleColorMode: () => void;
+  siteName: string;
+  logoUrl: string;
+  logoLink: string;
 }) {
   const { hidden, scrolled } = useScrollDirection();
+  const brandName = siteName || "Usman Iqbal";
 
   return (
     <motion.header animate={{ y: hidden ? -92 : 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="fixed left-0 right-0 top-4 z-50 px-5">
       <nav className={`mx-auto flex max-w-[calc(100vw-2.5rem)] items-center justify-between rounded-full border border-white/10 px-3 py-2.5 shadow-cyan transition md:max-w-5xl ${scrolled ? "bg-black/72 backdrop-blur-2xl" : "bg-black/48 backdrop-blur-xl"}`}>
-        <a href="#home" className="flex items-center gap-2.5 font-black text-white">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-[var(--primary)] text-black">N</span>
-          <span className="hidden sm:block">NURAXTECH</span>
+        <a href={logoLink || "#home"} className="flex min-w-0 items-center gap-2.5 font-black text-white">
+          <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[var(--primary)] text-black">
+            {logoUrl ? <img src={logoUrl} alt="" className="h-full w-full object-cover" /> : brandName.charAt(0)}
+          </span>
+          <span className="hidden max-w-[160px] truncate sm:block">{brandName}</span>
         </a>
         <div className="hidden items-center gap-2 md:flex">
           {navItems.map((item) => {
@@ -990,6 +994,9 @@ function ContactForm({ email, fields, shouldAnimate }: { email: string; fields?:
   const formRef = useRef<HTMLFormElement>(null);
   const timeInputRef = useRef<HTMLInputElement>(null);
   const formFields = fields?.length ? fields : ["Name", "Email", "Project Type", "Message"];
+  const emailJsServiceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+  const emailJsTemplateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
+  const emailJsPublicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
 
   const emailJsFieldName = (field: string) => {
     const normalized = field.toLowerCase();
@@ -1018,12 +1025,18 @@ function ContactForm({ email, fields, shouldAnimate }: { email: string; fields?:
       timeInputRef.current.value = new Date().toLocaleString();
     }
 
+    if (!emailJsServiceId || !emailJsTemplateId || !emailJsPublicKey) {
+      setFormError("Contact form is not configured yet. Please email directly for now.");
+      setSending(false);
+      return;
+    }
+
     try {
       await emailjs.sendForm(
-        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
-        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
+        emailJsServiceId,
+        emailJsTemplateId,
         form,
-        { publicKey: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY! }
+        { publicKey: emailJsPublicKey }
       );
 
       form.reset();

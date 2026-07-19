@@ -5,6 +5,15 @@ import { sanitizeHex, sanitizeHtml, sanitizeText, sanitizeUrl } from "@/lib/sani
 export function validateSiteContent(content: SiteContent): SiteContent {
   return {
     ...content,
+    seo: {
+      ...content.seo,
+      title: sanitizeText(content.seo?.title || "Usman Iqbal | Salesforce Administrator & Developer"),
+      description: sanitizeText(content.seo?.description || ""),
+      keywords: (content.seo?.keywords || []).map(sanitizeText).filter(Boolean).slice(0, 30),
+      canonicalUrl: sanitizeUrl(content.seo?.canonicalUrl || ""),
+      ogImage: sanitizeUrl(content.seo?.ogImage || ""),
+      author: sanitizeText(content.seo?.author || "Usman Iqbal")
+    },
     home: {
       ...content.home,
       title: sanitizeText(content.home.title),
@@ -91,6 +100,12 @@ export function validateSiteContent(content: SiteContent): SiteContent {
     })),
     builder: {
       ...content.builder,
+      settings: {
+        ...content.builder.settings,
+        siteName: sanitizeText(content.builder.settings.siteName || "Usman Iqbal"),
+        logoUrl: sanitizeUrl(content.builder.settings.logoUrl || ""),
+        logoLink: sanitizeUrl(content.builder.settings.logoLink || "/")
+      },
       themes: content.builder.themes.map(validateTheme),
       templates: content.builder.templates.map(validateTemplate),
       pages: content.builder.pages.map((page) => ({

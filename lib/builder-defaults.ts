@@ -223,6 +223,9 @@ export const defaultPages: BuilderPage[] = [
 
 export const defaultBuilder: BuilderState = {
   settings: {
+    siteName: "Usman Iqbal",
+    logoUrl: "/images/usman-profile.png",
+    logoLink: "/",
     globalFont: "Inter",
     primaryColor: "#16f2a4",
     secondaryColor: "#22d3ee",

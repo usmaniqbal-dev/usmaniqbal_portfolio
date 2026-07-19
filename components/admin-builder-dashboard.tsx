@@ -17,8 +17,10 @@ import {
   Moon,
   PanelLeft,
   Save,
+  Search,
   Shield,
   Sun,
+  Trash2,
   Upload
 } from "lucide-react";
 import type { BuilderTemplate, MediaFile, SiteContent } from "@/types/site-content";
@@ -36,11 +38,13 @@ type AdminView =
   | "templates"
   | "content"
   | "media"
+  | "seo"
   | "ai";
 
 const menu: { id: AdminView; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "content", label: "Content Manager", icon: BriefcaseBusiness },
+  { id: "seo", label: "Brand & SEO", icon: Search },
   { id: "pages", label: "Page Manager", icon: FileText },
   { id: "templates", label: "Template Manager", icon: PanelLeft },
   { id: "media", label: "Media Manager", icon: ImagePlus },
@@ -278,6 +282,7 @@ export default function AdminBuilderDashboard() {
                 secureHeaders={secureHeaders}
               />
             ) : null}
+            {view === "seo" ? <BrandSeoView content={content} setContent={setContent} saveDraft={saveDraft} secureHeaders={secureHeaders} /> : null}
             {view === "pages" ? <PagesView content={content} setContent={setContent} saveDraft={saveDraft} /> : null}
             {view === "templates" ? <TemplatesView content={content} activeTemplate={activeTemplate} setContent={setContent} secureHeaders={secureHeaders} /> : null}
             {view === "media" ? <MediaView content={content} setContent={setContent} secureHeaders={secureHeaders} /> : null}
@@ -335,6 +340,102 @@ function DashboardView({ templates, activeTheme, lastPublished, mediaCount }: { 
           <p className="mt-3 text-2xl font-black">{value}</p>
         </div>
       ))}
+    </div>
+  );
+}
+
+function BrandSeoView({ content, setContent, saveDraft, secureHeaders }: { content: SiteContent; setContent: (content: SiteContent) => void; saveDraft: (content?: SiteContent | null) => void; secureHeaders: (extra?: HeadersInit) => HeadersInit }) {
+  const [uploading, setUploading] = useState("");
+  const seoKeywords = content.seo.keywords.join(", ");
+
+  function update(next: SiteContent) {
+    setContent(next);
+  }
+
+  async function uploadBrandFile(file: File | undefined, target: "logo" | "og") {
+    if (!file) return;
+    setUploading(target);
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch("/api/admin/upload", { method: "POST", headers: secureHeaders(), body: formData });
+    const result = (await response.json()) as { url?: string };
+    setUploading("");
+
+    if (!response.ok || !result.url) return;
+
+    if (target === "logo") {
+      update({ ...content, builder: { ...content.builder, settings: { ...content.builder.settings, logoUrl: result.url } } });
+      return;
+    }
+
+    update({ ...content, seo: { ...content.seo, ogImage: result.url } });
+  }
+
+  return (
+    <div className="grid gap-5">
+      <div>
+        <h2 className="text-3xl font-black">Brand & SEO</h2>
+        <p className="mt-2 max-w-3xl text-white/52">Manage the website logo, brand link, search title, meta description, keywords, and share image from one place.</p>
+      </div>
+
+      <section className="grid gap-5 rounded-[8px] border border-white/10 bg-white/[0.04] p-4 sm:p-6 xl:grid-cols-[320px_1fr]">
+        <div className="grid gap-3">
+          <p className="font-black">Logo</p>
+          <div className="grid aspect-video place-items-center overflow-hidden rounded-[8px] border border-white/10 bg-black/35">
+            {content.builder.settings.logoUrl ? <img src={content.builder.settings.logoUrl} alt="" className="h-full w-full object-contain p-4" /> : <span className="text-white/35">No logo selected</span>}
+          </div>
+          <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-3 font-bold text-white/70 hover:border-[#16f2a4] hover:text-[#16f2a4]">
+            {uploading === "logo" ? <Loader2 className="animate-spin" size={17} /> : <Upload size={17} />}
+            Upload Logo
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" className="hidden" onChange={(event) => uploadBrandFile(event.target.files?.[0], "logo")} />
+          </label>
+        </div>
+        <div className="grid gap-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <TextField label="Website Name" value={content.builder.settings.siteName} onChange={(value) => update({ ...content, builder: { ...content.builder, settings: { ...content.builder.settings, siteName: value } } })} />
+            <TextField label="Logo Link" value={content.builder.settings.logoLink} onChange={(value) => update({ ...content, builder: { ...content.builder, settings: { ...content.builder.settings, logoLink: value } } })} />
+          </div>
+          <TextField label="Logo URL" value={content.builder.settings.logoUrl} onChange={(value) => update({ ...content, builder: { ...content.builder, settings: { ...content.builder.settings, logoUrl: value } } })} />
+        </div>
+      </section>
+
+      <section className="grid gap-4 rounded-[8px] border border-white/10 bg-white/[0.04] p-4 sm:p-6">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <TextField label="SEO Title" value={content.seo.title} onChange={(value) => update({ ...content, seo: { ...content.seo, title: value } })} />
+          <TextField label="Author" value={content.seo.author} onChange={(value) => update({ ...content, seo: { ...content.seo, author: value } })} />
+        </div>
+        <TextArea label="Meta Description" value={content.seo.description} onChange={(value) => update({ ...content, seo: { ...content.seo, description: value } })} />
+        <TextArea label="Keywords" value={seoKeywords} onChange={(value) => update({ ...content, seo: { ...content.seo, keywords: value.split(",").map((item) => item.trim()).filter(Boolean) } })} />
+        <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+          <TextField label="Canonical Website URL" value={content.seo.canonicalUrl} onChange={(value) => update({ ...content, seo: { ...content.seo, canonicalUrl: value } })} />
+          <label className="mt-4 inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-3 font-bold text-white/70 hover:border-[#16f2a4] hover:text-[#16f2a4]">
+            {uploading === "og" ? <Loader2 className="animate-spin" size={17} /> : <Upload size={17} />}
+            Upload Share Image
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(event) => uploadBrandFile(event.target.files?.[0], "og")} />
+          </label>
+        </div>
+        <TextField label="Share Image URL" value={content.seo.ogImage} onChange={(value) => update({ ...content, seo: { ...content.seo, ogImage: value } })} />
+        <button type="button" onClick={() => saveDraft(content)} className="inline-flex w-fit items-center gap-2 rounded-full bg-[#16f2a4] px-5 py-3 font-black text-black hover:bg-white">
+          <Save size={17} />
+          Save Brand & SEO
+        </button>
+      </section>
+
+      <section className="grid gap-4 rounded-[8px] border border-white/10 bg-white/[0.04] p-4 sm:p-6">
+        <div>
+          <p className="font-black">Website Colors</p>
+          <p className="mt-1 text-sm text-white/48">These colors are used on the public website after saving.</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <ColorInput label="Primary" value={content.theme.primary} onChange={(value) => update({ ...content, theme: { ...content.theme, primary: value }, builder: { ...content.builder, settings: { ...content.builder.settings, primaryColor: value, buttonColor: value } } })} />
+          <ColorInput label="Secondary" value={content.theme.secondary} onChange={(value) => update({ ...content, theme: { ...content.theme, secondary: value }, builder: { ...content.builder, settings: { ...content.builder.settings, secondaryColor: value } } })} />
+          <ColorInput label="Accent" value={content.theme.accent} onChange={(value) => update({ ...content, theme: { ...content.theme, accent: value } })} />
+        </div>
+        <label className="flex items-center gap-3 rounded-[8px] border border-white/10 bg-black/25 p-4 font-bold text-white/72">
+          <input type="checkbox" checked={content.theme.animations} onChange={(event) => update({ ...content, theme: { ...content.theme, animations: event.target.checked } })} className="h-5 w-5 accent-[#16f2a4]" />
+          Enable website animations
+        </label>
+      </section>
     </div>
   );
 }
@@ -400,6 +501,22 @@ function MediaView({ content, setContent, secureHeaders }: { content: SiteConten
     }
   }
 
+  async function deleteMedia(file: MediaFile) {
+    if (!window.confirm(`Remove ${file.filename} from the media library? Existing pages using this URL will keep the URL.`)) {
+      return;
+    }
+
+    const response = await fetch(`/api/admin/media?id=${encodeURIComponent(file.id)}`, {
+      method: "DELETE",
+      headers: secureHeaders()
+    });
+
+    if (response.ok) {
+      const media = (await response.json()) as MediaFile[];
+      setContent({ ...content, builder: { ...content.builder, media } });
+    }
+  }
+
   return (
     <div>
       <label className="mb-5 inline-flex cursor-pointer items-center gap-2 rounded-full bg-[#16f2a4] px-5 py-3 font-black text-black">
@@ -416,6 +533,10 @@ function MediaView({ content, setContent, secureHeaders }: { content: SiteConten
             <button type="button" onClick={() => navigator.clipboard.writeText(file.url)} className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-sm font-bold text-white/70">
               <Copy size={15} />
               Copy URL
+            </button>
+            <button type="button" onClick={() => deleteMedia(file)} className="ml-2 mt-3 inline-flex items-center gap-2 rounded-full border border-red-300/30 px-3 py-2 text-sm font-bold text-red-100">
+              <Trash2 size={15} />
+              Delete
             </button>
           </div>
         ))}
@@ -482,6 +603,18 @@ function TextArea({ label, value, onChange }: { label: string; value: string; on
     <label className="mt-4 grid gap-2 text-sm font-bold text-white/70">
       {label}
       <textarea value={value} onChange={(event) => onChange(event.target.value)} className="min-h-28 w-full resize-y rounded-[8px] border border-white/10 bg-black/35 px-4 py-3 text-white outline-none focus:border-[#16f2a4]" />
+    </label>
+  );
+}
+
+function ColorInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="grid gap-2 text-sm font-bold text-white/70">
+      {label}
+      <span className="flex overflow-hidden rounded-[8px] border border-white/10 bg-black/35">
+        <input type="color" value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-14 cursor-pointer border-0 bg-transparent p-1" />
+        <input value={value} onChange={(event) => onChange(event.target.value)} className="min-w-0 flex-1 bg-transparent px-3 text-white outline-none" />
+      </span>
     </label>
   );
 }
