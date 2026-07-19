@@ -583,7 +583,6 @@ function HeroVisual({
   const parallaxY = useMotionValue(0);
   const [dragging, setDragging] = useState(false);
   const [floatPaused, setFloatPaused] = useState(false);
-  const [showHint, setShowHint] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const visualRef = useRef<HTMLDivElement>(null);
 
@@ -596,21 +595,6 @@ function HeroVisual({
     const observer = new IntersectionObserver(([entry]) => setIsVisible(entry.isIntersecting), { rootMargin: "120px" });
     observer.observe(element);
     return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const seenHint = window.sessionStorage.getItem("nuraxtech-hero-drag-hint");
-    if (seenHint) {
-      return;
-    }
-
-    const showTimer = window.setTimeout(() => setShowHint(true), 1400);
-    const hideTimer = window.setTimeout(() => setShowHint(false), 6500);
-
-    return () => {
-      window.clearTimeout(showTimer);
-      window.clearTimeout(hideTimer);
-    };
   }, []);
 
   useEffect(() => {
@@ -631,11 +615,6 @@ function HeroVisual({
     return () => window.cancelAnimationFrame(frame);
   }, [cursor, dragging, isVisible, parallaxX, parallaxY, shouldAnimate]);
 
-  function markInteracted() {
-    window.sessionStorage.setItem("nuraxtech-hero-drag-hint", "true");
-    setShowHint(false);
-  }
-
   return (
     <motion.div
       ref={visualRef}
@@ -654,7 +633,6 @@ function HeroVisual({
         dragTransition={{ bounceStiffness: 300, bounceDamping: 20 }}
         whileDrag={{ scale: 1.05 }}
         onDragStart={() => {
-          markInteracted();
           setDragging(true);
           setFloatPaused(true);
         }}
@@ -662,7 +640,6 @@ function HeroVisual({
           setDragging(false);
           window.setTimeout(() => setFloatPaused(false), 1000);
         }}
-        onPointerDown={markInteracted}
         className={`hero-drag-figure absolute inset-x-0 bottom-0 mx-auto h-[92%] w-[82%] cursor-grab touch-none active:cursor-grabbing ${dragging ? "cursor-grabbing" : ""}`}
       >
         <motion.div style={{ x: parallaxX, y: parallaxY }} className="relative h-full w-full">
@@ -682,19 +659,6 @@ function HeroVisual({
             />
           </motion.div>
         </motion.div>
-        <AnimatePresence>
-          {showHint ? (
-            <motion.div
-              initial={{ opacity: 0, y: 8, scale: 0.94 }}
-              animate={{ opacity: 1, y: [0, -4, 0], scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.94 }}
-              transition={{ duration: 0.45, y: { duration: 1.5, repeat: Infinity, ease: "easeInOut" } }}
-              className="absolute right-4 top-12 rounded-full border border-white/12 bg-black/60 px-3 py-1.5 text-xs font-black text-white/75 backdrop-blur-xl"
-            >
-              Drag me
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
       </motion.div>
     </motion.div>
   );
