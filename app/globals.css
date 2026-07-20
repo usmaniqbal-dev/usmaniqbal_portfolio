@@ -459,7 +459,7 @@ textarea {
 }
 
 .hero-drag-figure {
-  touch-action: none;
+  touch-action: pan-y;
   user-select: none;
   will-change: transform;
 }
@@ -702,6 +702,10 @@ textarea {
   .skill-logo-3d,
   .hero-drag-figure {
     transform: none;
+  }
+
+  .hero-drag-figure {
+    touch-action: pan-y;
   }
 }
 

@@ -24,10 +24,12 @@ import type { ProjectContent, ServiceContent, SiteContent, SkillContent, SocialC
 type SessionState = {
   authenticated: boolean;
   configured: boolean;
+  csrfToken?: string;
   message?: string;
 };
 
 type AdminTab = "home" | "about" | "skills" | "services" | "projects" | "contact" | "style";
+const uploadTimeoutMs = 60_000;
 
 const tabs: { id: AdminTab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "home", label: "Home", icon: LayoutDashboard },
@@ -89,7 +91,7 @@ export default function AdminDashboard() {
       return;
     }
 
-    setSession({ authenticated: true, configured: true });
+    setSession({ authenticated: true, configured: true, csrfToken: (result as { csrfToken?: string }).csrfToken });
     await loadContent();
     setBusy(false);
   }
@@ -110,7 +112,7 @@ export default function AdminDashboard() {
 
     const response = await fetch("/api/admin/content", {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-admin-csrf": session?.csrfToken || "" },
       body: JSON.stringify(content)
     });
 
@@ -272,11 +274,11 @@ export default function AdminDashboard() {
               {message}
             </div>
           ) : null}
-          {activeTab === "home" ? <HomeEditor content={content} setContent={setContent} /> : null}
+          {activeTab === "home" ? <HomeEditor content={content} setContent={setContent} csrfToken={session.csrfToken || ""} /> : null}
           {activeTab === "about" ? <AboutEditor content={content} setContent={setContent} /> : null}
           {activeTab === "skills" ? <SkillsEditor content={content} setContent={setContent} /> : null}
           {activeTab === "services" ? <ServicesEditor content={content} setContent={setContent} /> : null}
-          {activeTab === "projects" ? <ProjectsEditor content={content} setContent={setContent} /> : null}
+          {activeTab === "projects" ? <ProjectsEditor content={content} setContent={setContent} csrfToken={session.csrfToken || ""} /> : null}
           {activeTab === "contact" ? <ContactEditor content={content} setContent={setContent} /> : null}
           {activeTab === "style" ? <StyleEditor content={content} setContent={setContent} /> : null}
         </section>
@@ -285,7 +287,7 @@ export default function AdminDashboard() {
   );
 }
 
-function HomeEditor({ content, setContent }: EditorProps) {
+function HomeEditor({ content, setContent, csrfToken }: EditorProps) {
   return (
     <Panel title="Home Section" description="Edit hero copy, buttons, and images.">
       <div className="grid gap-5 lg:grid-cols-2">
@@ -300,8 +302,8 @@ function HomeEditor({ content, setContent }: EditorProps) {
         <TextField label="Secondary Button Link" value={content.home.secondaryButton.href} onChange={(value) => setContent({ ...content, home: { ...content.home, secondaryButton: { ...content.home.secondaryButton, href: value } } })} />
       </div>
       <div className="grid gap-5 lg:grid-cols-2">
-        <ImageUpload label="Hero Image" value={content.home.heroImage} onUploaded={(value) => setContent({ ...content, home: { ...content.home, heroImage: value } })} />
-        <ImageUpload label="Profile Image" value={content.home.profileImage} onUploaded={(value) => setContent({ ...content, home: { ...content.home, profileImage: value } })} />
+        <ImageUpload label="Hero Image" value={content.home.heroImage} csrfToken={csrfToken} onUploaded={(value) => setContent({ ...content, home: { ...content.home, heroImage: value } })} />
+        <ImageUpload label="Profile Image" value={content.home.profileImage} csrfToken={csrfToken} onUploaded={(value) => setContent({ ...content, home: { ...content.home, profileImage: value } })} />
       </div>
     </Panel>
   );
@@ -387,7 +389,7 @@ function ServicesEditor({ content, setContent }: EditorProps) {
   );
 }
 
-function ProjectsEditor({ content, setContent }: EditorProps) {
+function ProjectsEditor({ content, setContent, csrfToken }: EditorProps) {
   const update = (id: string, next: Partial<ProjectContent>) => {
     setContent({ ...content, projects: content.projects.map((project) => (project.id === id ? { ...project, ...next } : project)) });
   };
@@ -405,7 +407,7 @@ function ProjectsEditor({ content, setContent }: EditorProps) {
               <TextArea label="Description" value={project.description} onChange={(value) => update(project.id, { description: value })} compact />
               <div className="grid gap-4">
                 <TextField label="Tags" hint="Comma separated" value={project.tags.join(", ")} onChange={(value) => update(project.id, { tags: csv(value) })} />
-                <ImageUpload label="Project Image" value={project.image} onUploaded={(value) => update(project.id, { image: value })} />
+                <ImageUpload label="Project Image" value={project.image} csrfToken={csrfToken} onUploaded={(value) => update(project.id, { image: value })} />
               </div>
               <DeleteButton onClick={() => setContent({ ...content, projects: content.projects.filter((item) => item.id !== project.id) })} />
             </div>
@@ -500,6 +502,7 @@ function StyleEditor({ content, setContent }: EditorProps) {
 type EditorProps = {
   content: SiteContent;
   setContent: (content: SiteContent) => void;
+  csrfToken?: string;
 };
 
 function Panel({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
@@ -585,7 +588,7 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
   );
 }
 
-function ImageUpload({ label, value, onUploaded }: { label: string; value: string; onUploaded: (value: string) => void }) {
+function ImageUpload({ label, value, onUploaded, csrfToken = "" }: { label: string; value: string; onUploaded: (value: string) => void; csrfToken?: string }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
@@ -596,23 +599,34 @@ function ImageUpload({ label, value, onUploaded }: { label: string; value: strin
 
     setUploading(true);
     setError("");
-    const formData = new FormData();
-    formData.append("file", file);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), uploadTimeoutMs);
 
-    const response = await fetch("/api/admin/upload", {
-      method: "POST",
-      body: formData
-    });
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
 
-    const result = (await response.json()) as { url?: string; message?: string };
-    setUploading(false);
+      const response = await fetch("/api/admin/upload", {
+        method: "POST",
+        headers: { "x-admin-csrf": csrfToken },
+        body: formData,
+        signal: controller.signal
+      });
 
-    if (!response.ok || !result.url) {
-      setError(result.message || "Upload failed.");
-      return;
+      const result = (await response.json().catch(() => ({ message: "Upload failed. The server returned an invalid response." }))) as { url?: string; message?: string };
+
+      if (!response.ok || !result.url) {
+        setError(result.message || "Upload failed.");
+        return;
+      }
+
+      onUploaded(result.url);
+    } catch (error) {
+      setError(error instanceof Error && error.name === "AbortError" ? "Upload timed out. Try a smaller file." : "Upload failed. Please try again.");
+    } finally {
+      window.clearTimeout(timeout);
+      setUploading(false);
     }
-
-    onUploaded(result.url);
   }
 
   return (

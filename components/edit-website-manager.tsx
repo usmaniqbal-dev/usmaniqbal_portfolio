@@ -41,6 +41,14 @@ const heroTemplates: { id: HeroTemplate; name: string; description: string; prev
   { id: "layered", name: "Modern Layered Design", description: "The current NURAXTECH hero composition.", previewClass: "rounded-[8px] shadow-lg" }
 ];
 
+const uploadTimeoutMs = 60_000;
+
+function uploadFailureMessage(error: unknown) {
+  return error instanceof Error && error.name === "AbortError"
+    ? "Upload timed out. Try a smaller file or check the connection."
+    : "Media upload failed. Please try again.";
+}
+
 const tabs: { id: EditWebsiteTab; label: string; icon: typeof Sparkles }[] = [
   { id: "hero", label: "Hero Section", icon: Sparkles },
   { id: "projects", label: "Projects", icon: BriefcaseBusiness },
@@ -453,23 +461,32 @@ function ImageField({ label, value, onChange, onUploaded, secureHeaders, compact
 
     setUploading(true);
     setError("");
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await fetch("/api/admin/upload", { method: "POST", headers: secureHeaders(), body: formData });
-    const result = (await response.json()) as { url?: string; message?: string };
-    setUploading(false);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), uploadTimeoutMs);
 
-    if (!response.ok || !result.url) {
-      setError(result.message || "Media upload failed.");
-      return;
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/admin/upload", { method: "POST", headers: secureHeaders(), body: formData, signal: controller.signal });
+      const result = (await response.json().catch(() => ({ message: "Upload failed. The server returned an invalid response." }))) as { url?: string; message?: string };
+
+      if (!response.ok || !result.url) {
+        setError(result.message || "Media upload failed.");
+        return;
+      }
+
+      if (onUploaded) {
+        onUploaded(result.url);
+        return;
+      }
+
+      onChange(result.url);
+    } catch (error) {
+      setError(uploadFailureMessage(error));
+    } finally {
+      window.clearTimeout(timeout);
+      setUploading(false);
     }
-
-    if (onUploaded) {
-      onUploaded(result.url);
-      return;
-    }
-
-    onChange(result.url);
   }
 
   const videoPreview = allowVideo && /\.(mp4|webm)(\?.*)?$/i.test(value);

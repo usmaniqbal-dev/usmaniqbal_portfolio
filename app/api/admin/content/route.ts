@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { cookieName, verifySessionToken } from "@/lib/auth";
 import { adminSetupErrorResponse, requireAdminMutation } from "@/lib/admin-api";
+import { contentJsonHeaders, revalidatePortfolioContent } from "@/lib/content-cache";
 import { getSiteContent, saveSiteContent } from "@/lib/content-store";
 import type { SiteContent } from "@/types/site-content";
 
@@ -18,7 +19,7 @@ export async function GET() {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  return NextResponse.json(await getSiteContent());
+  return NextResponse.json(await getSiteContent(), { headers: contentJsonHeaders() });
 }
 
 export async function PUT(request: Request) {
@@ -40,8 +41,9 @@ export async function PUT(request: Request) {
         }
       }
     });
+    revalidatePortfolioContent();
 
-    return NextResponse.json(saved);
+    return NextResponse.json(saved, { headers: contentJsonHeaders() });
   } catch (error) {
     return adminSetupErrorResponse(error);
   }

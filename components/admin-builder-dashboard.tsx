@@ -52,6 +52,14 @@ const menu: { id: AdminView; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "ai", label: "AI Tools", icon: Bot }
 ];
 
+const uploadTimeoutMs = 60_000;
+
+function uploadFailureMessage(error: unknown) {
+  return error instanceof Error && error.name === "AbortError"
+    ? "Upload timed out. Try a smaller file or check the connection."
+    : "Upload failed. Please try again.";
+}
+
 export default function AdminBuilderDashboard() {
   const [session, setSession] = useState<SessionState | null>(null);
   const [content, setContent] = useState<SiteContent | null>(null);
@@ -348,6 +356,7 @@ function DashboardView({ templates, activeTheme, lastPublished, mediaCount, stor
 
 function BrandSeoView({ content, setContent, saveDraft, secureHeaders }: { content: SiteContent; setContent: (content: SiteContent) => void; saveDraft: (content?: SiteContent | null) => void; secureHeaders: (extra?: HeadersInit) => HeadersInit }) {
   const [uploading, setUploading] = useState("");
+  const [uploadError, setUploadError] = useState("");
   const seoKeywords = content.seo.keywords.join(", ");
 
   function update(next: SiteContent) {
@@ -357,20 +366,33 @@ function BrandSeoView({ content, setContent, saveDraft, secureHeaders }: { conte
   async function uploadBrandFile(file: File | undefined, target: "logo" | "og") {
     if (!file) return;
     setUploading(target);
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await fetch("/api/admin/upload", { method: "POST", headers: secureHeaders(), body: formData });
-    const result = (await response.json()) as { url?: string };
-    setUploading("");
+    setUploadError("");
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), uploadTimeoutMs);
 
-    if (!response.ok || !result.url) return;
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/admin/upload", { method: "POST", headers: secureHeaders(), body: formData, signal: controller.signal });
+      const result = (await response.json().catch(() => ({ message: "Upload failed. The server returned an invalid response." }))) as { url?: string; message?: string };
 
-    if (target === "logo") {
-      update({ ...content, builder: { ...content.builder, settings: { ...content.builder.settings, logoUrl: result.url } } });
-      return;
+      if (!response.ok || !result.url) {
+        setUploadError(result.message || "Upload failed.");
+        return;
+      }
+
+      if (target === "logo") {
+        update({ ...content, builder: { ...content.builder, settings: { ...content.builder.settings, logoUrl: result.url } } });
+        return;
+      }
+
+      update({ ...content, seo: { ...content.seo, ogImage: result.url } });
+    } catch (error) {
+      setUploadError(uploadFailureMessage(error));
+    } finally {
+      window.clearTimeout(timeout);
+      setUploading("");
     }
-
-    update({ ...content, seo: { ...content.seo, ogImage: result.url } });
   }
 
   return (
@@ -416,6 +438,7 @@ function BrandSeoView({ content, setContent, saveDraft, secureHeaders }: { conte
             <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(event) => uploadBrandFile(event.target.files?.[0], "og")} />
           </label>
         </div>
+        {uploadError ? <p className="rounded-[8px] border border-red-300/30 bg-red-400/10 p-3 text-sm font-semibold text-red-100">{uploadError}</p> : null}
         <TextField label="Share Image URL" value={content.seo.ogImage} onChange={(value) => update({ ...content, seo: { ...content.seo, ogImage: value } })} />
         <button type="button" onClick={() => saveDraft(content)} className="inline-flex w-fit items-center gap-2 rounded-full bg-[#16f2a4] px-5 py-3 font-black text-black hover:bg-white">
           <Save size={17} />
@@ -492,14 +515,33 @@ function TemplatesView({ content, activeTemplate, setContent, secureHeaders }: {
 }
 
 function MediaView({ content, setContent, secureHeaders }: { content: SiteContent; setContent: (content: SiteContent) => void; secureHeaders: (extra?: HeadersInit) => HeadersInit }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
   async function upload(file?: File) {
     if (!file) return;
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await fetch("/api/admin/upload", { method: "POST", headers: secureHeaders(), body: formData });
-    if (response.ok) {
-      const result = (await response.json()) as { media: MediaFile };
+    setUploading(true);
+    setError("");
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), uploadTimeoutMs);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/admin/upload", { method: "POST", headers: secureHeaders(), body: formData, signal: controller.signal });
+      const result = (await response.json().catch(() => ({ message: "Upload failed. The server returned an invalid response." }))) as { media?: MediaFile; message?: string };
+
+      if (!response.ok || !result.media) {
+        setError(result.message || "Upload failed.");
+        return;
+      }
+
       setContent({ ...content, builder: { ...content.builder, media: [result.media, ...content.builder.media] } });
+    } catch (uploadError) {
+      setError(uploadFailureMessage(uploadError));
+    } finally {
+      window.clearTimeout(timeout);
+      setUploading(false);
     }
   }
 
@@ -522,10 +564,11 @@ function MediaView({ content, setContent, secureHeaders }: { content: SiteConten
   return (
     <div>
       <label className="mb-5 inline-flex cursor-pointer items-center gap-2 rounded-full bg-[#16f2a4] px-5 py-3 font-black text-black">
-        <Upload size={18} />
-        Upload Media
+        {uploading ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
+        {uploading ? "Uploading" : "Upload Media"}
         <input type="file" accept="image/*,.pdf" className="hidden" onChange={(event) => upload(event.target.files?.[0])} />
       </label>
+      {error ? <p className="mb-5 rounded-[8px] border border-red-300/30 bg-red-400/10 p-3 text-sm font-semibold text-red-100">{error}</p> : null}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {content.builder.media.map((file) => (
           <div key={file.id} className="rounded-[8px] border border-white/10 bg-white/[0.04] p-4">

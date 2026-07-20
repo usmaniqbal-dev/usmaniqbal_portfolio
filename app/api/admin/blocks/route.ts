@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminSetupErrorResponse, requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
 import { addBlock, reorderSections } from "@/lib/builder-actions";
+import { contentJsonHeaders, revalidatePortfolioContent } from "@/lib/content-cache";
 import { getSiteContent, saveSiteContent } from "@/lib/content-store";
 import type { BuilderBlock } from "@/types/site-content";
 
@@ -15,7 +16,7 @@ export async function GET() {
 
   const content = await getSiteContent();
   const page = content.builder.pages.find((item) => item.id === "home-page");
-  return NextResponse.json({ blocks: page?.blocks || [], sections: page?.sections || [] });
+  return NextResponse.json({ blocks: page?.blocks || [], sections: page?.sections || [] }, { headers: contentJsonHeaders() });
 }
 
 // Adds blocks or reorders sections from the drag and drop builder.
@@ -31,11 +32,15 @@ export async function POST(request: Request) {
     const content = await getSiteContent();
 
     if (body.action === "reorder-sections" && body.sectionIds) {
-      return NextResponse.json(await saveSiteContent(reorderSections(content, body.sectionIds)));
+      const saved = await saveSiteContent(reorderSections(content, body.sectionIds));
+      revalidatePortfolioContent();
+      return NextResponse.json(saved, { headers: contentJsonHeaders() });
     }
 
     if (body.action === "add-block" && body.block) {
-      return NextResponse.json(await saveSiteContent(addBlock(content, body.block)));
+      const saved = await saveSiteContent(addBlock(content, body.block));
+      revalidatePortfolioContent();
+      return NextResponse.json(saved, { headers: contentJsonHeaders() });
     }
 
     return NextResponse.json({ message: "Unsupported block action." }, { status: 400 });

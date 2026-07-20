@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminSetupErrorResponse, requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
+import { contentJsonHeaders, revalidatePortfolioContent } from "@/lib/content-cache";
 import { getSiteContent, saveSiteContent } from "@/lib/content-store";
 
 export const runtime = "nodejs";
@@ -12,7 +13,7 @@ export async function GET() {
   }
 
   const content = await getSiteContent();
-  return NextResponse.json(content.builder.media);
+  return NextResponse.json(content.builder.media, { headers: contentJsonHeaders() });
 }
 
 // Removes a media record from the builder library.
@@ -28,8 +29,9 @@ export async function DELETE(request: Request) {
     const id = searchParams.get("id");
     const content = await getSiteContent();
     const saved = await saveSiteContent({ ...content, builder: { ...content.builder, media: content.builder.media.filter((item) => item.id !== id) } });
+    revalidatePortfolioContent();
 
-    return NextResponse.json(saved.builder.media);
+    return NextResponse.json(saved.builder.media, { headers: contentJsonHeaders() });
   } catch (error) {
     return adminSetupErrorResponse(error);
   }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminSetupErrorResponse, requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
+import { contentJsonHeaders, revalidatePortfolioContent } from "@/lib/content-cache";
 import { getSiteContent, saveSiteContent } from "@/lib/content-store";
 import type { SiteContent } from "@/types/site-content";
 
@@ -13,7 +14,7 @@ export async function GET() {
   }
 
   const content = await getSiteContent();
-  return NextResponse.json(content.builder.versionHistory);
+  return NextResponse.json(content.builder.versionHistory, { headers: contentJsonHeaders() });
 }
 
 // Restores a version snapshot by id.
@@ -41,8 +42,9 @@ export async function POST(request: Request) {
         versionHistory: content.builder.versionHistory.map((item) => (item.id === version.id ? { ...item, restoredAt: new Date().toISOString() } : item))
       }
     });
+    revalidatePortfolioContent();
 
-    return NextResponse.json(saved);
+    return NextResponse.json(saved, { headers: contentJsonHeaders() });
   } catch (error) {
     return adminSetupErrorResponse(error);
   }

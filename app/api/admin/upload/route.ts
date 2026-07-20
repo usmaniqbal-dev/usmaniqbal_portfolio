@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
+import { contentJsonHeaders, revalidatePortfolioContent } from "@/lib/content-cache";
 import { assertDatabaseReady, getSiteContent, isDatabaseConfigured, saveSiteContent } from "@/lib/content-store";
 import { adminSetupErrorResponse, requireAdminMutation } from "@/lib/admin-api";
 
@@ -19,7 +20,13 @@ export async function POST(request: Request) {
     return denied;
   }
 
-  const formData = await request.formData();
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json({ message: "Upload failed before the file reached the server. Try a smaller file." }, { status: 400 });
+  }
+
   const file = formData.get("file");
 
   if (!(file instanceof File) || !allowedTypes.has(file.type)) {
@@ -54,16 +61,24 @@ export async function POST(request: Request) {
   const safeName = `${crypto.randomUUID()}.${extension}`;
   let mediaUrl: string;
 
-  if (usesBlobStorage) {
-    const blob = await put(`portfolio/${safeName}`, file, { access: "public" });
-    mediaUrl = blob.url;
-  } else {
-    const uploadDirectory = path.join(process.cwd(), "public", "uploads");
-    const uploadPath = path.join(uploadDirectory, safeName);
-    const arrayBuffer = await file.arrayBuffer();
-    await mkdir(uploadDirectory, { recursive: true });
-    await writeFile(uploadPath, Buffer.from(arrayBuffer));
-    mediaUrl = `/uploads/${safeName}`;
+  try {
+    if (usesBlobStorage) {
+      const blob = await put(`portfolio/${safeName}`, file, { access: "public" });
+      mediaUrl = blob.url;
+    } else {
+      if (process.env.VERCEL) {
+        return NextResponse.json({ message: "Production uploads require Vercel Blob. Connect a Blob store and redeploy." }, { status: 503 });
+      }
+
+      const uploadDirectory = path.join(process.cwd(), "public", "uploads");
+      const uploadPath = path.join(uploadDirectory, safeName);
+      const arrayBuffer = await file.arrayBuffer();
+      await mkdir(uploadDirectory, { recursive: true });
+      await writeFile(uploadPath, Buffer.from(arrayBuffer));
+      mediaUrl = `/uploads/${safeName}`;
+    }
+  } catch (error) {
+    return adminSetupErrorResponse(error);
   }
 
   const content = await getSiteContent();
@@ -87,9 +102,10 @@ export async function POST(request: Request) {
         media: [media, ...content.builder.media]
       }
     });
+    revalidatePortfolioContent();
   } catch (error) {
     return adminSetupErrorResponse(error);
   }
 
-  return NextResponse.json({ url: media.url, media });
+  return NextResponse.json({ url: media.url, media }, { headers: contentJsonHeaders() });
 }

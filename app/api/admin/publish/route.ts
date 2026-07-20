@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminSetupErrorResponse, requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
 import { applyPublishAction } from "@/lib/builder-actions";
+import { contentJsonHeaders, revalidatePortfolioContent } from "@/lib/content-cache";
 import { getSiteContent, saveSiteContent } from "@/lib/content-store";
 
 export const runtime = "nodejs";
@@ -17,7 +18,7 @@ export async function GET() {
     lastPublishedAt: content.builder.settings.lastPublishedAt,
     draftUpdatedAt: content.builder.settings.draftUpdatedAt,
     versions: content.builder.versionHistory
-  });
+  }, { headers: contentJsonHeaders() });
 }
 
 // Saves a draft, publishes the draft, or resets builder customizations to default.
@@ -32,8 +33,9 @@ export async function POST(request: Request) {
     const body = (await request.json()) as { action?: string };
     const content = await getSiteContent();
     const saved = await saveSiteContent(applyPublishAction(content, body.action || "draft"));
+    revalidatePortfolioContent();
 
-    return NextResponse.json(saved);
+    return NextResponse.json(saved, { headers: contentJsonHeaders() });
   } catch (error) {
     return adminSetupErrorResponse(error);
   }

@@ -1,7 +1,8 @@
 import PortfolioClient from "@/components/portfolio-client";
 import { getSiteContent } from "@/lib/content-store";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function HomePage() {
   const content = await getSiteContent();

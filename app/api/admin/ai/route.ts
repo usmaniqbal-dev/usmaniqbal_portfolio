@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminSetupErrorResponse, requireAdminMutation } from "@/lib/admin-api";
 import { createLocalAIResponse } from "@/lib/builder-actions";
+import { contentJsonHeaders, revalidatePortfolioContent } from "@/lib/content-cache";
 import { getSiteContent, saveSiteContent } from "@/lib/content-store";
 import { sanitizeText } from "@/lib/sanitize";
 
@@ -57,8 +58,9 @@ export async function POST(request: Request) {
         aiContent: [aiRecord, ...content.builder.aiContent].slice(0, 50)
       }
     });
+    revalidatePortfolioContent();
 
-    return NextResponse.json(aiRecord);
+    return NextResponse.json(aiRecord, { headers: contentJsonHeaders() });
   } catch (error) {
     return adminSetupErrorResponse(error);
   }

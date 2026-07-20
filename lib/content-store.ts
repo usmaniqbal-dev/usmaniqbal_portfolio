@@ -21,8 +21,16 @@ function isProductionBuild() {
   return process.env.NEXT_PHASE === "phase-production-build";
 }
 
+function requiresPersistentDatabase() {
+  return Boolean(process.env.VERCEL && !isProductionBuild());
+}
+
+function canUseLocalFallback() {
+  return !requiresPersistentDatabase();
+}
+
 function hasDatabaseConfig() {
-  if (process.env.NEXT_PHASE === "phase-production-build") {
+  if (isProductionBuild()) {
     return false;
   }
 
@@ -63,7 +71,11 @@ export function isDatabaseConfigured() {
 }
 
 export function getContentStorageMode() {
-  return hasDatabaseConfig() ? "Neon PostgreSQL" : "local .data JSON";
+  if (hasDatabaseConfig()) {
+    return "Neon PostgreSQL";
+  }
+
+  return requiresPersistentDatabase() ? "Neon PostgreSQL required" : "local .data JSON";
 }
 
 function createDatabaseSetupError(action: string) {
@@ -162,7 +174,11 @@ function normalizeContent(content: Partial<SiteContent>): SiteContent {
 }
 
 async function readLocalContent() {
-  if (process.env.VERCEL || isProductionBuild()) {
+  if (requiresPersistentDatabase()) {
+    throw createDatabaseSetupError("Public content");
+  }
+
+  if (isProductionBuild()) {
     return defaultContent;
   }
 
@@ -181,7 +197,7 @@ async function readLocalContent() {
 }
 
 async function saveLocalContent(content: SiteContent) {
-  if (process.env.VERCEL) {
+  if (!canUseLocalFallback()) {
     throw createDatabaseSetupError("Persistent admin editing");
   }
 
@@ -191,12 +207,18 @@ async function saveLocalContent(content: SiteContent) {
 
 export async function getSiteContent(): Promise<SiteContent> {
   if (!hasDatabaseConfig()) {
+    if (!canUseLocalFallback()) {
+      throw createDatabaseSetupError("Public content");
+    }
     return readLocalContent();
   }
 
   const databaseReady = await withTimeout(ensurePostgresTables(), DATABASE_READ_TIMEOUT_MS);
   if (!databaseReady) {
     postgresUnavailable = true;
+    if (!canUseLocalFallback()) {
+      throw createDatabaseSetupError("Public content");
+    }
     return readLocalContent();
   }
 
@@ -206,6 +228,9 @@ export async function getSiteContent(): Promise<SiteContent> {
       postgresUnavailable = true;
       postgresReady = false;
       sqlClient = null;
+      if (!canUseLocalFallback()) {
+        throw createDatabaseSetupError("Public content");
+      }
       return readLocalContent();
     }
 
@@ -227,6 +252,10 @@ export async function getSiteContent(): Promise<SiteContent> {
       console.warn("Could not read from Neon PostgreSQL. Local development can fall back to .data; Vercel requires a working DATABASE_URL.", error);
     }
 
+    if (!canUseLocalFallback()) {
+      throw createDatabaseSetupError("Public content");
+    }
+
     return readLocalContent();
   }
 }
@@ -235,11 +264,17 @@ export async function saveSiteContent(content: SiteContent) {
   const normalized = validateSiteContent(normalizeContent(content));
 
   if (!hasDatabaseConfig()) {
+    if (!canUseLocalFallback()) {
+      throw createDatabaseSetupError("Persistent admin editing");
+    }
     await saveLocalContent(normalized);
     return normalized;
   }
 
   if (!(await ensurePostgresTables())) {
+    if (!canUseLocalFallback()) {
+      throw createDatabaseSetupError("Persistent admin editing");
+    }
     await saveLocalContent(normalized);
     return normalized;
   }
@@ -262,6 +297,10 @@ export async function saveSiteContent(content: SiteContent) {
       console.warn("Could not save to Neon PostgreSQL. Local development can use .data storage; Vercel requires Neon DATABASE_URL.", error);
     }
 
+    if (!canUseLocalFallback()) {
+      throw createDatabaseSetupError("Persistent admin editing");
+    }
+
     await saveLocalContent(normalized);
   }
 
@@ -272,6 +311,9 @@ export async function saveSiteContent(content: SiteContent) {
 // same managed database used by the admin builder.
 export async function getStoredJson<T>(key: string): Promise<T | null> {
   if (!hasDatabaseConfig() || !(await ensurePostgresTables())) {
+    if (!canUseLocalFallback()) {
+      throw createDatabaseSetupError(`${key} storage`);
+    }
     return null;
   }
 
@@ -282,6 +324,9 @@ export async function getStoredJson<T>(key: string): Promise<T | null> {
     return (typeof value === "string" ? JSON.parse(value) : value) as T;
   } catch (error) {
     console.warn(`Could not read ${key} from the production database.`, error);
+    if (!canUseLocalFallback()) {
+      throw createDatabaseSetupError(`${key} storage`);
+    }
     return null;
   }
 }
@@ -290,6 +335,9 @@ export async function getStoredJson<T>(key: string): Promise<T | null> {
 // their checked-in JSON fallback. Vercel callers should treat false as a setup error.
 export async function saveStoredJson(key: string, value: unknown): Promise<boolean> {
   if (!hasDatabaseConfig() || !(await ensurePostgresTables())) {
+    if (!canUseLocalFallback()) {
+      throw createDatabaseSetupError(`${key} storage`);
+    }
     return false;
   }
 

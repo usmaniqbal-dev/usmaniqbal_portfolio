@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminSetupErrorResponse, requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
 import { activateTemplate, upsertTemplate } from "@/lib/builder-actions";
+import { contentJsonHeaders, revalidatePortfolioContent } from "@/lib/content-cache";
 import { getSiteContent, saveSiteContent } from "@/lib/content-store";
 import type { BuilderTemplate } from "@/types/site-content";
 
@@ -14,7 +15,7 @@ export async function GET() {
   }
 
   const content = await getSiteContent();
-  return NextResponse.json(content.builder.templates);
+  return NextResponse.json(content.builder.templates, { headers: contentJsonHeaders() });
 }
 
 // Creates, updates, deletes, duplicates, saves current design, or activates a template.
@@ -30,7 +31,9 @@ export async function POST(request: Request) {
     const content = await getSiteContent();
 
     if (body.action === "activate" && body.templateId) {
-      return NextResponse.json(await saveSiteContent(activateTemplate(content, body.templateId)));
+      const saved = await saveSiteContent(activateTemplate(content, body.templateId));
+      revalidatePortfolioContent();
+      return NextResponse.json(saved, { headers: contentJsonHeaders() });
     }
 
     if (body.action === "delete" && body.templateId) {
@@ -39,7 +42,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: "Active and default templates cannot be deleted." }, { status: 400 });
       }
 
-      return NextResponse.json(await saveSiteContent({ ...content, builder: { ...content.builder, templates: content.builder.templates.filter((item) => item.id !== body.templateId) } }));
+      const saved = await saveSiteContent({ ...content, builder: { ...content.builder, templates: content.builder.templates.filter((item) => item.id !== body.templateId) } });
+      revalidatePortfolioContent();
+      return NextResponse.json(saved, { headers: contentJsonHeaders() });
     }
 
     if (body.action === "save-current") {
@@ -53,7 +58,9 @@ export async function POST(request: Request) {
         createdAt: new Date().toISOString(),
         createdBy: "admin"
       };
-      return NextResponse.json(await saveSiteContent(upsertTemplate(content, template)));
+      const saved = await saveSiteContent(upsertTemplate(content, template));
+      revalidatePortfolioContent();
+      return NextResponse.json(saved, { headers: contentJsonHeaders() });
     }
 
     if (!body.template) {
@@ -61,7 +68,9 @@ export async function POST(request: Request) {
     }
 
     const template = body.action === "duplicate" ? { ...body.template, id: crypto.randomUUID(), name: `${body.template.name} Copy`, isActive: false, isDefault: false } : body.template;
-    return NextResponse.json(await saveSiteContent(upsertTemplate(content, template)));
+    const saved = await saveSiteContent(upsertTemplate(content, template));
+    revalidatePortfolioContent();
+    return NextResponse.json(saved, { headers: contentJsonHeaders() });
   } catch (error) {
     return adminSetupErrorResponse(error);
   }

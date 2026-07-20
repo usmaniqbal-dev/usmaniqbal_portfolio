@@ -578,7 +578,8 @@ function HeroVisual({
   shouldAnimate: boolean;
   dragConstraints: React.RefObject<HTMLElement | null>;
 }) {
-  const cursor = useCursorParallax(shouldAnimate);
+  const mobileInteraction = useMobileHeroInteraction();
+  const cursor = useCursorParallax(shouldAnimate && !mobileInteraction);
   const parallaxX = useMotionValue(0);
   const parallaxY = useMotionValue(0);
   const [dragging, setDragging] = useState(false);
@@ -598,6 +599,12 @@ function HeroVisual({
   }, []);
 
   useEffect(() => {
+    if (mobileInteraction) {
+      parallaxX.set(0);
+      parallaxY.set(0);
+      return;
+    }
+
     if (!shouldAnimate || !isVisible) {
       return;
     }
@@ -613,7 +620,7 @@ function HeroVisual({
 
     frame = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(frame);
-  }, [cursor, dragging, isVisible, parallaxX, parallaxY, shouldAnimate]);
+  }, [cursor, dragging, isVisible, mobileInteraction, parallaxX, parallaxY, shouldAnimate]);
 
   return (
     <motion.div
@@ -625,13 +632,14 @@ function HeroVisual({
     >
       <div className="hero-figure-glow absolute inset-x-10 bottom-4 top-8" />
       <motion.div
-        drag
+        drag={mobileInteraction ? "x" : true}
         dragConstraints={dragConstraints}
-        dragElastic={0.18}
-        dragMomentum
+        dragDirectionLock
+        dragElastic={mobileInteraction ? 0.06 : 0.18}
+        dragMomentum={!mobileInteraction}
         dragSnapToOrigin
         dragTransition={{ bounceStiffness: 300, bounceDamping: 20 }}
-        whileDrag={{ scale: 1.05 }}
+        whileDrag={mobileInteraction ? { scale: 1.01 } : { scale: 1.05 }}
         onDragStart={() => {
           setDragging(true);
           setFloatPaused(true);
@@ -640,12 +648,12 @@ function HeroVisual({
           setDragging(false);
           window.setTimeout(() => setFloatPaused(false), 1000);
         }}
-        className={`hero-drag-figure absolute inset-x-0 bottom-0 mx-auto h-[92%] w-[82%] cursor-grab touch-none active:cursor-grabbing ${dragging ? "cursor-grabbing" : ""}`}
+        className={`hero-drag-figure absolute inset-x-0 bottom-0 mx-auto h-[92%] w-[82%] cursor-grab active:cursor-grabbing ${dragging ? "cursor-grabbing" : ""}`}
       >
         <motion.div style={{ x: parallaxX, y: parallaxY }} className="relative h-full w-full">
           <motion.div
-            animate={shouldAnimate && isVisible && !floatPaused ? { y: [0, -6, 0] } : { y: 0 }}
-            transition={{ duration: 3.6, repeat: shouldAnimate && isVisible && !floatPaused ? Infinity : 0, ease: "easeInOut" }}
+            animate={shouldAnimate && isVisible && !floatPaused && !mobileInteraction ? { y: [0, -6, 0] } : { y: 0 }}
+            transition={{ duration: 3.6, repeat: shouldAnimate && isVisible && !floatPaused && !mobileInteraction ? Infinity : 0, ease: "easeInOut" }}
             className="hero-profile-frame relative h-full w-full"
           >
             <Image
@@ -662,6 +670,20 @@ function HeroVisual({
       </motion.div>
     </motion.div>
   );
+}
+
+function useMobileHeroInteraction() {
+  const [mobile, setMobile] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 767px), (hover: none) and (pointer: coarse)");
+    const update = () => setMobile(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  return mobile;
 }
 
 function SectionKicker({ number, label }: { number: string; label: string }) {

@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
+import { revalidatePortfolioContent } from "@/lib/content-cache";
 import { sanitizeText } from "@/lib/sanitize";
 import { getStoredJson, saveStoredJson } from "@/lib/content-store";
 
@@ -46,36 +47,43 @@ async function readSubmissions() {
 
 // Validates, stores, and acknowledges a public contact-form submission.
 export async function POST(request: Request) {
-  if (!withinRateLimit(request)) {
-    return NextResponse.json({ message: "Please wait a minute before sending another message." }, { status: 429 });
-  }
+  try {
+    if (!withinRateLimit(request)) {
+      return NextResponse.json({ message: "Please wait a minute before sending another message." }, { status: 429 });
+    }
 
-  const body = (await request.json()) as { fields?: Record<string, unknown> };
-  const fields = Object.entries(body.fields || {})
-    .map(([label, value]) => [sanitizeText(label).slice(0, 80), sanitizeText(value).slice(0, 4000)] as const)
-    .filter(([label, value]) => label && value);
+    const body = (await request.json()) as { fields?: Record<string, unknown> };
+    const fields = Object.entries(body.fields || {})
+      .map(([label, value]) => [sanitizeText(label).slice(0, 80), sanitizeText(value).slice(0, 4000)] as const)
+      .filter(([label, value]) => label && value);
 
-  if (!fields.length) {
-    return NextResponse.json({ message: "Please complete the contact form before sending." }, { status: 400 });
-  }
+    if (!fields.length) {
+      return NextResponse.json({ message: "Please complete the contact form before sending." }, { status: 400 });
+    }
 
-  const submissions = await readSubmissions();
-  const record = {
-    id: crypto.randomUUID(),
-    fields: Object.fromEntries(fields),
-    submittedAt: new Date().toISOString()
-  };
+    const submissions = await readSubmissions();
+    const record = {
+      id: crypto.randomUUID(),
+      fields: Object.fromEntries(fields),
+      submittedAt: new Date().toISOString()
+    };
 
-  const nextSubmissions = [record, ...submissions].slice(0, 250);
-  if (await saveStoredJson("contact-submissions", nextSubmissions)) {
+    const nextSubmissions = [record, ...submissions].slice(0, 250);
+    if (await saveStoredJson("contact-submissions", nextSubmissions)) {
+      revalidatePortfolioContent();
+      return NextResponse.json({ ok: true });
+    }
+    if (process.env.VERCEL) {
+      return NextResponse.json({ message: "Contact storage requires Neon PostgreSQL. Add DATABASE_URL from the Vercel Neon integration." }, { status: 503 });
+    }
+
+    await mkdir(path.dirname(submissionsFile), { recursive: true });
+    await writeFile(submissionsFile, JSON.stringify(nextSubmissions, null, 2), "utf8");
+
     return NextResponse.json({ ok: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Contact storage failed.";
+    const status = message.includes("Neon PostgreSQL") || message.includes("DATABASE_URL") ? 503 : 500;
+    return NextResponse.json({ message }, { status });
   }
-  if (process.env.VERCEL) {
-    return NextResponse.json({ message: "Contact storage requires Neon PostgreSQL. Add DATABASE_URL from the Vercel Neon integration." }, { status: 503 });
-  }
-
-  await mkdir(path.dirname(submissionsFile), { recursive: true });
-  await writeFile(submissionsFile, JSON.stringify(nextSubmissions, null, 2), "utf8");
-
-  return NextResponse.json({ ok: true });
 }
