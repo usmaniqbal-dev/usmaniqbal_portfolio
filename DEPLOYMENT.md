@@ -15,7 +15,7 @@ Connect these in Vercel before production use:
 
 The app automatically creates PostgreSQL-compatible `site_content` and `app_data` tables with `CREATE TABLE IF NOT EXISTS`. Data is stored as `JSONB` with parameterized queries and `INSERT ... ON CONFLICT ... DO UPDATE`.
 
-Vercel production must have `DATABASE_URL` for admin writes and application persistence. Local JSON fallback is only for local development when `DATABASE_URL` is absent.
+Vercel production must have `DATABASE_URL` for admin writes and application persistence. `POSTGRES_URL` and a PostgreSQL-shaped `STORAGE_URL` are supported only as fallbacks; keep `DATABASE_URL` as the primary Neon variable. Local JSON fallback is only for local development when a PostgreSQL URL is absent.
 
 ## Required Vercel Environment Variables
 
@@ -65,6 +65,7 @@ Vercel server uploads are intentionally limited to 4 MB. Larger videos should be
 ```bash
 npm install
 npm run typecheck
+npm run db:migrate
 npm run build
 npm run dev
 ```

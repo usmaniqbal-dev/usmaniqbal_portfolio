@@ -10,12 +10,18 @@ import type { SiteContent } from "@/types/site-content";
 
 const dataDirectory = path.join(process.cwd(), ".data");
 const dataFile = path.join(dataDirectory, "site-content.json");
-const DATABASE_READ_TIMEOUT_MS = 900;
+const DATABASE_READ_TIMEOUT_MS = 5000;
+const DATABASE_WRITE_TIMEOUT_MS = 8000;
 
 let sqlClient: NeonQueryFunction<false, false> | null = null;
+let sqlClientUrl: string | null = null;
 let postgresReady = false;
-let postgresUnavailable = false;
-let postgresWarningShown = false;
+let lastDatabaseLogAt = 0;
+
+type DatabaseConfig = {
+  url: string;
+  source: "DATABASE_URL" | "POSTGRES_URL" | "STORAGE_URL";
+};
 
 function isProductionBuild() {
   return process.env.NEXT_PHASE === "phase-production-build";
@@ -29,21 +35,79 @@ function canUseLocalFallback() {
   return !requiresPersistentDatabase();
 }
 
-function hasDatabaseConfig() {
+function isPostgresUrl(value: string | undefined) {
+  return Boolean(value && /^postgres(?:ql)?:\/\//i.test(value));
+}
+
+function getDatabaseConfig(): DatabaseConfig | null {
   if (isProductionBuild()) {
-    return false;
+    return null;
   }
 
-  return Boolean(process.env.DATABASE_URL && !postgresUnavailable);
+  if (isPostgresUrl(process.env.DATABASE_URL)) {
+    return { url: process.env.DATABASE_URL as string, source: "DATABASE_URL" };
+  }
+
+  if (isPostgresUrl(process.env.POSTGRES_URL)) {
+    return { url: process.env.POSTGRES_URL as string, source: "POSTGRES_URL" };
+  }
+
+  if (isPostgresUrl(process.env.STORAGE_URL)) {
+    return { url: process.env.STORAGE_URL as string, source: "STORAGE_URL" };
+  }
+
+  return null;
+}
+
+function getDatabaseEnvSnapshot() {
+  return {
+    environment: process.env.VERCEL_ENV || process.env.NODE_ENV || "unknown",
+    stage: process.env.NEXT_PHASE || "runtime",
+    hasDatabaseUrl: isPostgresUrl(process.env.DATABASE_URL),
+    hasPostgresUrl: isPostgresUrl(process.env.POSTGRES_URL),
+    hasStorageUrl: isPostgresUrl(process.env.STORAGE_URL),
+    selectedSource: getDatabaseConfig()?.source || null
+  };
+}
+
+function sanitizeDatabaseError(error: unknown) {
+  if (error instanceof Error) {
+    const code = typeof (error as Error & { code?: unknown }).code === "string"
+      ? (error as Error & { code: string }).code
+      : undefined;
+    return { name: error.name, message: error.message, code };
+  }
+
+  return { name: "UnknownDatabaseError", message: String(error) };
+}
+
+function logDatabaseEvent(stage: string, error?: unknown) {
+  const now = Date.now();
+  if (now - lastDatabaseLogAt < 30000) {
+    return;
+  }
+
+  lastDatabaseLogAt = now;
+  const payload = {
+    databaseStage: stage,
+    ...getDatabaseEnvSnapshot(),
+    ...(error ? { error: sanitizeDatabaseError(error) } : {})
+  };
+
+  console.warn("[database]", payload);
 }
 
 function getSql() {
-  if (!process.env.DATABASE_URL) {
+  const config = getDatabaseConfig();
+  if (!config) {
+    logDatabaseEvent("resolve-config");
     throw new Error("DATABASE_URL is missing. Connect Neon to this Vercel project so persistent admin storage can use PostgreSQL.");
   }
 
-  if (!sqlClient) {
-    sqlClient = neon(process.env.DATABASE_URL);
+  if (!sqlClient || sqlClientUrl !== config.url) {
+    sqlClient = neon(config.url);
+    sqlClientUrl = config.url;
+    postgresReady = false;
   }
 
   return sqlClient;
@@ -67,12 +131,13 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
 }
 
 export function isDatabaseConfigured() {
-  return hasDatabaseConfig();
+  return Boolean(getDatabaseConfig());
 }
 
 export function getContentStorageMode() {
-  if (hasDatabaseConfig()) {
-    return "Neon PostgreSQL";
+  const config = getDatabaseConfig();
+  if (config) {
+    return config.source === "DATABASE_URL" ? "Neon PostgreSQL" : `Neon PostgreSQL via ${config.source}`;
   }
 
   return requiresPersistentDatabase() ? "Neon PostgreSQL required" : "local .data JSON";
@@ -83,7 +148,7 @@ function createDatabaseSetupError(action: string) {
 }
 
 export async function assertDatabaseReady(action: string) {
-  if (!hasDatabaseConfig() || !(await ensurePostgresTables())) {
+  if (!getDatabaseConfig() || !(await ensurePostgresTables())) {
     throw createDatabaseSetupError(action);
   }
 }
@@ -113,14 +178,11 @@ async function ensurePostgresTables() {
     postgresReady = true;
     return true;
   } catch (error) {
-    postgresUnavailable = true;
     postgresReady = false;
     sqlClient = null;
+    sqlClientUrl = null;
 
-    if (!postgresWarningShown) {
-      postgresWarningShown = true;
-      console.warn("Neon PostgreSQL is configured but unavailable. Local development can fall back to .data; Vercel requires a working DATABASE_URL.", error);
-    }
+    logDatabaseEvent("ensure-tables", error);
 
     return false;
   }
@@ -206,7 +268,7 @@ async function saveLocalContent(content: SiteContent) {
 }
 
 export async function getSiteContent(): Promise<SiteContent> {
-  if (!hasDatabaseConfig()) {
+  if (!getDatabaseConfig()) {
     if (!canUseLocalFallback()) {
       throw createDatabaseSetupError("Public content");
     }
@@ -215,8 +277,8 @@ export async function getSiteContent(): Promise<SiteContent> {
 
   const databaseReady = await withTimeout(ensurePostgresTables(), DATABASE_READ_TIMEOUT_MS);
   if (!databaseReady) {
-    postgresUnavailable = true;
     if (!canUseLocalFallback()) {
+      logDatabaseEvent("read-timeout");
       throw createDatabaseSetupError("Public content");
     }
     return readLocalContent();
@@ -225,10 +287,11 @@ export async function getSiteContent(): Promise<SiteContent> {
   try {
     const rows = await withTimeout(getSql()`SELECT content FROM site_content WHERE id = 1 LIMIT 1`, DATABASE_READ_TIMEOUT_MS);
     if (!rows) {
-      postgresUnavailable = true;
       postgresReady = false;
       sqlClient = null;
+      sqlClientUrl = null;
       if (!canUseLocalFallback()) {
+        logDatabaseEvent("read-content-timeout");
         throw createDatabaseSetupError("Public content");
       }
       return readLocalContent();
@@ -243,14 +306,11 @@ export async function getSiteContent(): Promise<SiteContent> {
 
     return normalizeContent(parseContentValue(firstRow.content));
   } catch (error) {
-    postgresUnavailable = true;
     postgresReady = false;
     sqlClient = null;
+    sqlClientUrl = null;
 
-    if (!postgresWarningShown) {
-      postgresWarningShown = true;
-      console.warn("Could not read from Neon PostgreSQL. Local development can fall back to .data; Vercel requires a working DATABASE_URL.", error);
-    }
+    logDatabaseEvent("read-content", error);
 
     if (!canUseLocalFallback()) {
       throw createDatabaseSetupError("Public content");
@@ -263,7 +323,7 @@ export async function getSiteContent(): Promise<SiteContent> {
 export async function saveSiteContent(content: SiteContent) {
   const normalized = validateSiteContent(normalizeContent(content));
 
-  if (!hasDatabaseConfig()) {
+  if (!getDatabaseConfig()) {
     if (!canUseLocalFallback()) {
       throw createDatabaseSetupError("Persistent admin editing");
     }
@@ -280,22 +340,22 @@ export async function saveSiteContent(content: SiteContent) {
   }
 
   try {
-    await getSql()`
+    const saved = await withTimeout(getSql()`
       INSERT INTO site_content (id, content, updated_at)
       VALUES (1, ${JSON.stringify(normalized)}::jsonb, NOW())
       ON CONFLICT (id) DO UPDATE
       SET content = EXCLUDED.content,
           updated_at = NOW()
-    `;
+    `, DATABASE_WRITE_TIMEOUT_MS);
+    if (!saved) {
+      throw new Error("Timed out while saving site content.");
+    }
   } catch (error) {
-    postgresUnavailable = true;
     postgresReady = false;
     sqlClient = null;
+    sqlClientUrl = null;
 
-    if (!postgresWarningShown) {
-      postgresWarningShown = true;
-      console.warn("Could not save to Neon PostgreSQL. Local development can use .data storage; Vercel requires Neon DATABASE_URL.", error);
-    }
+    logDatabaseEvent("save-content", error);
 
     if (!canUseLocalFallback()) {
       throw createDatabaseSetupError("Persistent admin editing");
@@ -310,7 +370,7 @@ export async function saveSiteContent(content: SiteContent) {
 // Reads auxiliary JSON documents (chatbot settings, analytics, etc.) from the
 // same managed database used by the admin builder.
 export async function getStoredJson<T>(key: string): Promise<T | null> {
-  if (!hasDatabaseConfig() || !(await ensurePostgresTables())) {
+  if (!getDatabaseConfig() || !(await ensurePostgresTables())) {
     if (!canUseLocalFallback()) {
       throw createDatabaseSetupError(`${key} storage`);
     }
@@ -323,7 +383,10 @@ export async function getStoredJson<T>(key: string): Promise<T | null> {
     if (!value) return null;
     return (typeof value === "string" ? JSON.parse(value) : value) as T;
   } catch (error) {
-    console.warn(`Could not read ${key} from the production database.`, error);
+    postgresReady = false;
+    sqlClient = null;
+    sqlClientUrl = null;
+    logDatabaseEvent(`read-json:${key}`, error);
     if (!canUseLocalFallback()) {
       throw createDatabaseSetupError(`${key} storage`);
     }
@@ -334,19 +397,33 @@ export async function getStoredJson<T>(key: string): Promise<T | null> {
 // Returns false during local development without Neon so callers can retain
 // their checked-in JSON fallback. Vercel callers should treat false as a setup error.
 export async function saveStoredJson(key: string, value: unknown): Promise<boolean> {
-  if (!hasDatabaseConfig() || !(await ensurePostgresTables())) {
+  if (!getDatabaseConfig() || !(await ensurePostgresTables())) {
     if (!canUseLocalFallback()) {
       throw createDatabaseSetupError(`${key} storage`);
     }
     return false;
   }
 
-  await getSql()`
-    INSERT INTO app_data (data_key, value, updated_at)
-    VALUES (${key}, ${JSON.stringify(value)}::jsonb, NOW())
-    ON CONFLICT (data_key) DO UPDATE
-    SET value = EXCLUDED.value,
-        updated_at = NOW()
-  `;
-  return true;
+  try {
+    const saved = await withTimeout(getSql()`
+      INSERT INTO app_data (data_key, value, updated_at)
+      VALUES (${key}, ${JSON.stringify(value)}::jsonb, NOW())
+      ON CONFLICT (data_key) DO UPDATE
+      SET value = EXCLUDED.value,
+          updated_at = NOW()
+    `, DATABASE_WRITE_TIMEOUT_MS);
+    if (!saved) {
+      throw new Error(`Timed out while saving ${key}.`);
+    }
+    return true;
+  } catch (error) {
+    postgresReady = false;
+    sqlClient = null;
+    sqlClientUrl = null;
+    logDatabaseEvent(`save-json:${key}`, error);
+    if (!canUseLocalFallback()) {
+      throw createDatabaseSetupError(`${key} storage`);
+    }
+    return false;
+  }
 }
