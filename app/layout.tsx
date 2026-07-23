@@ -9,9 +9,12 @@ const deploymentUrl = process.env.NEXT_PUBLIC_SITE_URL ||
 export async function generateMetadata(): Promise<Metadata> {
   const content = await getSiteContent();
   const siteUrl = content.seo.canonicalUrl || deploymentUrl;
-  const title = content.seo.title || content.builder.pages[0]?.metaTitle || "Usman Iqbal | Salesforce Administrator & Developer";
+  const savedTitle = content.seo.title || content.builder.pages[0]?.metaTitle;
+  const title = !savedTitle || savedTitle === "Usman Iqbal | Salesforce Administrator & Developer" ? "Usman Iqbal Portfolio" : savedTitle;
   const description = content.seo.description || content.builder.pages[0]?.metaDescription || content.about.description;
-  const image = content.seo.ogImage || content.builder.settings.logoUrl || content.home.profileImage || "/images/usman-profile.png";
+  const savedImage = content.seo.ogImage || content.builder.settings.logoUrl || content.home.profileImage;
+  const image = !savedImage || savedImage.includes("usman-profile.png") ? "/images/usman-browser-icon.png" : savedImage;
+  const icon = "/images/usman-browser-icon.png";
 
   return {
     metadataBase: new URL(siteUrl),
@@ -20,12 +23,17 @@ export async function generateMetadata(): Promise<Metadata> {
     keywords: content.seo.keywords,
     authors: [{ name: content.seo.author || "Usman Iqbal" }],
     alternates: { canonical: siteUrl },
+    icons: {
+      icon,
+      shortcut: icon,
+      apple: icon
+    },
     openGraph: {
       title,
       description,
       type: "website",
       url: siteUrl,
-      siteName: content.builder.settings.siteName || "Usman Iqbal",
+      siteName: content.builder.settings.siteName || "Usman Iqbal Portfolio",
       images: [image]
     },
     twitter: {

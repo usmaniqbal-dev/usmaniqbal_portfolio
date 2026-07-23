@@ -3,7 +3,7 @@ import { defaultBuilder } from "@/lib/builder-defaults";
 
 export const defaultContent: SiteContent = {
   seo: {
-    title: "Usman Iqbal | Salesforce Administrator & Developer",
+    title: "Usman Iqbal Portfolio",
     description:
       "Official portfolio of Usman Iqbal, Salesforce Administrator, Salesforce Developer, CRM specialist, web developer, and AI bots developer at NURAXTECH.",
     keywords: [
@@ -19,7 +19,7 @@ export const defaultContent: SiteContent = {
       "AI Bots Developer"
     ],
     canonicalUrl: "",
-    ogImage: "/images/usman-profile.png",
+    ogImage: "/images/usman-hero.png",
     author: "Usman Iqbal"
   },
   home: {
@@ -35,8 +35,8 @@ export const defaultContent: SiteContent = {
       label: "Contact Me",
       href: "#contact"
     },
-    heroImage: "/images/usman-profile.png",
-    profileImage: "/images/usman-profile.png",
+    heroImage: "/images/usman-hero.png",
+    profileImage: "/images/usman-hero.png",
     heroTemplate: "layered"
   },
   about: {

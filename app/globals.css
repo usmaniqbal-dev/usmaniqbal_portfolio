@@ -48,16 +48,19 @@ textarea {
 
 .light-mode.site-shell {
   background:
-    linear-gradient(180deg, rgba(5, 9, 32, 0.98) 0%, rgba(4, 9, 32, 1) 46%, rgba(3, 7, 24, 1) 100%),
-    radial-gradient(circle at 76% 12%, rgba(21, 140, 255, 0.24), transparent 30%),
-    radial-gradient(circle at 22% 45%, rgba(143, 91, 255, 0.18), transparent 34%),
+    radial-gradient(circle at 86% 9%, rgba(193, 60, 255, 0.2), transparent 23%),
+    radial-gradient(circle at 8% 32%, rgba(99, 51, 234, 0.24), transparent 28%),
+    radial-gradient(circle at 78% 58%, rgba(21, 140, 255, 0.14), transparent 28%),
+    linear-gradient(180deg, rgba(2, 3, 24, 0.98) 0%, rgba(4, 3, 29, 1) 48%, rgba(2, 5, 22, 1) 100%),
     var(--builder-bg);
   color: #ffffff;
 }
 
 .light-mode .site-grid {
-  background-image: radial-gradient(circle at 1px 1px, rgba(255, 116, 23, 0.16) 1px, transparent 0);
-  opacity: 0.42;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(193, 60, 255, 0.18) 1px, transparent 0),
+    linear-gradient(120deg, transparent 0 38%, rgba(193, 60, 255, 0.08) 38.2%, transparent 38.45%, transparent 68%, rgba(21, 140, 255, 0.07) 68.2%, transparent 68.45%);
+  opacity: 0.62;
 }
 
 .light-mode [class*="text-white"] {
@@ -75,13 +78,22 @@ textarea {
 .light-mode .glass-panel,
 .light-mode article[class*="bg-[#"],
 .light-mode .card-grid {
-  background-color: rgba(8, 17, 49, 0.72) !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
+  background-color: rgba(10, 8, 42, 0.76) !important;
+  border-color: rgba(193, 60, 255, 0.2) !important;
 }
 
 .light-mode .shadow-glow,
 .light-mode .shadow-cyan {
-  box-shadow: 0 18px 60px rgba(21, 140, 255, 0.16);
+  box-shadow:
+    0 18px 60px rgba(21, 140, 255, 0.16),
+    0 0 30px rgba(193, 60, 255, 0.18);
+}
+
+.light-mode .bg-animated-fallback {
+  background:
+    radial-gradient(circle at var(--cursor-x, 50%) var(--cursor-y, 45%), rgba(193, 60, 255, 0.18), transparent 28%),
+    radial-gradient(circle at 78% 22%, rgba(21, 140, 255, 0.16), transparent 24%),
+    linear-gradient(180deg, #020318, #04031d);
 }
 
 .light-mode .floating-field > span {
@@ -96,6 +108,62 @@ textarea {
 .light-mode input::placeholder,
 .light-mode textarea::placeholder {
   color: rgba(255, 255, 255, 0.54);
+}
+
+.light-mode header nav {
+  border-color: rgba(193, 60, 255, 0.32) !important;
+  background:
+    linear-gradient(180deg, rgba(14, 8, 50, 0.76), rgba(6, 6, 30, 0.68)) !important;
+  box-shadow:
+    0 0 0 1px rgba(21, 140, 255, 0.08),
+    0 0 28px rgba(193, 60, 255, 0.28),
+    0 18px 70px rgba(0, 0, 0, 0.3) !important;
+}
+
+.light-mode header nav > a > span:first-child {
+  background: linear-gradient(135deg, #ffffff, #c13cff) !important;
+  box-shadow: 0 0 18px rgba(193, 60, 255, 0.58);
+}
+
+.light-mode header nav a[href="#home"] {
+  color: #ffffff;
+}
+
+.light-mode header nav a[href="#home"] svg {
+  color: var(--primary);
+}
+
+.light-mode header nav a[href="#home"] > span {
+  transform: scaleX(1);
+}
+
+.light-mode header button {
+  border-color: rgba(193, 60, 255, 0.55) !important;
+  background: radial-gradient(circle at 50% 45%, rgba(193, 60, 255, 0.22), rgba(64, 20, 140, 0.42)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 24px rgba(193, 60, 255, 0.44);
+}
+
+.light-mode .hero-showcase h2 {
+  background: linear-gradient(90deg, #d947ff 0%, #934dff 48%, #158cff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+
+.light-mode a[class*="bg-[var(--primary)]"],
+.light-mode button[class*="bg-[var(--primary)]"] {
+  background: linear-gradient(135deg, #8b2cff 0%, #c13cff 46%, #158cff 100%) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 12px 32px rgba(21, 140, 255, 0.22),
+    0 0 26px rgba(193, 60, 255, 0.36) !important;
+}
+
+.light-mode a[class*="border-[var(--secondary)]"],
+.light-mode a[class*="border-white"] {
+  border-color: rgba(193, 60, 255, 0.36) !important;
+  background: rgba(3, 6, 32, 0.46) !important;
 }
 
 /* Keeps the existing admin layout intact while supplying a complete light color mode. */
@@ -315,11 +383,26 @@ textarea {
     radial-gradient(circle at 86% 64%, rgba(0, 133, 255, 0.32), transparent 30%);
 }
 
+.light-mode .hero-showcase {
+  background:
+    radial-gradient(circle at 77% 45%, rgba(193, 60, 255, 0.3), transparent 25%),
+    radial-gradient(circle at 88% 32%, rgba(21, 140, 255, 0.14), transparent 24%),
+    radial-gradient(circle at 8% 62%, rgba(193, 60, 255, 0.22), transparent 28%),
+    linear-gradient(115deg, rgba(2, 3, 22, 0.98), rgba(5, 4, 34, 0.96) 46%, rgba(2, 8, 30, 0.98) 100%);
+}
+
 .site-shell > section:not(#home) {
   isolation: isolate;
   background:
     linear-gradient(120deg, rgba(4, 8, 31, 0.94), rgba(8, 14, 52, 0.88) 48%, rgba(0, 56, 128, 0.56) 100%),
     radial-gradient(circle at 84% 12%, rgba(143, 91, 255, 0.18), transparent 30%),
+    radial-gradient(circle at 18% 72%, rgba(21, 140, 255, 0.12), transparent 32%);
+}
+
+.light-mode.site-shell > section:not(#home) {
+  background:
+    linear-gradient(120deg, rgba(3, 3, 24, 0.96), rgba(7, 4, 39, 0.9) 48%, rgba(3, 10, 35, 0.9) 100%),
+    radial-gradient(circle at 84% 12%, rgba(193, 60, 255, 0.18), transparent 30%),
     radial-gradient(circle at 18% 72%, rgba(21, 140, 255, 0.12), transparent 32%);
 }
 
@@ -363,12 +446,36 @@ textarea {
   box-shadow: 0 0 28px rgba(255, 116, 23, 0.18);
 }
 
+.site-shell footer {
+  background: rgba(3, 7, 24, 0.9);
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.site-shell footer p {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.light-mode.site-shell footer {
+  border-color: rgba(193, 60, 255, 0.26) !important;
+  background:
+    linear-gradient(180deg, rgba(5, 4, 30, 0.94), rgba(2, 4, 20, 0.98));
+  box-shadow: inset 0 1px 0 rgba(193, 60, 255, 0.18);
+}
+
 .hero-showcase-bg {
   background:
     linear-gradient(115deg, transparent 0 36%, rgba(255, 255, 255, 0.12) 36.15%, transparent 36.45%, transparent 62%, rgba(255, 255, 255, 0.09) 62.15%, transparent 62.45%),
     repeating-linear-gradient(150deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 58px);
   opacity: 0.52;
   animation: hero-lines-drift 16s linear infinite;
+}
+
+.light-mode .hero-showcase-bg {
+  background:
+    radial-gradient(circle at 77% 50%, rgba(193, 60, 255, 0.12), transparent 30%),
+    linear-gradient(135deg, transparent 0 42%, rgba(193, 60, 255, 0.42) 42.1%, transparent 42.35%, transparent 72%, rgba(21, 140, 255, 0.18) 72.1%, transparent 72.35%),
+    repeating-linear-gradient(135deg, transparent 0 58px, rgba(193, 60, 255, 0.14) 59px, transparent 60px);
+  opacity: 0.7;
 }
 
 .hero-orb-field {
@@ -458,6 +565,15 @@ textarea {
   opacity: 0.8;
 }
 
+.light-mode .hero-figure-glow {
+  background:
+    radial-gradient(circle at 50% 44%, rgba(193, 60, 255, 0.46), transparent 47%),
+    radial-gradient(circle at 62% 54%, rgba(21, 140, 255, 0.24), transparent 54%),
+    conic-gradient(from 230deg, rgba(193, 60, 255, 0.08), rgba(193, 60, 255, 0.32), rgba(21, 140, 255, 0.24), rgba(193, 60, 255, 0.08));
+  filter: blur(22px);
+  opacity: 0.92;
+}
+
 .hero-drag-figure {
   touch-action: pan-y;
   user-select: none;
@@ -470,9 +586,35 @@ textarea {
   overflow: hidden;
 }
 
+.light-mode .hero-profile-frame {
+  border-color: rgba(193, 60, 255, 0.62);
+  box-shadow:
+    inset 0 0 38px rgba(21, 140, 255, 0.12),
+    0 0 0 1px rgba(21, 140, 255, 0.16),
+    0 0 34px rgba(193, 60, 255, 0.42),
+    0 28px 70px rgba(0, 0, 0, 0.42);
+}
+
+.light-mode .hero-profile-frame::before {
+  content: "";
+  position: absolute;
+  inset: 4%;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.light-mode .hero-profile-frame::before {
+  border: 2px solid rgba(193, 60, 255, 0.62);
+  box-shadow: 0 0 26px rgba(193, 60, 255, 0.72), inset 0 0 34px rgba(21, 140, 255, 0.12);
+}
+
 .hero-profile-cutout {
   filter: drop-shadow(0 28px 42px rgba(0, 0, 0, 0.32)) drop-shadow(0 0 26px color-mix(in srgb, var(--primary) 18%, transparent));
   pointer-events: none;
+}
+
+.light-mode .hero-profile-cutout {
+  filter: drop-shadow(0 28px 42px rgba(0, 0, 0, 0.34)) drop-shadow(0 0 24px rgba(193, 60, 255, 0.22));
 }
 
 .tilt-card {

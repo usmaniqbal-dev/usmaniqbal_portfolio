@@ -58,8 +58,9 @@ const navItems = [
 
 const serviceIcons = [Database, Zap, Layers3, Settings2, Code2, BriefcaseBusiness, Bot, Sparkles];
 
-const LOADER_MAX_MS = 1280;
+const LOADER_MAX_MS = 320;
 const DEFER_3D_MS = 180;
+const ENABLE_3D_BACKGROUND = false;
 
 const Global3DBackground = dynamic(() => import("@/components/animations/Global3DBackground"), {
   ssr: false,
@@ -150,15 +151,19 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
   }
 
   const activeBuilderTheme = content.builder.themes.find((theme) => theme.isActive);
-  const themePrimary = content.theme.primary || activeBuilderTheme?.primaryColor || content.builder.settings.primaryColor;
-  const themeSecondary = content.theme.secondary || activeBuilderTheme?.secondaryColor || content.builder.settings.secondaryColor;
+  const basePrimary = content.theme.primary || activeBuilderTheme?.primaryColor || content.builder.settings.primaryColor;
+  const baseSecondary = content.theme.secondary || activeBuilderTheme?.secondaryColor || content.builder.settings.secondaryColor;
+  const baseAccent = content.theme.accent || activeBuilderTheme?.accentColor || "#a7f3d0";
+  const themePrimary = darkMode ? basePrimary : "#c13cff";
+  const themeSecondary = darkMode ? baseSecondary : "#158cff";
+  const themeAccent = darkMode ? baseAccent : "#f472ff";
   const style = {
     "--primary": themePrimary,
     "--secondary": themeSecondary,
-    "--accent": content.theme.accent || activeBuilderTheme?.accentColor || "#a7f3d0",
-    "--builder-bg": activeBuilderTheme?.backgroundColor || content.builder.settings.backgroundColor,
+    "--accent": themeAccent,
+    "--builder-bg": darkMode ? activeBuilderTheme?.backgroundColor || content.builder.settings.backgroundColor : "#020318",
     "--builder-text": activeBuilderTheme?.textColor || content.builder.settings.textColor,
-    "--builder-card": activeBuilderTheme?.cardColor || content.builder.settings.cardColor
+    "--builder-card": darkMode ? activeBuilderTheme?.cardColor || content.builder.settings.cardColor : "#090a28"
   } as React.CSSProperties;
 
   const activeTemplate = content.builder.templates.find((template) => template.isActive);
@@ -185,14 +190,14 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
   return (
     <main className={`site-shell flex min-h-screen flex-col overflow-hidden text-white ${darkMode ? "dark-mode" : "light-mode"}`} style={style}>
       <AnimatePresence>{loading ? <LoadingExperience /> : null}</AnimatePresence>
-      {effectsReady ? (
+      {ENABLE_3D_BACKGROUND && effectsReady ? (
         <Global3DBackground primary={themePrimary} secondary={themeSecondary} enabled={shouldAnimate} />
       ) : (
         <div className="pointer-events-none fixed inset-0 z-0 bg-animated-fallback" aria-hidden />
       )}
       <div className="site-grid pointer-events-none fixed inset-0 opacity-80" />
       <div className="pointer-events-none fixed inset-x-0 top-0 h-px glow-line opacity-70" />
-      <FloatingNav menuOpen={menuOpen} setMenuOpen={setMenuOpen} darkMode={darkMode} toggleColorMode={toggleColorMode} siteName={content.builder.settings.siteName} logoUrl={content.builder.settings.logoUrl} logoLink={content.builder.settings.logoLink} />
+      <FloatingNav menuOpen={menuOpen} setMenuOpen={setMenuOpen} darkMode={darkMode} toggleColorMode={toggleColorMode} siteName={content.builder.settings.siteName} logoUrl={content.builder.settings.logoUrl} heroImageSrc={heroImageSrc} logoLink={content.builder.settings.logoLink} />
 
       <section ref={heroSectionRef} id="home" className="hero-showcase relative min-h-[100svh] px-5 pb-8 pt-28 sm:px-8 lg:h-[100svh] lg:min-h-0 lg:overflow-hidden lg:px-12 lg:pb-4 lg:pt-28" style={homeStyle}>
         {heroBackgroundType === "image" && heroBackgroundUrl ? <div className="absolute inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroBackgroundUrl})` }} /> : null}
@@ -372,7 +377,7 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
       </section>
 
       <footer className="border-t border-white/10 px-5 py-8 text-center text-sm text-white/45 sm:px-8" style={{ order: 100 }}>
-        <p>© {new Date().getFullYear()} Usman Iqbal - NURAXTECH. Built for CRM, automation, web, and AI solutions.</p>
+        <p>&copy; {new Date().getFullYear()} Usman Iqbal - NURAXTECH. Built for CRM, automation, web, and AI solutions.</p>
       </footer>
     </main>
   );
@@ -385,6 +390,7 @@ function FloatingNav({
   toggleColorMode,
   siteName,
   logoUrl,
+  heroImageSrc,
   logoLink
 }: {
   menuOpen: boolean;
@@ -393,17 +399,19 @@ function FloatingNav({
   toggleColorMode: () => void;
   siteName: string;
   logoUrl: string;
+  heroImageSrc: string;
   logoLink: string;
 }) {
   const { hidden, scrolled } = useScrollDirection();
-  const brandName = siteName || "Usman Iqbal";
+  const brandName = "Usman Iqbal";
+  const navLogoUrl = !logoUrl || logoUrl.includes("usman-profile.png") ? heroImageSrc : logoUrl;
 
   return (
     <motion.header animate={{ y: hidden ? -92 : 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="fixed left-0 right-0 top-4 z-50 px-5">
       <nav className={`mx-auto flex max-w-[calc(100vw-2.5rem)] items-center justify-between rounded-full border border-white/10 px-3 py-2.5 shadow-cyan transition md:max-w-5xl ${scrolled ? "bg-black/72 backdrop-blur-2xl" : "bg-black/48 backdrop-blur-xl"}`}>
         <a href={logoLink || "#home"} className="flex min-w-0 items-center gap-2.5 font-black text-white">
           <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[var(--primary)] text-black">
-            {logoUrl ? <img src={logoUrl} alt="" className="h-full w-full object-cover" /> : brandName.charAt(0)}
+            {navLogoUrl ? <img src={navLogoUrl} alt="" className="h-full w-full rounded-full object-cover" /> : brandName.charAt(0)}
           </span>
           <span className="hidden max-w-[160px] truncate sm:block">{brandName}</span>
         </a>
@@ -424,7 +432,7 @@ function FloatingNav({
           })}
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"} title={darkMode ? "Light mode" : "Dark mode"} className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-white/78 transition hover:border-[var(--primary)] hover:text-[var(--primary)]" onClick={toggleColorMode}>
+          <button type="button" aria-label={darkMode ? "Switch to neon theme" : "Switch to current theme"} title={darkMode ? "Neon theme" : "Current theme"} className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-white/78 transition hover:border-[var(--primary)] hover:text-[var(--primary)]" onClick={toggleColorMode}>
             {darkMode ? <Sun size={19} /> : <Moon size={19} />}
           </button>
           <button

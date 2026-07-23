@@ -166,7 +166,7 @@ export const defaultTemplates: BuilderTemplate[] = [
   {
     id: "classic-portfolio",
     name: "Classic Portfolio",
-    thumbnail: "/images/usman-profile.png",
+    thumbnail: "/images/usman-hero.png",
     sectionsOrder: ["home", "about", "skills", "services", "projects", "contact"],
     sectionSettings: {},
     isActive: true,
@@ -215,7 +215,7 @@ export const defaultPages: BuilderPage[] = [
     blocks: defaultSections.flatMap((section) => section.blocks),
     sections: defaultSections,
     isPublished: true,
-    metaTitle: "Usman Iqbal | Salesforce Administrator & Developer",
+    metaTitle: "Usman Iqbal Portfolio",
     metaDescription: "Salesforce CRM, automation, web development, AI bots, and modern business solutions.",
     createdAt: now
   }
@@ -223,8 +223,8 @@ export const defaultPages: BuilderPage[] = [
 
 export const defaultBuilder: BuilderState = {
   settings: {
-    siteName: "Usman Iqbal",
-    logoUrl: "/images/usman-profile.png",
+    siteName: "Usman Iqbal Portfolio",
+    logoUrl: "/images/usman-hero.png",
     logoLink: "/",
     globalFont: "Inter",
     primaryColor: "#16f2a4",
