@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getKnowledgeBase, type KnowledgeBase } from "@/lib/chatbot-store";
+import { getSiteContent } from "@/lib/content-store";
+import type { SiteContent } from "@/types/site-content";
 
 export const runtime = "nodejs";
 
@@ -41,8 +43,9 @@ function windowlessTimeout(callback: () => void, ms: number) {
 }
 
 async function localChatResponse(message: string) {
-  const knowledge = await getKnowledgeBase();
-  return new Response(buildWebsiteAnswer(message, knowledge), {
+  const [knowledge, siteContent] = await Promise.all([getKnowledgeBase(), getSiteContent()]);
+  const effectiveKnowledge = buildEffectiveKnowledge(knowledge, siteContent);
+  return new Response(buildWebsiteAnswer(message, effectiveKnowledge), {
     status: 200,
     headers: { "Content-Type": "text/plain; charset=utf-8" }
   });
@@ -53,7 +56,13 @@ function normalizeText(value: string) {
 }
 
 function hasAny(query: string, keywords: string[]) {
-  return keywords.some((keyword) => query.includes(keyword));
+  const words = new Set(query.split(/\s+/).filter(Boolean));
+  return keywords.some((keyword) => keyword.length <= 3 ? words.has(keyword) : query.includes(keyword));
+}
+
+function hasExactWord(query: string, keywords: string[]) {
+  const words = new Set(query.split(/\s+/).filter(Boolean));
+  return keywords.some((keyword) => words.has(keyword));
 }
 
 function languageMode(message: string) {
@@ -80,6 +89,7 @@ function formatList(title: string, rows: Array<Record<string, unknown>>, nameKey
       return true;
     })
     .slice(0, 8);
+  if (!lines.length) return "";
   return `${title}:\n${lines.map((line) => `- ${line}`).join("\n")}`;
 }
 
@@ -93,7 +103,56 @@ function formatContact(knowledge: KnowledgeBase) {
     contact.linkedin ? `LinkedIn: ${contact.linkedin}` : "",
     contact.github ? `GitHub: ${contact.github}` : ""
   ].filter(Boolean);
+  if (!parts.length) return "";
   return `Contact details:\n${parts.map((part) => `- ${part}`).join("\n")}`;
+}
+
+function hasUsableRows(rows: Array<Record<string, unknown>>, keys: string[]) {
+  return rows.some((row) => keys.some((key) => String(row[key] || "").trim()));
+}
+
+function buildEffectiveKnowledge(knowledge: KnowledgeBase, siteContent: SiteContent): KnowledgeBase {
+  const socialUrl = (name: string) =>
+    siteContent.socials.find((social) => social.platform.toLowerCase().includes(name))?.url || "";
+
+  return {
+    ...knowledge,
+    owner: {
+      ...knowledge.owner,
+      name: knowledge.owner.name || siteContent.home.title.replace(/^I'm\s+/i, "") || "Usman Iqbal",
+      title: knowledge.owner.title || siteContent.home.subtitle,
+      bio: knowledge.owner.bio || siteContent.about.description || siteContent.home.description,
+      email: knowledge.owner.email || siteContent.contact.email,
+      location: knowledge.owner.location || siteContent.contact.location,
+      phone: knowledge.owner.phone || siteContent.contact.phone,
+      availability: knowledge.owner.availability || "Available for new CRM and automation projects"
+    },
+    skills: hasUsableRows(knowledge.skills, ["name", "category"]) ? knowledge.skills : siteContent.skills.map((skill) => ({
+      name: skill.name,
+      category: skill.category,
+      level: skill.level,
+      description: `${skill.name} skill in ${skill.category}.`
+    })),
+    services: hasUsableRows(knowledge.services, ["title", "description"]) ? knowledge.services : siteContent.services.map((service) => ({
+      title: service.title,
+      description: service.description
+    })),
+    projects: hasUsableRows(knowledge.projects, ["title", "description"]) ? knowledge.projects : siteContent.projects.map((project) => ({
+      title: project.title,
+      description: project.description,
+      techStack: project.tags,
+      liveUrl: project.url,
+      githubUrl: project.githubUrl || ""
+    })),
+    contact: {
+      ...knowledge.contact,
+      email: knowledge.contact.email || siteContent.contact.email,
+      linkedin: knowledge.contact.linkedin || socialUrl("linkedin"),
+      github: knowledge.contact.github || socialUrl("github"),
+      twitter: knowledge.contact.twitter || socialUrl("twitter"),
+      website: knowledge.contact.website || siteContent.seo.canonicalUrl
+    }
+  };
 }
 
 function buildWebsiteAnswer(message: string, knowledge: KnowledgeBase) {
@@ -103,7 +162,7 @@ function buildWebsiteAnswer(message: string, knowledge: KnowledgeBase) {
     ? "Main sirf is portfolio website ke mutabiq jawab de sakta hun: Usman Iqbal ki skills, services, projects, availability, aur contact details."
     : "I can answer from Usman Iqbal's portfolio website only: skills, services, projects, availability, and contact details.";
 
-  if (hasAny(query, ["hello", "hi", "hey", "salam", "assalam", "aoa", "سلام"])) {
+  if (hasExactWord(query, ["hello", "hi", "hey", "salam", "assalam", "aoa", "سلام"])) {
     return languageMode(message) === "roman-urdu"
       ? "Assalam o Alaikum, main Usman Iqbal ka website assistant hun. Aap skills, services, projects, availability, ya contact details pooch sakte hain."
       : "Hi, I am Usman Iqbal's website assistant. You can ask me about skills, services, projects, availability, or contact details.";
