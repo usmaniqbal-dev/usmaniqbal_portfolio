@@ -50,7 +50,7 @@ export const defaultChatbotSettings: ChatbotSettings = {
   primaryColor: "#16f2a4",
   hiddenPages: [],
   showSuggestions: true,
-  suggestions: ["What are your skills?", "Tell me about your projects", "What services do you offer?", "How can I contact you?"],
+  suggestions: ["What services do you offer?", "Usman ko kya skills ati hain?", "Portfolio men kon se projects hain?", "Usman se rabta kaise karun?"],
   lastTrainedAt: ""
 };
 

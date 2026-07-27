@@ -9,19 +9,31 @@ from __future__ import annotations
 import json
 import os
 import pickle
+import re
 import time
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, Generator, List
 
-import numpy as np
-from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
+
+try:
+    from dotenv import load_dotenv
+except Exception:
+    def load_dotenv(*_args: Any, **_kwargs: Any) -> None:
+        return None
+
+try:
+    import numpy as np
+    from sentence_transformers import SentenceTransformer
+    from sklearn.metrics.pairwise import cosine_similarity
+except Exception:
+    np = None
+    SentenceTransformer = None
+    cosine_similarity = None
 
 from train_chatbot import EMBEDDINGS_PATH, KNOWLEDGE_PATH, ROOT_DIR, retrieve_context, train_embeddings
 
@@ -33,6 +45,10 @@ SETTINGS_PATH = DATA_DIR / "chatbot-settings.json"
 MODEL_NAME = "all-MiniLM-L6-v2"
 RATE_LIMIT = 20
 RATE_WINDOW_SECONDS = 60 * 60
+WEBSITE_SCOPE_MESSAGE = (
+    "I can answer from Usman Iqbal's portfolio website only: skills, services, projects, "
+    "experience, availability, and contact details."
+)
 
 app = FastAPI(title="Portfolio AI Chatbot")
 rate_limits: Dict[str, List[float]] = defaultdict(list)
@@ -105,9 +121,18 @@ def retrieve_debug_context(question: str, top_k: int = 3) -> Dict[str, Any]:
     """Retrieve context chunks and similarity scores for admin debugging."""
     payload = load_embeddings()
     chunks = payload.get("chunks", [])
-    embeddings = payload.get("embeddings", np.empty((0, 384)))
     if not chunks:
         return {"context": "", "matches": []}
+
+    embeddings = payload.get("embeddings", [])
+    if SentenceTransformer is None or cosine_similarity is None or not hasattr(embeddings, "__len__") or len(embeddings) == 0:
+        question_terms = set(re.sub(r"[^a-z0-9]+", " ", question.lower()).split())
+        scored = []
+        for chunk in chunks:
+            chunk_terms = set(re.sub(r"[^a-z0-9]+", " ", chunk.lower()).split())
+            scored.append({"text": chunk, "score": float(len(question_terms.intersection(chunk_terms)))})
+        matches = sorted(scored, key=lambda item: item["score"], reverse=True)[:top_k]
+        return {"context": "\n\n".join(match["text"] for match in matches), "matches": matches}
 
     model = SentenceTransformer(payload.get("model", MODEL_NAME))
     query_embedding = model.encode([question], convert_to_numpy=True)
@@ -138,6 +163,44 @@ def normalize_question(question: str) -> str:
     return question.lower().strip()
 
 
+def contains_any(query: str, keywords: List[str]) -> bool:
+    """Check English, Urdu, and Roman Urdu keywords in a normalized question."""
+    return any(keyword in query for keyword in keywords)
+
+
+def question_language(question: str) -> str:
+    """Detect enough language signal to keep common replies natural."""
+    if re.search(r"[\u0600-\u06ff]", question):
+        return "urdu"
+    query = normalize_question(question)
+    roman_urdu_markers = [
+        "aap", "ap", "kya", "kia", "kon", "kaun", "hain", "hy", "hai", "ho",
+        "mujhe", "btao", "batao", "rabta", "kaise", "kahan", "men", "mein",
+        "kr", "kar", "dety", "dete", "ata", "ati"
+    ]
+    return "roman_urdu" if contains_any(query, roman_urdu_markers) else "english"
+
+
+def scoped_fallback(question: str) -> str:
+    """Return a website-only boundary message in the user's likely language."""
+    language = question_language(question)
+    if language == "urdu":
+        return "میں صرف اس portfolio website کے مطابق جواب دے سکتا ہوں: Usman Iqbal کی skills, services, projects, availability, aur contact details."
+    if language == "roman_urdu":
+        return "Main sirf is portfolio website ke mutabiq jawab de sakta hun: Usman Iqbal ki skills, services, projects, availability, aur contact details."
+    return WEBSITE_SCOPE_MESSAGE
+
+
+def answer_prefix(question: str) -> str:
+    """Use a short natural prefix for common Urdu/Roman Urdu questions."""
+    language = question_language(question)
+    if language == "urdu":
+        return "Website ke mutabiq"
+    if language == "roman_urdu":
+        return "Website ke mutabiq"
+    return ""
+
+
 def format_contact_answer(knowledge: Dict[str, Any]) -> str:
     """Build a contact answer from the local knowledge base."""
     owner = knowledge.get("owner", {}) if isinstance(knowledge.get("owner"), dict) else {}
@@ -166,13 +229,23 @@ def format_section_answer(knowledge: Dict[str, Any], section: str, title: str) -
 
     if isinstance(value, list):
         lines: List[str] = []
-        for item in value[:8]:
+        seen = set()
+        for item in value:
             if isinstance(item, dict):
                 name = item.get("title") or item.get("name") or item.get("question") or item.get("company") or "Item"
                 description = item.get("description") or item.get("answer") or item.get("category") or item.get("role") or ""
-                lines.append(f"{name}: {description}".strip(": "))
+                line = f"{name}: {description}".strip(": ")
             elif item:
-                lines.append(str(item))
+                line = str(item)
+            else:
+                continue
+            marker = line.lower()
+            if marker in seen:
+                continue
+            seen.add(marker)
+            lines.append(line)
+            if len(lines) >= 8:
+                break
         return f"{title}:\n" + "\n".join(f"- {line}" for line in lines if line)
 
     return f"{title}: {value}"
@@ -182,34 +255,39 @@ def build_local_answer(question: str, context: str) -> str:
     """Answer from the trained website knowledge base without any external API key."""
     knowledge = load_json(KNOWLEDGE_PATH, {})
     query = normalize_question(question)
+    prefix = answer_prefix(question)
 
     words = {word.strip("?!.,") for word in query.split()}
-    if words.intersection({"hello", "hi", "salam", "assalam", "hey"}):
+    if words.intersection({"hello", "hi", "salam", "assalam", "hey", "aoa", "اسلام", "سلام"}):
         owner = knowledge.get("owner", {}) if isinstance(knowledge.get("owner"), dict) else {}
+        if question_language(question) in {"urdu", "roman_urdu"}:
+            return f"Assalam o Alaikum, main {owner.get('name') or 'Usman'} ka website assistant hun. Aap skills, services, projects, availability, ya contact details ke bare mein pooch sakte hain."
         return f"Hi, I am {owner.get('name') or 'Usman'}'s website assistant. You can ask me about skills, services, projects, experience, availability, or contact details."
 
     section_map = [
-        (["contact", "email", "phone", "call", "whatsapp", "linkedin", "github"], lambda: format_contact_answer(knowledge)),
-        (["skill", "skills", "technology", "tech", "stack"], lambda: format_section_answer(knowledge, "skills", "Skills")),
-        (["service", "services", "offer", "work"], lambda: format_section_answer(knowledge, "services", "Services")),
-        (["project", "projects", "portfolio", "case study"], lambda: format_section_answer(knowledge, "projects", "Projects")),
-        (["experience", "job", "career"], lambda: format_section_answer(knowledge, "experience", "Experience")),
-        (["education", "degree", "study"], lambda: format_section_answer(knowledge, "education", "Education")),
-        (["about", "bio", "who", "owner", "usman"], lambda: format_section_answer(knowledge, "owner", "About Usman")),
-        (["faq", "question"], lambda: format_section_answer(knowledge, "faq", "FAQ")),
+        (["contact", "email", "phone", "call", "whatsapp", "linkedin", "github", "rabta", "raabta", "number", "رابطہ", "فون", "ای میل"], lambda: format_contact_answer(knowledge)),
+        (["skill", "skills", "technology", "tech", "stack", "maharat", "hunr", "ata", "ati", "آتا", "سکل", "مہارت"], lambda: format_section_answer(knowledge, "skills", "Skills")),
+        (["service", "services", "offer", "work", "kaam", "kam", "khidmat", "provide", "سروس", "خدمت", "کام"], lambda: format_section_answer(knowledge, "services", "Services")),
+        (["project", "projects", "portfolio", "case study", "نمونے", "پروجیکٹ"], lambda: format_section_answer(knowledge, "projects", "Projects")),
+        (["experience", "job", "career", "tajurba", "تجربہ"], lambda: format_section_answer(knowledge, "experience", "Experience")),
+        (["education", "degree", "study", "parhai", "تعلیم", "ڈگری"], lambda: format_section_answer(knowledge, "education", "Education")),
+        (["about", "bio", "who", "owner", "usman", "kon", "kaun", "عثمان", "کون"], lambda: format_section_answer(knowledge, "owner", "About Usman")),
+        (["availability", "available", "hire", "freelance", "دستیاب", "فارغ"], lambda: format_section_answer(knowledge, "owner", "Availability")),
+        (["faq", "question", "سوال"], lambda: format_section_answer(knowledge, "faq", "FAQ")),
     ]
 
     for keywords, builder in section_map:
-        if any(keyword in query for keyword in keywords):
+        if contains_any(query, keywords):
             answer = builder()
             if answer:
-                return answer
+                return f"{prefix}: {answer}" if prefix else answer
 
     if context:
         clean_lines = [line.strip() for line in context.splitlines() if line.strip()]
-        return "Here is what I found on the website:\n" + "\n".join(f"- {line}" for line in clean_lines[:8])
+        intro = "Website ke mutabiq yeh information mili:" if question_language(question) in {"urdu", "roman_urdu"} else "Here is what I found on the website:"
+        return intro + "\n" + "\n".join(f"- {line}" for line in clean_lines[:8])
 
-    return "I do not have that detail in the website knowledge base yet. Please add it in the admin panel or the chatbot knowledge base, then retrain the chatbot."
+    return scoped_fallback(question)
 
 
 def stream_local_response(payload: ChatRequest, context: str) -> Generator[str, None, None]:

@@ -11,13 +11,28 @@ import json
 import os
 import pickle
 from pathlib import Path
+import re
 from typing import Any, Dict, Iterable, List, Tuple
 
-import psycopg
-import numpy as np
-from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
+try:
+    from dotenv import load_dotenv
+except Exception:
+    def load_dotenv(*_args: Any, **_kwargs: Any) -> None:
+        return None
+
+try:
+    import psycopg
+except Exception:
+    psycopg = None
+
+try:
+    import numpy as np
+    from sentence_transformers import SentenceTransformer
+    from sklearn.metrics.pairwise import cosine_similarity
+except Exception:
+    np = None
+    SentenceTransformer = None
+    cosine_similarity = None
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
@@ -61,17 +76,16 @@ def collect_json_documents() -> List[Any]:
         if not directory.exists():
             continue
         for path in directory.glob("*.json"):
-            if path.name in {"knowledge-base.json", "chatbot-settings.json", "chat-analytics.json"}:
-                documents.append(read_json_file(path))
-            else:
-                documents.append(read_json_file(path))
+            if path.name in {"chat-analytics.json"}:
+                continue
+            documents.append(read_json_file(path))
     return documents
 
 
 def collect_postgres_documents() -> List[Any]:
     """Collect JSON portfolio content from Neon PostgreSQL when DATABASE_URL exists."""
     database_url = os.getenv("DATABASE_URL")
-    if not database_url:
+    if not database_url or psycopg is None:
         return []
 
     try:
@@ -100,6 +114,13 @@ def first_text(*values: Any) -> str:
         if value is not None and str(value).strip():
             return str(value).strip()
     return ""
+
+
+def normalize_key(value: Any) -> str:
+    """Create a stable key for deduplicating repeated training entries."""
+    text = str(value or "").lower()
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    return " ".join(text.split())
 
 
 def merge_site_content(kb: KnowledgeBase, content: Dict[str, Any]) -> None:
@@ -187,8 +208,74 @@ def build_knowledge_base() -> KnowledgeBase:
         merge_knowledge_document(kb, document)
         merge_site_content(kb, document)
 
+    dedupe_knowledge_base(kb)
+    enrich_website_training(kb)
     KNOWLEDGE_PATH.write_text(json.dumps(kb, indent=2, ensure_ascii=False), encoding="utf-8")
     return kb
+
+
+def dedupe_records(records: List[Any], keys: Tuple[str, ...]) -> List[Any]:
+    """Remove repeated records while preserving the first useful version."""
+    seen = set()
+    unique: List[Any] = []
+    for record in records:
+        if not isinstance(record, dict):
+            marker = normalize_key(record)
+        else:
+            marker = "|".join(normalize_key(record.get(key)) for key in keys)
+            if not marker.strip("|"):
+                marker = normalize_key(json.dumps(record, sort_keys=True, ensure_ascii=False))
+        if not marker or marker in seen:
+            continue
+        seen.add(marker)
+        unique.append(record)
+    return unique
+
+
+def dedupe_knowledge_base(kb: KnowledgeBase) -> None:
+    """Keep chatbot training compact so retrieval returns clear website facts."""
+    kb["skills"] = dedupe_records(kb.get("skills", []), ("name", "category"))
+    kb["projects"] = dedupe_records(kb.get("projects", []), ("title", "description"))
+    kb["services"] = dedupe_records(kb.get("services", []), ("title", "description"))
+    kb["experience"] = dedupe_records(kb.get("experience", []), ("company", "role", "title"))
+    kb["education"] = dedupe_records(kb.get("education", []), ("degree", "school", "title"))
+    kb["testimonials"] = dedupe_records(kb.get("testimonials", []), ("name", "quote"))
+    kb["faq"] = dedupe_records(kb.get("faq", []), ("question", "answer"))
+    kb["customQA"] = dedupe_records(kb.get("customQA", []), ("question", "answer"))
+
+
+def add_qa(kb: KnowledgeBase, question: str, answer: str) -> None:
+    """Add one training Q&A without duplicating existing admin entries."""
+    kb.setdefault("customQA", [])
+    marker = normalize_key(question)
+    existing = {normalize_key(item.get("question")) for item in kb["customQA"] if isinstance(item, dict)}
+    if marker not in existing:
+        kb["customQA"].append({"question": question, "answer": answer})
+
+
+def enrich_website_training(kb: KnowledgeBase) -> None:
+    """Train common English, Urdu, and Roman Urdu questions against website facts."""
+    owner = kb.get("owner", {})
+    services = ", ".join(item.get("title", "") for item in kb.get("services", []) if isinstance(item, dict) and item.get("title"))
+    skills = ", ".join(item.get("name", "") for item in kb.get("skills", []) if isinstance(item, dict) and item.get("name"))
+    projects = ", ".join(item.get("title", "") for item in kb.get("projects", []) if isinstance(item, dict) and item.get("title"))
+    contact = f"Email: {owner.get('email', '')}, Phone: {owner.get('phone', '')}, Location: {owner.get('location', '')}"
+    about = f"{owner.get('name', 'Usman Iqbal')} is a {owner.get('title', 'Salesforce Administrator & Developer')}. {owner.get('bio', '')}"
+
+    add_qa(kb, "Who is Usman Iqbal?", about)
+    add_qa(kb, "Usman Iqbal kon hai?", about)
+    add_qa(kb, "Usman Iqbal kaun hain?", about)
+    add_qa(kb, "عثمان اقبال کون ہیں؟", about)
+    add_qa(kb, "What services do you offer?", f"Usman/NURAXTECH offers: {services}.")
+    add_qa(kb, "Aap kya services dety hain?", f"Usman/NURAXTECH offers: {services}.")
+    add_qa(kb, "آپ کون سی سروسز دیتے ہیں؟", f"Usman/NURAXTECH offers: {services}.")
+    add_qa(kb, "What skills does Usman have?", f"Usman's website lists these skills: {skills}.")
+    add_qa(kb, "Usman ko kya skills ati hain?", f"Usman's website lists these skills: {skills}.")
+    add_qa(kb, "What projects are on this portfolio?", f"The portfolio includes: {projects}.")
+    add_qa(kb, "Portfolio men kon se projects hain?", f"The portfolio includes: {projects}.")
+    add_qa(kb, "How can I contact Usman?", contact)
+    add_qa(kb, "Usman se rabta kaise karun?", contact)
+    add_qa(kb, "عثمان سے رابطہ کیسے کروں؟", contact)
 
 
 def flatten_value(label: str, value: Any) -> Iterable[str]:
@@ -221,12 +308,22 @@ def train_embeddings() -> Dict[str, Any]:
     """Generate local sentence-transformer embeddings and save them to disk."""
     kb = build_knowledge_base()
     chunks = create_chunks(kb)
-    model = SentenceTransformer(MODEL_NAME)
-    embeddings = model.encode(chunks, convert_to_numpy=True) if chunks else np.empty((0, 384))
+    if SentenceTransformer is not None and np is not None:
+        model = SentenceTransformer(MODEL_NAME)
+        embeddings = model.encode(chunks, convert_to_numpy=True) if chunks else np.empty((0, 384))
+    else:
+        embeddings = []
     payload = {"model": MODEL_NAME, "chunks": chunks, "embeddings": embeddings, "knowledge": kb}
     with EMBEDDINGS_PATH.open("wb") as file:
         pickle.dump(payload, file)
     return payload
+
+
+def lexical_score(question: str, chunk: str) -> int:
+    """Score chunks without ML dependencies using shared words."""
+    question_terms = set(normalize_key(question).split())
+    chunk_terms = set(normalize_key(chunk).split())
+    return len(question_terms.intersection(chunk_terms))
 
 
 def retrieve_context(question: str, top_k: int = 3) -> str:
@@ -239,8 +336,13 @@ def retrieve_context(question: str, top_k: int = 3) -> str:
 
     chunks: List[str] = payload.get("chunks", [])
     embeddings = payload.get("embeddings")
-    if not chunks or embeddings is None:
+    if not chunks:
         return ""
+
+    if SentenceTransformer is None or cosine_similarity is None or embeddings is None or len(embeddings) == 0:
+        scored = sorted(((lexical_score(question, chunk), index) for index, chunk in enumerate(chunks)), reverse=True)
+        top_indices = [index for score, index in scored[:top_k] if score > 0] or [index for _, index in scored[:top_k]]
+        return "\n\n".join(chunks[index] for index in top_indices)
 
     model = SentenceTransformer(payload.get("model", MODEL_NAME))
     query_embedding = model.encode([question], convert_to_numpy=True)

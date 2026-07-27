@@ -376,7 +376,7 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
         </div>
       </section>
 
-      <footer className="border-t border-white/10 px-5 py-8 text-center text-sm text-white/45 sm:px-8" style={{ order: 100 }}>
+      <footer className="portfolio-footer relative z-10 border-t border-white/10 px-5 py-8 text-center text-sm text-white/45 sm:px-8" style={{ order: 100 }}>
         <p>&copy; {new Date().getFullYear()} Usman Iqbal - NURAXTECH. Built for CRM, automation, web, and AI solutions.</p>
       </footer>
     </main>
@@ -410,8 +410,8 @@ function FloatingNav({
     <motion.header animate={{ y: hidden ? -92 : 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="fixed left-0 right-0 top-4 z-50 px-5">
       <nav className={`mx-auto flex max-w-[calc(100vw-2.5rem)] items-center justify-between rounded-full border border-white/10 px-3 py-2.5 shadow-cyan transition md:max-w-5xl ${scrolled ? "bg-black/72 backdrop-blur-2xl" : "bg-black/48 backdrop-blur-xl"}`}>
         <a href={logoLink || "#home"} className="flex min-w-0 items-center gap-2.5 font-black text-white">
-          <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[var(--primary)] text-black">
-            {navLogoUrl ? <img src={navLogoUrl} alt="" className="h-full w-full rounded-full object-cover" /> : brandName.charAt(0)}
+          <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[var(--primary)] p-0.5 text-black">
+            {navLogoUrl ? <img src={navLogoUrl} alt="" className="h-full w-full rounded-full object-cover object-top" /> : brandName.charAt(0)}
           </span>
           <span className="hidden max-w-[160px] truncate sm:block">{brandName}</span>
         </a>
