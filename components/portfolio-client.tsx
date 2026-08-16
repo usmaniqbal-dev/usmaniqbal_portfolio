@@ -1005,6 +1005,10 @@ function ContactForm({ email, fields, shouldAnimate }: { email: string; fields?:
 
   async function submitContactForm(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (sending) {
+      return;
+    }
+
     const form = formRef.current;
 
     if (!form || !form.checkValidity()) {
@@ -1058,7 +1062,7 @@ function ContactForm({ email, fields, shouldAnimate }: { email: string; fields?:
           const isMessage = field.toLowerCase().includes("message");
           const isEmail = field.toLowerCase().includes("email");
           const fieldName = emailJsFieldName(field);
-          const input = isMessage ? <textarea name={fieldName} className="peer min-h-32 resize-y rounded-[8px] border border-white/10 bg-black/35 px-4 pb-3 pt-6 text-sm text-white outline-none transition focus:border-[var(--primary)] focus:shadow-[0_0_24px_rgba(22,242,164,0.16)]" placeholder=" " required /> : <input name={fieldName} type={isEmail ? "email" : "text"} className="peer rounded-[8px] border border-white/10 bg-black/35 px-4 pb-3 pt-6 text-sm text-white outline-none transition focus:border-[var(--primary)] focus:shadow-[0_0_24px_rgba(22,242,164,0.16)]" placeholder=" " required={index < 2 || isEmail} />;
+          const input = isMessage ? <textarea name={fieldName} className="peer min-h-32 resize-y rounded-[8px] border border-white/10 bg-black/35 px-4 pb-3 pt-6 text-sm text-white outline-none transition focus:border-[var(--primary)] focus:shadow-[0_0_24px_rgba(22,242,164,0.16)]" placeholder=" " required /> : <input name={fieldName} type={isEmail ? "email" : "text"} className="peer rounded-[8px] border border-white/10 bg-black/35 px-4 pb-3 pt-6 text-sm text-white outline-none transition focus:border-[var(--primary)] focus:shadow-[0_0_24px_rgba(22,242,164,0.16)]" placeholder=" " required />;
 
           return <label key={`${field}-${index}`} className={`floating-field relative grid text-sm font-bold text-white/70 ${isMessage ? "sm:col-span-2" : ""}`}>{input}<span>{field}</span></label>;
         })}
