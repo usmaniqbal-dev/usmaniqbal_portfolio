@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
 import ChatbotWidget from "@/components/chatbot/ChatbotWidget";
 import { getSiteContent } from "@/lib/content-store";
+import { seoDescription, seoKeywords, seoTitle, siteUrl } from "@/lib/seo-config";
 import "./globals.css";
-
-const deploymentUrl = process.env.NEXT_PUBLIC_SITE_URL ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
 
 export async function generateMetadata(): Promise<Metadata> {
   const content = await getSiteContent();
-  const siteUrl = content.seo.canonicalUrl || deploymentUrl;
-  const savedTitle = content.seo.title || content.builder.pages[0]?.metaTitle;
-  const title = !savedTitle || savedTitle === "Usman Iqbal | Salesforce Administrator & Developer" ? "Usman Iqbal Portfolio" : savedTitle;
-  const description = content.seo.description || content.builder.pages[0]?.metaDescription || content.about.description;
+  const title = seoTitle;
+  const description = seoDescription;
   const savedImage = content.seo.ogImage || content.builder.settings.logoUrl || content.home.profileImage;
   const image = !savedImage || savedImage.includes("usman-profile.png") ? "/images/usman-browser-icon.png" : savedImage;
   const icon = "/images/usman-browser-icon.png";
@@ -20,8 +16,8 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(siteUrl),
     title,
     description,
-    keywords: content.seo.keywords,
-    authors: [{ name: content.seo.author || "Usman Iqbal" }],
+    keywords: seoKeywords,
+    authors: [{ name: "Usman Iqbal" }],
     alternates: { canonical: siteUrl },
     icons: {
       icon,
@@ -33,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description,
       type: "website",
       url: siteUrl,
-      siteName: content.builder.settings.siteName || "Usman Iqbal Portfolio",
+      siteName: "Usman Iqbal Portfolio",
       images: [image]
     },
     twitter: {

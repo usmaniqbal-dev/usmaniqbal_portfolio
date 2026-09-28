@@ -3,9 +3,9 @@ import { defaultBuilder } from "@/lib/builder-defaults";
 
 export const defaultContent: SiteContent = {
   seo: {
-    title: "Usman Iqbal Portfolio",
+    title: "Usman Iqbal | Salesforce Administrator & Developer",
     description:
-      "Official portfolio of Usman Iqbal, Salesforce Administrator, Salesforce Developer, CRM specialist, web developer, and AI bots developer at NURAXTECH.",
+      "Usman Iqbal is a Salesforce Administrator and Salesforce Developer specializing in Salesforce CRM, Salesforce Automation, and reliable digital solutions.",
     keywords: [
       "Usman Iqbal",
       "Usman",
@@ -13,12 +13,14 @@ export const defaultContent: SiteContent = {
       "Usman Iqbal portfolio",
       "Salesforce Administrator Usman Iqbal",
       "Salesforce Developer Usman Iqbal",
+      "Salesforce CRM",
+      "Salesforce Automation",
       "NURAXTECH",
       "CRM Specialist",
       "Web Developer",
       "AI Bots Developer"
     ],
-    canonicalUrl: "",
+    canonicalUrl: "https://www.usmaniqbal.tech",
     ogImage: "/images/usman-hero.png",
     author: "Usman Iqbal"
   },
@@ -26,7 +28,7 @@ export const defaultContent: SiteContent = {
     title: "I'm Usman Iqbal",
     subtitle: "Salesforce Administrator & Developer",
     description:
-      "I specialize in Salesforce CRM, automation, web development, AI bots, and modern business solutions.",
+      "I am Usman Iqbal, a Salesforce Administrator and Salesforce Developer specializing in Salesforce CRM, Salesforce Automation, web development, and reliable business solutions.",
     primaryButton: {
       label: "View Projects",
       href: "#projects"
@@ -41,9 +43,9 @@ export const defaultContent: SiteContent = {
   },
   about: {
     eyebrow: "Founder of NURAXTECH",
-    title: "Final-year BSCS student building intelligent CRM systems and digital products.",
+    title: "Usman Iqbal builds reliable Salesforce CRM and digital solutions.",
     description:
-      "I work across Salesforce administration, Salesforce development, CRM customization, automation, reports, dashboards, websites, AI bots, and Android apps. My focus is helping businesses move faster with systems that are clean, reliable, and easy to use.",
+      "I work across Salesforce administration, Salesforce development, Salesforce CRM customization, Salesforce Automation, reports, dashboards, websites, AI bots, and Android apps. My focus is helping businesses move faster with systems that are clean, reliable, and easy to use.",
     highlights: [
       "Salesforce Admin & Developer",
       "CRM customization and business automation",
@@ -201,8 +203,9 @@ export const defaultContent: SiteContent = {
     formFields: ["Name", "Email", "Project Type", "Message"]
   },
   socials: [
-    { id: "linkedin", platform: "LinkedIn", label: "LinkedIn", url: "https://www.linkedin.com/" },
-    { id: "github", platform: "GitHub", label: "GitHub", url: "https://github.com/" },
+    { id: "linkedin", platform: "LinkedIn", label: "LinkedIn", url: "https://linkedin.com/in/usmaniqbalnurax" },
+    { id: "github", platform: "GitHub", label: "GitHub", url: "https://github.com/usmaniqbal-dev" },
+    { id: "trailblazer", platform: "Salesforce Trailblazer", label: "Trailblazer", url: "https://www.salesforce.com/trailblazer/usmaniqbal" },
     { id: "fiverr", platform: "Fiverr", label: "Fiverr", url: "https://www.fiverr.com/" },
     { id: "instagram", platform: "Instagram", label: "Instagram", url: "https://www.instagram.com/" }
   ],

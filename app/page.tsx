@@ -1,27 +1,23 @@
 import PortfolioClient from "@/components/portfolio-client";
 import { getSiteContent } from "@/lib/content-store";
+import { professionalProfiles, siteUrl } from "@/lib/seo-config";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function HomePage() {
   const content = await getSiteContent();
-  const siteUrl = content.seo.canonicalUrl || process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "");
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Person",
+    "@id": `${siteUrl}/#usman-iqbal`,
     name: "Usman Iqbal",
-    alternateName: ["Usman", content.builder.settings.siteName].filter(Boolean),
-    url: siteUrl || undefined,
-    image: content.home.profileImage || content.seo.ogImage,
+    url: siteUrl,
+    image: `${siteUrl}/images/usman-hero.png`,
     jobTitle: "Salesforce Administrator & Developer",
-    brand: {
-      "@type": "Brand",
-      name: "NURAXTECH"
-    },
-    knowsAbout: content.seo.keywords,
-    sameAs: content.socials.map((social) => social.url).filter(Boolean)
+    description: "Professional portfolio of Usman Iqbal, a Salesforce Administrator and Salesforce Developer.",
+    knowsAbout: ["Salesforce CRM", "Salesforce Automation", "Salesforce Administration", "Salesforce Development"],
+    sameAs: professionalProfiles
   };
 
   return (

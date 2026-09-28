@@ -215,8 +215,8 @@ export const defaultPages: BuilderPage[] = [
     blocks: defaultSections.flatMap((section) => section.blocks),
     sections: defaultSections,
     isPublished: true,
-    metaTitle: "Usman Iqbal Portfolio",
-    metaDescription: "Salesforce CRM, automation, web development, AI bots, and modern business solutions.",
+    metaTitle: "Usman Iqbal | Salesforce Administrator & Developer",
+    metaDescription: "Usman Iqbal is a Salesforce Administrator and Salesforce Developer specializing in Salesforce CRM, Salesforce Automation, and reliable digital solutions.",
     createdAt: now
   }
 ];
