@@ -220,7 +220,7 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
 
             <motion.p {...heroIn(shouldAnimate, loading, 0.3)} className="mb-4 text-sm font-bold uppercase text-[var(--primary)]">NURAXTECH</motion.p>
             <motion.h1 {...heroIn(shouldAnimate, loading, 0.36, true)} className="text-balance break-words text-4xl font-black leading-[1.02] text-white sm:text-5xl lg:line-clamp-2 lg:text-5xl">
-              {content.home.title}
+              Usman Iqbal
             </motion.h1>
             <motion.h2 {...heroIn(shouldAnimate, loading, 0.46)} className="mt-3 max-w-[320px] text-balance text-2xl font-black leading-tight text-[var(--primary)] sm:max-w-none sm:text-3xl lg:line-clamp-2 lg:text-3xl">
               {content.home.subtitle}
@@ -253,7 +253,7 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
                 className="inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full border border-[var(--secondary)]/45 bg-[var(--secondary)]/10 px-5 py-2.5 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:border-[var(--secondary)] hover:text-[var(--secondary)] sm:w-auto sm:max-w-none"
               >
                 <Eye size={16} />
-                View CV
+                View Usman Iqbal CV
               </a>
             </motion.div>
 
@@ -338,7 +338,7 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
           <motion.div {...reveal()} className="mb-6">
             <SectionKicker number="03" label="Services" />
             <h2 className="mt-4 max-w-3xl text-balance text-xl font-black leading-tight sm:text-2xl lg:text-3xl">
-              Practical systems for businesses that need cleaner workflows and faster execution.
+              Salesforce, CRM, automation, AI and web development services for cleaner workflows and faster execution.
             </h2>
           </motion.div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -762,7 +762,7 @@ function ServiceCard({ service, index, shouldAnimate }: { service: ServiceConten
       className="tilt-card group relative min-h-[154px] overflow-hidden rounded-[8px] border border-white/10 bg-white/[0.045] p-3.5 transition-colors duration-300 hover:border-[var(--secondary)]/45"
     >
       <div className="relative z-10">
-        {service.image ? <img src={service.image} alt="" className="mb-4 aspect-[16/7] w-full rounded-[8px] border border-white/10 object-cover" /> : null}
+        {service.image ? <img src={service.image} alt={`${service.title} by Usman Iqbal`} width={1280} height={560} loading="lazy" decoding="async" className="mb-4 aspect-[16/7] w-full rounded-[8px] border border-white/10 object-cover" /> : null}
         <div className="mb-3 grid h-10 w-10 place-items-center overflow-hidden rounded-[8px] bg-[var(--primary)]/12 text-[var(--primary)] transition group-hover:bg-[var(--primary)] group-hover:text-black">
           {service.icon ? <img src={service.icon} alt="" className="h-6 w-6 object-contain" /> : <Icon size={21} />}
         </div>

@@ -25,10 +25,10 @@ export const defaultContent: SiteContent = {
     author: "Usman Iqbal"
   },
   home: {
-    title: "I'm Usman Iqbal",
+    title: "Usman Iqbal",
     subtitle: "Salesforce Administrator & Developer",
     description:
-      "I am Usman Iqbal, a Salesforce Administrator and Salesforce Developer specializing in Salesforce CRM, Salesforce Automation, web development, and reliable business solutions.",
+      "I am Usman Iqbal, a Salesforce Administrator, Salesforce Developer and CRM consultant specializing in Salesforce CRM, Salesforce Automation, web development, AI bots, and reliable business solutions.",
     primaryButton: {
       label: "View Projects",
       href: "#projects"

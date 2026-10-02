@@ -81,9 +81,14 @@ export function verifySessionToken(token?: string) {
     return null;
   }
 
-  const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as SessionPayload;
+  let payload: SessionPayload;
+  try {
+    payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as SessionPayload;
+  } catch {
+    return null;
+  }
 
-  if (payload.expiresAt < Date.now()) {
+  if (!payload.username || !Number.isFinite(payload.expiresAt) || payload.expiresAt < Date.now()) {
     return null;
   }
 

@@ -1,10 +1,31 @@
+import sanitizeHtmlLibrary from "sanitize-html";
+
 // Removes scriptable markup and unsafe attributes before custom HTML is saved.
 export function sanitizeHtml(value: string) {
-  return value
-    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
-    .replace(/\son\w+="[^"]*"/gi, "")
-    .replace(/\son\w+='[^']*'/gi, "")
-    .replace(/javascript:/gi, "");
+  return sanitizeHtmlLibrary(value, {
+    allowedTags: [
+      "a",
+      "blockquote",
+      "br",
+      "code",
+      "em",
+      "h2",
+      "h3",
+      "li",
+      "ol",
+      "p",
+      "pre",
+      "strong",
+      "ul"
+    ],
+    allowedAttributes: {
+      a: ["href", "rel", "target"]
+    },
+    allowedSchemes: ["http", "https", "mailto"],
+    allowProtocolRelative: false,
+    disallowedTagsMode: "discard",
+    enforceHtmlBoundary: true
+  });
 }
 
 // Converts unknown input into safe display text.

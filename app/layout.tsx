@@ -11,6 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const savedImage = content.seo.ogImage || content.builder.settings.logoUrl || content.home.profileImage;
   const image = !savedImage || savedImage.includes("usman-profile.png") ? "/images/usman-browser-icon.png" : savedImage;
   const icon = "/images/usman-browser-icon.png";
+  const absoluteImage = image.startsWith("http") ? image : `${siteUrl}${image.startsWith("/") ? image : `/${image}`}`;
 
   return {
     metadataBase: new URL(siteUrl),
@@ -30,13 +31,14 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       url: siteUrl,
       siteName: "Usman Iqbal Portfolio",
-      images: [image]
+      locale: "en_US",
+      images: [{ url: absoluteImage, width: 1200, height: 630, alt: "Usman Iqbal - Salesforce Administrator and Developer" }]
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [image]
+      images: [absoluteImage]
     },
     robots: {
       index: true,
@@ -46,7 +48,10 @@ export async function generateMetadata(): Promise<Metadata> {
         follow: true,
         "max-image-preview": "large"
       }
-    }
+    },
+    category: "technology",
+    creator: "Usman Iqbal",
+    publisher: "Usman Iqbal"
   };
 }
 
