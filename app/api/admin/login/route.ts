@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Invalid login request." }, { status: 400 });
   }
 
-  if (!credentialsMatch(body.username, body.password)) {
+  if (!(await credentialsMatch(body.username, body.password))) {
     return NextResponse.json({ message: "Invalid admin credentials." }, { status: 401 });
   }
 

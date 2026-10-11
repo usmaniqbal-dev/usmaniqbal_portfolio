@@ -13,8 +13,10 @@ import {
   Eye,
   FileText,
   ImagePlus,
+  KeyRound,
   LayoutDashboard,
   Loader2,
+  Lock,
   LogOut,
   Mail,
   Moon,
@@ -40,6 +42,7 @@ type SessionState = {
 type AdminView =
   | "dashboard"
   | "email"
+  | "security"
   | "pages"
   | "templates"
   | "content"
@@ -49,6 +52,7 @@ type AdminView =
 
 const menu: { id: AdminView; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "security", label: "Admin Credentials", icon: KeyRound },
   { id: "email", label: "Email Settings", icon: Mail },
   { id: "content", label: "Content Manager", icon: BriefcaseBusiness },
   { id: "seo", label: "Brand & SEO", icon: Search },
@@ -267,6 +271,16 @@ export default function AdminBuilderDashboard() {
                 <h1 className="text-2xl font-black">NURAXTECH Admin Panel</h1>
               </div>
               <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setView("security")}
+                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-3 font-bold transition ${
+                    view === "security" ? "border-[#16f2a4] bg-[#16f2a4]/15 text-[#16f2a4]" : "border-white/10 text-white/70 hover:text-white"
+                  }`}
+                >
+                  <KeyRound size={17} />
+                  Change Credentials
+                </button>
                 <button type="button" onClick={toggleAdminColorMode} title={adminDarkMode ? "Light mode" : "Dark mode"} aria-label={adminDarkMode ? "Switch to light mode" : "Switch to dark mode"} className="grid h-11 w-11 place-items-center rounded-full border border-white/10 text-white/70 transition hover:border-[#16f2a4] hover:text-[#16f2a4]">
                   {adminDarkMode ? <Sun size={17} /> : <Moon size={17} />}
                 </button>
@@ -288,7 +302,8 @@ export default function AdminBuilderDashboard() {
           </header>
 
           <div className="p-4 sm:p-6">
-            {view === "dashboard" ? <DashboardView templates={content.builder.templates.length} activeTheme={activeTheme?.name || "None"} lastPublished={content.builder.settings.lastPublishedAt} mediaCount={mediaCount} storageMode={session.storageMode || "Unknown"} /> : null}
+            {view === "dashboard" ? <DashboardView templates={content.builder.templates.length} activeTheme={activeTheme?.name || "None"} lastPublished={content.builder.settings.lastPublishedAt} mediaCount={mediaCount} storageMode={session.storageMode || "Unknown"} onNavigateToSecurity={() => setView("security")} /> : null}
+            {view === "security" ? <AdminSecurityView secureHeaders={secureHeaders} onUsernameUpdated={setUsername} /> : null}
             {view === "email" ? <EmailSettingsView secureHeaders={secureHeaders} /> : null}
             {view === "content" ? (
               <EditWebsiteManager
@@ -340,7 +355,7 @@ function LoginScreen({ session, username, password, setUsername, setPassword, lo
   );
 }
 
-function DashboardView({ templates, activeTheme, lastPublished, mediaCount, storageMode }: { templates: number; activeTheme: string; lastPublished: string; mediaCount: number; storageMode: string }) {
+function DashboardView({ templates, activeTheme, lastPublished, mediaCount, storageMode, onNavigateToSecurity }: { templates: number; activeTheme: string; lastPublished: string; mediaCount: number; storageMode: string; onNavigateToSecurity?: () => void }) {
   const cards = [
     ["Total templates", String(templates)],
     ["Active theme", activeTheme],
@@ -350,13 +365,36 @@ function DashboardView({ templates, activeTheme, lastPublished, mediaCount, stor
   ];
 
   return (
-    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-      {cards.map(([label, value]) => (
-        <div key={label} className="rounded-[8px] border border-white/10 bg-white/[0.04] p-5">
-          <p className="text-sm font-bold uppercase text-white/42">{label}</p>
-          <p className="mt-3 text-2xl font-black">{value}</p>
+    <div className="grid gap-5">
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+        {cards.map(([label, value]) => (
+          <div key={label} className="rounded-[8px] border border-white/10 bg-white/[0.04] p-5">
+            <p className="text-sm font-bold uppercase text-white/42">{label}</p>
+            <p className="mt-3 text-2xl font-black">{value}</p>
+          </div>
+        ))}
+      </div>
+      {onNavigateToSecurity ? (
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-[8px] border border-white/10 bg-white/[0.035] p-5">
+          <div className="flex items-center gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-[#16f2a4]/15 text-[#16f2a4]">
+              <KeyRound size={22} />
+            </div>
+            <div>
+              <p className="font-black text-white">Admin Credentials &amp; Security</p>
+              <p className="text-xs text-white/50">Update your admin login username or password directly from this dashboard.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onNavigateToSecurity}
+            className="inline-flex items-center gap-2 rounded-full border border-[#16f2a4] bg-[#16f2a4]/10 px-5 py-2.5 text-sm font-bold text-[#16f2a4] transition hover:bg-[#16f2a4] hover:text-black"
+          >
+            <KeyRound size={16} />
+            Manage Login Credentials
+          </button>
         </div>
-      ))}
+      ) : null}
     </div>
   );
 }
@@ -962,6 +1000,207 @@ function EmailSettingsView({ secureHeaders }: { secureHeaders: (extra?: HeadersI
             <li><code className="text-white font-mono">&#123;&#123;time&#125;&#125;</code> - Submission timestamp</li>
           </ul>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminSecurityView({
+  secureHeaders,
+  onUsernameUpdated
+}: {
+  secureHeaders: (extra?: HeadersInit) => HeadersInit;
+  onUsernameUpdated?: (name: string) => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [username, setUsername] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [status, setStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    async function fetchCurrentUsername() {
+      try {
+        const response = await fetch("/api/admin/credentials", { cache: "no-store" });
+        if (response.ok) {
+          const data = (await response.json()) as { username?: string };
+          if (data.username) setUsername(data.username);
+        }
+      } catch {
+        // Fallback default
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCurrentUsername();
+  }, []);
+
+  async function handleUpdateCredentials(event: React.FormEvent) {
+    event.preventDefault();
+    setStatus(null);
+
+    if (!currentPassword) {
+      setStatus({ type: "error", text: "Please enter your current password to confirm changes." });
+      return;
+    }
+
+    if (newPassword && newPassword.length < 8) {
+      setStatus({ type: "error", text: "New password must be at least 8 characters long." });
+      return;
+    }
+
+    if (newPassword && newPassword !== confirmPassword) {
+      setStatus({ type: "error", text: "New passwords do not match." });
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const response = await fetch("/api/admin/credentials", {
+        method: "PUT",
+        headers: secureHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          currentPassword,
+          newUsername: username,
+          newPassword: newPassword || undefined
+        })
+      });
+
+      const data = (await response.json()) as { message?: string; ok?: boolean; username?: string };
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update credentials.");
+      }
+
+      setStatus({
+        type: "success",
+        text: data.message || "Credentials updated successfully!"
+      });
+
+      if (data.username && onUsernameUpdated) {
+        onUsernameUpdated(data.username);
+      }
+
+      // Clear password fields
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      setStatus({
+        type: "error",
+        text: err instanceof Error ? err.message : "Error updating credentials."
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="animate-spin text-[#16f2a4]" size={32} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl">
+      <div className="rounded-[8px] border border-white/10 bg-white/[0.035] p-5 sm:p-7">
+        <div className="mb-6 border-b border-white/10 pb-4">
+          <div className="flex items-center gap-2">
+            <KeyRound className="text-[#16f2a4]" size={24} />
+            <h2 className="text-2xl font-black text-white">Admin Credentials &amp; Security</h2>
+          </div>
+          <p className="mt-2 text-sm text-white/50">
+            Change your admin dashboard login username and password. Changes persist in the database and local backup.
+          </p>
+        </div>
+
+        <form onSubmit={handleUpdateCredentials} className="grid gap-5">
+          <div>
+            <label className="block text-sm font-bold text-white/80">Admin Username</label>
+            <p className="mt-0.5 text-xs text-white/40">The username you use to log in to /admin1122</p>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="mt-2 w-full rounded-[8px] border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-[#16f2a4]"
+              required
+            />
+          </div>
+
+          <div className="rounded-[8px] border border-white/10 bg-black/20 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#16f2a4] mb-3">Password Change</p>
+            <div className="grid gap-4">
+              <div>
+                <label className="block text-sm font-bold text-white/80">New Password (Optional)</label>
+                <p className="mt-0.5 text-xs text-white/40">Leave blank if you only want to change your username (min 8 characters)</p>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password (at least 8 chars)"
+                  className="mt-2 w-full rounded-[8px] border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-[#16f2a4]"
+                />
+              </div>
+
+              {newPassword ? (
+                <div>
+                  <label className="block text-sm font-bold text-white/80">Confirm New Password</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-type new password"
+                    className="mt-2 w-full rounded-[8px] border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-[#16f2a4]"
+                    required={Boolean(newPassword)}
+                  />
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="border-t border-white/10 pt-4">
+            <label className="block text-sm font-bold text-white/80">Current Password (Required to Save)</label>
+            <p className="mt-0.5 text-xs text-white/40">Confirm your current password to authorize credential changes</p>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Enter your current password"
+              className="mt-2 w-full rounded-[8px] border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-[#16f2a4]"
+              required
+            />
+          </div>
+
+          {status ? (
+            <div
+              className={`flex items-center gap-2 rounded-[8px] p-3.5 text-sm font-semibold ${
+                status.type === "success"
+                  ? "border border-[#16f2a4]/30 bg-[#16f2a4]/10 text-[#bfffe8]"
+                  : "border border-red-400/30 bg-red-400/10 text-red-200"
+              }`}
+            >
+              {status.type === "success" ? <CheckCircle2 size={18} className="text-[#16f2a4]" /> : <AlertCircle size={18} />}
+              {status.text}
+            </div>
+          ) : null}
+
+          <div className="mt-2 flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-full bg-[#16f2a4] px-6 py-3.5 font-black text-black transition hover:bg-white disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+              Update Credentials
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
