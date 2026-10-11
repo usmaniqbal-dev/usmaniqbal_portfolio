@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import EditWebsiteManager from "@/components/edit-website-manager";
 import {
+  AlertCircle,
   Bot,
   BriefcaseBusiness,
   Check,
+  CheckCircle2,
   Copy,
   Eye,
   FileText,
@@ -14,10 +16,12 @@ import {
   LayoutDashboard,
   Loader2,
   LogOut,
+  Mail,
   Moon,
   PanelLeft,
   Save,
   Search,
+  Send,
   Shield,
   Sun,
   Trash2,
@@ -35,6 +39,7 @@ type SessionState = {
 
 type AdminView =
   | "dashboard"
+  | "email"
   | "pages"
   | "templates"
   | "content"
@@ -44,6 +49,7 @@ type AdminView =
 
 const menu: { id: AdminView; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "email", label: "Email Settings", icon: Mail },
   { id: "content", label: "Content Manager", icon: BriefcaseBusiness },
   { id: "seo", label: "Brand & SEO", icon: Search },
   { id: "pages", label: "Page Manager", icon: FileText },
@@ -283,6 +289,7 @@ export default function AdminBuilderDashboard() {
 
           <div className="p-4 sm:p-6">
             {view === "dashboard" ? <DashboardView templates={content.builder.templates.length} activeTheme={activeTheme?.name || "None"} lastPublished={content.builder.settings.lastPublishedAt} mediaCount={mediaCount} storageMode={session.storageMode || "Unknown"} /> : null}
+            {view === "email" ? <EmailSettingsView secureHeaders={secureHeaders} /> : null}
             {view === "content" ? (
               <EditWebsiteManager
                 content={content}
@@ -661,5 +668,301 @@ function ColorInput({ label, value, onChange }: { label: string; value: string; 
         <input value={value} onChange={(event) => onChange(event.target.value)} className="min-w-0 flex-1 bg-transparent px-3 text-white outline-none" />
       </span>
     </label>
+  );
+}
+
+function EmailSettingsView({ secureHeaders }: { secureHeaders: (extra?: HeadersInit) => HeadersInit }) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [serviceId, setServiceId] = useState("");
+  const [templateId, setTemplateId] = useState("");
+  const [publicKey, setPublicKey] = useState("");
+  const [senderEmail, setSenderEmail] = useState("");
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [testMessage, setTestMessage] = useState("Hello from Usman Iqbal Portfolio! This is a test email sent from the Admin Panel.");
+  const [saveStatus, setSaveStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [testResult, setTestResult] = useState<{
+    ok: boolean;
+    status?: number;
+    message?: string;
+    error?: string;
+    details?: Record<string, unknown>;
+  } | null>(null);
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const response = await fetch("/api/admin/email-settings", { cache: "no-store" });
+        if (response.ok) {
+          const data = await response.json();
+          setServiceId(data.serviceId || "");
+          setTemplateId(data.templateId || "");
+          setPublicKey(data.publicKey || "");
+          setSenderEmail(data.senderEmail || "");
+          setRecipientEmail(data.recipientEmail || "");
+        }
+      } catch {
+        setSaveStatus({ type: "error", text: "Failed to load current email configuration." });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadSettings();
+  }, []);
+
+  async function handleSave(event: React.FormEvent) {
+    event.preventDefault();
+    setSaving(true);
+    setSaveStatus(null);
+
+    try {
+      const response = await fetch("/api/admin/email-settings", {
+        method: "PUT",
+        headers: secureHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          serviceId,
+          templateId,
+          publicKey,
+          senderEmail,
+          recipientEmail
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to save configuration.");
+      }
+
+      setSaveStatus({
+        type: "success",
+        text: "EmailJS configuration saved successfully! The live contact form is now using these settings."
+      });
+    } catch (err) {
+      setSaveStatus({
+        type: "error",
+        text: err instanceof Error ? err.message : "Error saving configuration."
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleTestEmail() {
+    setTesting(true);
+    setTestResult(null);
+
+    try {
+      const response = await fetch("/api/admin/email-settings/test", {
+        method: "POST",
+        headers: secureHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          serviceId,
+          templateId,
+          publicKey,
+          senderEmail,
+          recipientEmail,
+          testMessage
+        })
+      });
+
+      const data = await response.json();
+      setTestResult(data);
+    } catch (err) {
+      setTestResult({
+        ok: false,
+        error: err instanceof Error ? err.message : "Network error while triggering test email."
+      });
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="animate-spin text-[#16f2a4]" size={32} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-6 xl:grid-cols-[1.25fr_1fr]">
+      {/* Configuration Form Card */}
+      <div className="rounded-[8px] border border-white/10 bg-white/[0.035] p-5 sm:p-6">
+        <div className="mb-5 flex items-center justify-between border-b border-white/10 pb-4">
+          <div>
+            <h2 className="text-xl font-black flex items-center gap-2">
+              <Mail className="text-[#16f2a4]" size={22} />
+              EmailJS Service Configuration
+            </h2>
+            <p className="mt-1 text-sm text-white/50">
+              Manage your EmailJS credentials. The live contact form will automatically use these settings.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSave} className="grid gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <TextField
+                label="EmailJS Service ID"
+                value={serviceId}
+                onChange={setServiceId}
+              />
+              <p className="mt-1 text-xs text-white/40">e.g. service_3yzs25n</p>
+            </div>
+            <div>
+              <TextField
+                label="EmailJS Template ID"
+                value={templateId}
+                onChange={setTemplateId}
+              />
+              <p className="mt-1 text-xs text-white/40">e.g. template_p2ef7xj</p>
+            </div>
+          </div>
+
+          <div>
+            <TextField
+              label="EmailJS Public Key"
+              value={publicKey}
+              onChange={setPublicKey}
+            />
+            <p className="mt-1 text-xs text-white/40">e.g. VGz_prbYHcK7LyvAl (Public API Key)</p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <TextField
+                label="Sender / From Email (Optional)"
+                value={senderEmail}
+                onChange={setSenderEmail}
+                type="email"
+              />
+              <p className="mt-1 text-xs text-white/40">Default sender address or reply-to placeholder</p>
+            </div>
+            <div>
+              <TextField
+                label="Recipient Email"
+                value={recipientEmail}
+                onChange={setRecipientEmail}
+                type="email"
+              />
+              <p className="mt-1 text-xs text-white/40">Where messages will be forwarded</p>
+            </div>
+          </div>
+
+          {saveStatus ? (
+            <div
+              className={`mt-2 flex items-center gap-2 rounded-[8px] p-3 text-sm font-semibold ${
+                saveStatus.type === "success"
+                  ? "border border-[#16f2a4]/30 bg-[#16f2a4]/10 text-[#bfffe8]"
+                  : "border border-red-400/30 bg-red-400/10 text-red-200"
+              }`}
+            >
+              {saveStatus.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+              {saveStatus.text}
+            </div>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-full bg-[#16f2a4] px-6 py-3 font-black text-black transition hover:bg-white disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+              Save Configuration
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Test Email & Diagnostics Card */}
+      <div className="grid gap-6">
+        <div className="rounded-[8px] border border-white/10 bg-white/[0.035] p-5 sm:p-6">
+          <div className="mb-4 border-b border-white/10 pb-3">
+            <h3 className="text-lg font-black flex items-center gap-2">
+              <Send className="text-[#16f2a4]" size={20} />
+              Test Email Delivery
+            </h3>
+            <p className="mt-1 text-xs text-white/50">
+              Dispatch a verified test email using the currently entered or saved credentials.
+            </p>
+          </div>
+
+          <div className="grid gap-3">
+            <TextArea
+              label="Test Message Content"
+              value={testMessage}
+              onChange={setTestMessage}
+            />
+
+            <button
+              type="button"
+              onClick={handleTestEmail}
+              disabled={testing || !serviceId || !templateId || !publicKey}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#16f2a4] bg-[#16f2a4]/10 px-5 py-3 font-bold text-[#16f2a4] transition hover:bg-[#16f2a4] hover:text-black disabled:opacity-40"
+            >
+              {testing ? <Loader2 className="animate-spin" size={17} /> : <Send size={17} />}
+              {testing ? "Sending Test..." : "Send Test Email"}
+            </button>
+          </div>
+
+          {testResult ? (
+            <div className="mt-4">
+              {testResult.ok ? (
+                <div className="rounded-[8px] border border-[#16f2a4]/30 bg-[#16f2a4]/10 p-4 text-sm text-[#bfffe8]">
+                  <div className="flex items-center gap-2 font-bold">
+                    <CheckCircle2 size={18} className="text-[#16f2a4]" />
+                    {testResult.message || "Test email sent successfully!"}
+                  </div>
+                  {testResult.details ? (
+                    <div className="mt-3 rounded-[6px] bg-black/40 p-2 text-xs font-mono text-white/70">
+                      <div>Status: 200 OK</div>
+                      <div>Recipient: {String(testResult.details.recipientEmail || recipientEmail)}</div>
+                      <div>Service: {String(testResult.details.serviceId || serviceId)}</div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="rounded-[8px] border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-200">
+                  <div className="flex items-center gap-2 font-bold">
+                    <AlertCircle size={18} className="text-red-400" />
+                    Delivery Error {testResult.status ? `(HTTP ${testResult.status})` : ""}
+                  </div>
+                  <p className="mt-2 text-xs text-white/90 font-mono bg-black/40 p-2 rounded">
+                    {testResult.error || "Unknown error"}
+                  </p>
+                  {testResult.status === 412 ? (
+                    <div className="mt-3 rounded-[6px] border border-yellow-400/30 bg-yellow-400/10 p-3 text-xs text-yellow-200">
+                      <strong>Troubleshooting Tip:</strong> Your EmailJS service connected to Gmail has an expired or revoked grant (&quot;Invalid grant&quot;). Go to your EmailJS Dashboard &gt; Email Services &gt; Reconnect Account.
+                    </div>
+                  ) : testResult.status === 403 ? (
+                    <div className="mt-3 rounded-[6px] border border-yellow-400/30 bg-yellow-400/10 p-3 text-xs text-yellow-200">
+                      <strong>Troubleshooting Tip:</strong> Check your EmailJS security settings at dashboard.emailjs.com/admin/account/security or verify the Public Key.
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Integration Instructions */}
+        <div className="rounded-[8px] border border-white/10 bg-white/[0.02] p-5 text-xs text-white/60">
+          <p className="font-bold uppercase tracking-wider text-[#16f2a4] mb-2">EmailJS Template Mapping Guide</p>
+          <p className="mb-2">Your EmailJS template should include these variables:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><code className="text-white font-mono">&#123;&#123;name&#125;&#125;</code> or <code className="text-white font-mono">&#123;&#123;from_name&#125;&#125;</code> - Sender name</li>
+            <li><code className="text-white font-mono">&#123;&#123;email&#125;&#125;</code> or <code className="text-white font-mono">&#123;&#123;from_email&#125;&#125;</code> - Sender email</li>
+            <li><code className="text-white font-mono">&#123;&#123;project_type&#125;&#125;</code> or <code className="text-white font-mono">&#123;&#123;subject&#125;&#125;</code> - Project type</li>
+            <li><code className="text-white font-mono">&#123;&#123;message&#125;&#125;</code> - Message content</li>
+            <li><code className="text-white font-mono">&#123;&#123;time&#125;&#125;</code> - Submission timestamp</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   );
 }

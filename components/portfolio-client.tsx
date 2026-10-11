@@ -985,19 +985,44 @@ function ContactForm({ email, fields, shouldAnimate }: { email: string; fields?:
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [formError, setFormError] = useState("");
+  const [emailConfig, setEmailConfig] = useState<{ serviceId: string; templateId: string; publicKey: string }>({
+    serviceId: process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "",
+    templateId: process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "",
+    publicKey: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || ""
+  });
   const formRef = useRef<HTMLFormElement>(null);
   const timeInputRef = useRef<HTMLInputElement>(null);
   const formFields = fields?.length ? fields : ["Name", "Email", "Project Type", "Message"];
-  const emailJsServiceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
-  const emailJsTemplateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
-  const emailJsPublicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
+
+  useEffect(() => {
+    async function loadEmailConfig() {
+      try {
+        const response = await fetch("/api/contact/config", { cache: "no-store" });
+        if (response.ok) {
+          const config = (await response.json()) as { serviceId?: string; templateId?: string; publicKey?: string };
+          if (config.serviceId || config.templateId || config.publicKey) {
+            setEmailConfig({
+              serviceId: config.serviceId || "",
+              templateId: config.templateId || "",
+              publicKey: config.publicKey || ""
+            });
+          }
+        }
+      } catch {
+        // Fallback to initial env variables if fetch fails
+      }
+    }
+
+    loadEmailConfig();
+  }, []);
 
   const emailJsFieldName = (field: string) => {
     const normalized = field.toLowerCase();
     if (normalized.includes("name")) return "name";
     if (normalized.includes("email")) return "email";
     if (normalized.includes("phone")) return "phone";
-    if (normalized.includes("subject") || normalized.includes("project")) return "subject";
+    if (normalized.includes("project")) return "project_type";
+    if (normalized.includes("subject")) return "subject";
     if (normalized.includes("message")) return "message";
     return field.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
   };
@@ -1023,7 +1048,24 @@ function ContactForm({ email, fields, shouldAnimate }: { email: string; fields?:
       timeInputRef.current.value = new Date().toLocaleString();
     }
 
-    if (!emailJsServiceId || !emailJsTemplateId || !emailJsPublicKey) {
+    // Sync template alias inputs if available
+    const nameVal = (form.elements.namedItem("name") as HTMLInputElement | null)?.value || "";
+    const emailVal = (form.elements.namedItem("email") as HTMLInputElement | null)?.value || "";
+    const projectVal = (form.elements.namedItem("project_type") as HTMLInputElement | null)?.value || (form.elements.namedItem("subject") as HTMLInputElement | null)?.value || "";
+    const fromNameInput = form.elements.namedItem("from_name") as HTMLInputElement | null;
+    const fromEmailInput = form.elements.namedItem("from_email") as HTMLInputElement | null;
+    const replyToInput = form.elements.namedItem("reply_to") as HTMLInputElement | null;
+    const projectInput = form.elements.namedItem("project") as HTMLInputElement | null;
+    if (fromNameInput) fromNameInput.value = nameVal;
+    if (fromEmailInput) fromEmailInput.value = emailVal;
+    if (replyToInput) replyToInput.value = emailVal;
+    if (projectInput) projectInput.value = projectVal;
+
+    const currentServiceId = emailConfig.serviceId || process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+    const currentTemplateId = emailConfig.templateId || process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
+    const currentPublicKey = emailConfig.publicKey || process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
+
+    if (!currentServiceId || !currentTemplateId || !currentPublicKey) {
       setFormError("Contact form is not configured yet. Please email directly for now.");
       setSending(false);
       return;
@@ -1031,16 +1073,21 @@ function ContactForm({ email, fields, shouldAnimate }: { email: string; fields?:
 
     try {
       await emailjs.sendForm(
-        emailJsServiceId,
-        emailJsTemplateId,
+        currentServiceId,
+        currentTemplateId,
         form,
-        { publicKey: emailJsPublicKey }
+        { publicKey: currentPublicKey }
       );
 
       form.reset();
       setSent(true);
-    } catch {
-      setFormError("Something went wrong. Please try again.");
+    } catch (err) {
+      const errMessage = err && typeof err === "object" && "text" in err ? String(err.text) : "";
+      if (errMessage) {
+        setFormError(`Failed to send message: ${errMessage}`);
+      } else {
+        setFormError("Something went wrong while sending your message. Please try again or email directly.");
+      }
     } finally {
       setSending(false);
     }
@@ -1056,7 +1103,12 @@ function ContactForm({ email, fields, shouldAnimate }: { email: string; fields?:
       className="glass-panel rounded-[8px] p-4 sm:p-6"
     >
       <input ref={timeInputRef} type="hidden" name="time" />
-      {["name", "email", "phone", "subject", "message"].filter((field) => !configuredEmailJsFields.has(field)).map((field) => <input key={field} type="hidden" name={field} />)}
+      {["name", "email", "phone", "project_type", "subject", "message"].filter((field) => !configuredEmailJsFields.has(field)).map((field) => <input key={field} type="hidden" name={field} />)}
+      {/* Hidden aliases for standard EmailJS templates */}
+      <input type="hidden" name="from_name" />
+      <input type="hidden" name="from_email" />
+      <input type="hidden" name="reply_to" />
+      <input type="hidden" name="project" />
       <div className="grid gap-4 sm:grid-cols-2">
         {formFields.map((field, index) => {
           const isMessage = field.toLowerCase().includes("message");
