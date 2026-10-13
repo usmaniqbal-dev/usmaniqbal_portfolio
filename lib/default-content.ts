@@ -210,9 +210,9 @@ export const defaultContent: SiteContent = {
     { id: "instagram", platform: "Instagram", label: "Instagram", url: "https://www.instagram.com/" }
   ],
   theme: {
-    primary: "#16f2a4",
-    secondary: "#22d3ee",
-    accent: "#a7f3d0",
+    primary: "#00DCA0",
+    secondary: "#00DCA0",
+    accent: "#00DCA0",
     animations: true
   },
   sliders: {

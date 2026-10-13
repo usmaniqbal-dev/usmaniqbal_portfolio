@@ -1,8 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import emailjs from "@emailjs/browser";
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
 import {
@@ -59,13 +58,6 @@ const navItems = [
 const serviceIcons = [Database, Zap, Layers3, Settings2, Code2, BriefcaseBusiness, Bot, Sparkles];
 
 const LOADER_MAX_MS = 320;
-const DEFER_3D_MS = 180;
-const ENABLE_3D_BACKGROUND = false;
-
-const Global3DBackground = dynamic(() => import("@/components/animations/Global3DBackground"), {
-  ssr: false,
-  loading: () => <div className="pointer-events-none fixed inset-0 z-0 bg-animated-fallback" aria-hidden />
-});
 
 export default function PortfolioClient({ content: initialContent }: PortfolioClientProps) {
   const [content, setContent] = useState(initialContent);
@@ -73,14 +65,17 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
   const shouldAnimate = content.theme.animations && !reducedMotion;
   const heroSectionRef = useRef<HTMLElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [effectsReady, setEffectsReady] = useState(false);
 
   useEffect(() => {
     const savedMode = window.localStorage.getItem("nuraxtech-portfolio-theme");
-    setDarkMode(savedMode ? savedMode === "dark" : content.builder.settings.darkMode);
-  }, [content.builder.settings.darkMode]);
+    if (savedMode) {
+      setDarkMode(savedMode === "dark");
+    } else {
+      setDarkMode(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!shouldAnimate) {
@@ -91,16 +86,6 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
     const timeout = window.setTimeout(() => setLoading(false), LOADER_MAX_MS);
     return () => window.clearTimeout(timeout);
   }, [shouldAnimate]);
-
-  useEffect(() => {
-    if (!shouldAnimate || loading) {
-      setEffectsReady(false);
-      return;
-    }
-
-    const timeout = window.setTimeout(() => setEffectsReady(true), DEFER_3D_MS);
-    return () => window.clearTimeout(timeout);
-  }, [loading, shouldAnimate]);
 
   useEffect(() => {
     setContent(initialContent);
@@ -150,20 +135,17 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
     });
   }
 
-  const activeBuilderTheme = content.builder.themes.find((theme) => theme.isActive);
-  const basePrimary = content.theme.primary || activeBuilderTheme?.primaryColor || content.builder.settings.primaryColor;
-  const baseSecondary = content.theme.secondary || activeBuilderTheme?.secondaryColor || content.builder.settings.secondaryColor;
-  const baseAccent = content.theme.accent || activeBuilderTheme?.accentColor || "#a7f3d0";
-  const themePrimary = darkMode ? basePrimary : "#c13cff";
-  const themeSecondary = darkMode ? baseSecondary : "#158cff";
-  const themeAccent = darkMode ? baseAccent : "#f472ff";
+  const emeraldAccent = "#00DCA0";
+  const themePrimary = emeraldAccent;
+  const themeSecondary = emeraldAccent;
+  const themeAccent = emeraldAccent;
   const style = {
     "--primary": themePrimary,
     "--secondary": themeSecondary,
     "--accent": themeAccent,
-    "--builder-bg": darkMode ? activeBuilderTheme?.backgroundColor || content.builder.settings.backgroundColor : "#020318",
-    "--builder-text": activeBuilderTheme?.textColor || content.builder.settings.textColor,
-    "--builder-card": darkMode ? activeBuilderTheme?.cardColor || content.builder.settings.cardColor : "#090a28"
+    "--builder-bg": darkMode ? "#000000" : "#FFFFFF",
+    "--builder-text": darkMode ? "#FFFFFF" : "#111111",
+    "--builder-card": darkMode ? "#0A0A0A" : "#FFFFFF"
   } as React.CSSProperties;
 
   const activeTemplate = content.builder.templates.find((template) => template.isActive);
@@ -171,7 +153,7 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
   const orderFor = (id: string) => ({ order: sectionOrder.indexOf(id) === -1 ? 99 : sectionOrder.indexOf(id) });
   const heroBackgroundType = content.home.heroBackgroundType;
   const heroBackgroundUrl = content.home.heroBackgroundUrl;
-  const uploadedHeroImage = content.home.profileImage || content.home.heroImage || "/images/usman-profile.png";
+  const uploadedHeroImage = content.home.profileImage || content.home.heroImage || "/images/usman-hero.png";
   const heroImageSrc = uploadedHeroImage.includes("usman-profile.png") ? "/images/usman-hero.png" : uploadedHeroImage;
   const homeStyle = {
     ...orderFor("home"),
@@ -188,51 +170,36 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
   });
 
   return (
-    <main className={`site-shell flex min-h-screen flex-col overflow-hidden text-white ${darkMode ? "dark-mode" : "light-mode"}`} style={style}>
+    <main className={`site-shell flex min-h-screen flex-col overflow-hidden ${darkMode ? "dark-mode bg-black text-white" : "light-mode bg-white text-[#111111]"}`} style={style}>
       <AnimatePresence>{loading ? <LoadingExperience /> : null}</AnimatePresence>
-      {ENABLE_3D_BACKGROUND && effectsReady ? (
-        <Global3DBackground primary={themePrimary} secondary={themeSecondary} enabled={shouldAnimate} />
-      ) : (
-        <div className="pointer-events-none fixed inset-0 z-0 bg-animated-fallback" aria-hidden />
-      )}
-      <div className="site-grid pointer-events-none fixed inset-0 opacity-80" />
-      <div className="pointer-events-none fixed inset-x-0 top-0 h-px glow-line opacity-70" />
       <FloatingNav menuOpen={menuOpen} setMenuOpen={setMenuOpen} darkMode={darkMode} toggleColorMode={toggleColorMode} siteName={content.builder.settings.siteName} logoUrl={content.builder.settings.logoUrl} heroImageSrc={heroImageSrc} logoLink={content.builder.settings.logoLink} />
 
-      <section ref={heroSectionRef} id="home" className="hero-showcase relative min-h-[100svh] px-5 pb-8 pt-28 sm:px-8 lg:h-[100svh] lg:min-h-0 lg:overflow-hidden lg:px-12 lg:pb-4 lg:pt-28" style={homeStyle}>
+      <section ref={heroSectionRef} id="home" className={`hero-showcase relative min-h-[100svh] px-5 pb-8 pt-28 sm:px-8 lg:h-[100svh] lg:min-h-0 lg:overflow-hidden lg:px-12 lg:pb-4 lg:pt-28 ${darkMode ? "bg-black" : "bg-white"}`} style={homeStyle}>
         {heroBackgroundType === "image" && heroBackgroundUrl ? <div className="absolute inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroBackgroundUrl})` }} /> : null}
         {heroBackgroundType === "video" && heroBackgroundUrl ? <video src={heroBackgroundUrl} autoPlay muted loop playsInline className="absolute inset-0 z-0 h-full w-full object-cover" /> : null}
-        {heroBackgroundType === "image" || heroBackgroundType === "video" ? <div className="absolute inset-0 z-[1] bg-black/55" /> : null}
-        <div className="hero-showcase-bg pointer-events-none absolute inset-0 z-[1]" aria-hidden />
-        <div className="hero-orb-field pointer-events-none absolute right-0 top-20 z-[2] hidden h-[72vh] w-[58vw] lg:block" aria-hidden>
-          <span className="hero-orb-core" />
-          <span className="hero-orb-ring hero-orb-ring-one" />
-          <span className="hero-orb-ring hero-orb-ring-two" />
-          <span className="hero-orb-dot hero-orb-dot-one" />
-          <span className="hero-orb-dot hero-orb-dot-two" />
-        </div>
+        {heroBackgroundType === "image" || heroBackgroundType === "video" ? <div className={`absolute inset-0 z-[1] ${darkMode ? "bg-black/55" : "bg-white/55"}`} /> : null}
         <div className="relative z-10 mx-auto grid min-h-[calc(100svh-9rem)] w-full max-w-7xl min-w-0 items-center gap-8 lg:h-[calc(100svh-8rem)] lg:min-h-0 lg:items-center lg:grid-cols-[0.92fr_0.78fr]">
           <motion.div initial={false} className="relative z-10 w-full min-w-0 max-w-[calc(100vw-4rem)] sm:max-w-3xl lg:overflow-hidden">
-            <motion.div {...heroIn(shouldAnimate, loading, 0.2)} className="mb-8 inline-flex max-w-full items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-white/70 shadow-glow lg:py-2 lg:text-xs">
-              <span className="h-2.5 w-2.5 rounded-full bg-[var(--primary)] shadow-[0_0_18px_var(--primary)]" />
+            <motion.div {...heroIn(shouldAnimate, loading, 0.2)} className={`mb-8 inline-flex max-w-full items-center gap-3 rounded-full border px-4 py-3 text-sm font-semibold lg:py-2 lg:text-xs ${darkMode ? "border-white/10 bg-white/[0.04] text-white/70" : "border-black/10 bg-black/[0.03] text-black/70"}`}>
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--primary)]" />
               <span className="truncate">Available for New CRM & Automation Projects</span>
             </motion.div>
 
             <motion.p {...heroIn(shouldAnimate, loading, 0.3)} className="mb-4 text-sm font-bold uppercase text-[var(--primary)]">NURAXTECH</motion.p>
-            <motion.h1 {...heroIn(shouldAnimate, loading, 0.36, true)} className="text-balance break-words text-4xl font-black leading-[1.02] text-white sm:text-5xl lg:line-clamp-2 lg:text-5xl">
+            <motion.h1 {...heroIn(shouldAnimate, loading, 0.36, true)} className={`text-balance break-words text-4xl font-black leading-[1.02] sm:text-5xl lg:line-clamp-2 lg:text-5xl ${darkMode ? "text-white" : "text-[#111111]"}`}>
               Usman Iqbal
             </motion.h1>
             <motion.h2 {...heroIn(shouldAnimate, loading, 0.46)} className="mt-3 max-w-[320px] text-balance text-2xl font-black leading-tight text-[var(--primary)] sm:max-w-none sm:text-3xl lg:line-clamp-2 lg:text-3xl">
               {content.home.subtitle}
             </motion.h2>
-            <motion.p {...heroIn(shouldAnimate, loading, 0.52)} className="mt-5 max-w-[310px] text-base leading-7 text-white/62 sm:max-w-2xl lg:line-clamp-3">
+            <motion.p {...heroIn(shouldAnimate, loading, 0.52)} className={`mt-5 max-w-[310px] text-base leading-7 sm:max-w-2xl lg:line-clamp-3 ${darkMode ? "text-white/65" : "text-black/65"}`}>
               {content.home.description}
             </motion.p>
 
             <motion.div {...heroIn(shouldAnimate, loading, 0.64, false, "spring")} className="mt-5 flex w-full flex-col gap-2.5 sm:flex-row">
               <a
                 href={content.home.primaryButton.href}
-                className="group inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-black text-black shadow-glow transition duration-300 hover:-translate-y-0.5 hover:bg-white sm:w-auto sm:max-w-none"
+                className="group inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-black text-black transition duration-300 hover:-translate-y-0.5 hover:bg-[#00b885] sm:w-auto sm:max-w-none"
               >
                 <span className="truncate">{content.home.primaryButton.label}</span>
                 <span className="grid h-7 w-7 place-items-center rounded-full bg-black/10 transition group-hover:translate-x-0.5">
@@ -241,7 +208,7 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
               </a>
               <a
                 href={content.home.secondaryButton.href}
-                className="inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full border border-white/14 bg-white/[0.04] px-5 py-2.5 text-sm font-black text-white transition duration-300 hover:-translate-y-0.5 hover:border-[var(--secondary)] hover:text-[var(--secondary)] sm:w-auto sm:max-w-none"
+                className={`inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-sm font-black transition duration-300 hover:-translate-y-0.5 hover:border-[var(--primary)] hover:text-[var(--primary)] sm:w-auto sm:max-w-none ${darkMode ? "border-white/15 bg-white/[0.04] text-white" : "border-black/10 bg-black/[0.03] text-[#111111]"}`}
               >
                 <MessageCircle size={17} />
                 <span className="truncate">{content.home.secondaryButton.label}</span>
@@ -250,7 +217,7 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
                 href="/cv"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full border border-[var(--secondary)]/45 bg-[var(--secondary)]/10 px-5 py-2.5 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:border-[var(--secondary)] hover:text-[var(--secondary)] sm:w-auto sm:max-w-none"
+                className={`inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition duration-300 hover:-translate-y-0.5 hover:border-[var(--primary)] hover:text-[var(--primary)] sm:w-auto sm:max-w-none ${darkMode ? "border-[var(--primary)]/30 bg-[var(--primary)]/10 text-white" : "border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[#111111]"}`}
               >
                 <Eye size={16} />
                 View Usman Iqbal CV
@@ -258,7 +225,7 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
             </motion.div>
 
             <motion.div {...heroIn(shouldAnimate, loading, 0.72, false, "spring")}>
-              <SocialLinks socials={content.socials} compact />
+              <SocialLinks socials={content.socials} compact darkMode={darkMode} />
             </motion.div>
           </motion.div>
 
@@ -268,50 +235,50 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
 
       <section id="about" className="relative px-4 py-12 sm:px-6 lg:px-8" style={orderFor("about")}>
         <div className="mx-auto grid max-w-5xl gap-5 lg:grid-cols-[0.98fr_0.9fr]">
-          <motion.div {...reveal()} className="glass-panel rounded-[8px] p-4 sm:p-5">
-            <SectionKicker number="01" label="About" />
-            <h2 className="mt-5 text-balance text-2xl font-black leading-tight sm:text-3xl">{content.about.title}</h2>
-            <p className="mt-4 text-sm leading-6 text-white/64 sm:text-base">{content.about.description}</p>
+          <motion.div {...reveal()} className={`glass-panel rounded-[8px] p-4 sm:p-5 border ${darkMode ? "border-white/10 bg-[#0A0A0A]" : "border-black/8 bg-white shadow-sm"}`}>
+            <SectionKicker number="01" label="About" darkMode={darkMode} />
+            <h2 className={`mt-5 text-balance text-2xl font-black leading-tight sm:text-3xl ${darkMode ? "text-white" : "text-[#111111]"}`}>{content.about.title}</h2>
+            <p className={`mt-4 text-sm leading-6 sm:text-base ${darkMode ? "text-white/65" : "text-black/65"}`}>{content.about.description}</p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {content.about.highlights.map((item, index) => (
-                <div key={`highlight-${index}-${item}`} className="rounded-[8px] border border-white/10 bg-white/[0.04] p-3">
+                <div key={`highlight-${index}-${item}`} className={`rounded-[8px] border p-3 ${darkMode ? "border-white/10 bg-white/[0.03]" : "border-black/8 bg-[#F9FAFB]"}`}>
                   <Sparkles className="mb-3 text-[var(--primary)]" size={18} />
-                  <p className="text-sm font-semibold leading-6 text-white/82">{item}</p>
+                  <p className={`text-sm font-semibold leading-6 ${darkMode ? "text-white/85" : "text-black/85"}`}>{item}</p>
                 </div>
               ))}
             </div>
           </motion.div>
 
           <motion.div {...reveal({ delay: 0.1 })} className="grid content-start gap-4">
-            <div className="rounded-[8px] border border-[var(--primary)]/25 bg-[var(--primary)]/8 p-4 shadow-glow">
+            <div className="rounded-[8px] border border-[var(--primary)]/25 bg-[var(--primary)]/8 p-4">
               <p className="text-sm font-bold uppercase text-[var(--primary)]">{content.about.eyebrow}</p>
-              <h3 className="mt-2 text-lg font-black leading-snug">CRM systems, websites, AI bots, and business automation under one brand.</h3>
+              <h3 className={`mt-2 text-lg font-black leading-snug ${darkMode ? "text-white" : "text-[#111111]"}`}>CRM systems, websites, AI bots, and business automation under one brand.</h3>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               {(content.about.statistics || [["16+", "Core Skills"], ["10+", "Services"], ["8", "Featured Projects"]].map(([value, label]) => ({ id: label, value, label }))).map((statistic) => (
-                <div key={statistic.id} className="rounded-[8px] border border-white/10 bg-white/[0.04] p-3">
-                  <p className="text-2xl font-black text-[var(--secondary)]">{statistic.value}</p>
-                  <p className="mt-2 text-sm font-semibold uppercase text-white/52">{statistic.label}</p>
+                <div key={statistic.id} className={`rounded-[8px] border p-3 ${darkMode ? "border-white/10 bg-[#0A0A0A]" : "border-black/8 bg-white shadow-sm"}`}>
+                  <p className="text-2xl font-black text-[var(--primary)]">{statistic.value}</p>
+                  <p className={`mt-2 text-sm font-semibold uppercase ${darkMode ? "text-white/50" : "text-black/50"}`}>{statistic.label}</p>
                 </div>
               ))}
             </div>
-            <div className="card-grid rounded-[8px] border border-white/10 bg-black/30 p-4">
+            <div className={`card-grid rounded-[8px] border p-4 ${darkMode ? "border-white/10 bg-[#0A0A0A]" : "border-black/8 bg-white shadow-sm"}`}>
               <div className="flex flex-wrap gap-2">
                 {["Salesforce", "Litify", "HubSpot", "Zoho", "AI Bots", "Next.js", "Android", "Firebase"].map((item) => (
-                  <span key={item} className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs font-bold text-white/72">
+                  <span key={item} className={`rounded-full border px-3 py-1.5 text-xs font-bold ${darkMode ? "border-white/10 bg-black/40 text-white/80" : "border-black/8 bg-[#F9FAFB] text-black/80"}`}>
                     {item}
                   </span>
                 ))}
               </div>
             </div>
             {content.about.experience || content.about.image || content.about.primaryButton?.label || content.about.secondaryButton?.label ? (
-              <div className="grid gap-4 rounded-[8px] border border-white/10 bg-black/30 p-4 sm:grid-cols-[auto_1fr]">
+              <div className={`grid gap-4 rounded-[8px] border p-4 sm:grid-cols-[auto_1fr] ${darkMode ? "border-white/10 bg-[#0A0A0A]" : "border-black/8 bg-white shadow-sm"}`}>
                 {content.about.image ? <Image src={content.about.image} alt="Usman Iqbal" width={80} height={80} className="h-20 w-20 rounded-[8px] object-cover" /> : null}
                 <div>
-                  {content.about.experience ? <p className="font-bold text-[var(--secondary)]">{content.about.experience}</p> : null}
+                  {content.about.experience ? <p className="font-bold text-[var(--primary)]">{content.about.experience}</p> : null}
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {content.about.primaryButton?.label ? <a href={content.about.primaryButton.href} className="rounded-full bg-[var(--primary)] px-4 py-2 font-black text-black transition hover:bg-white">{content.about.primaryButton.label}</a> : null}
-                    {content.about.secondaryButton?.label ? <a href={content.about.secondaryButton.href} className="rounded-full border border-white/15 px-4 py-2 font-black text-white/78 transition hover:border-[var(--primary)] hover:text-[var(--primary)]">{content.about.secondaryButton.label}</a> : null}
+                    {content.about.primaryButton?.label ? <a href={content.about.primaryButton.href} className="rounded-full bg-[var(--primary)] px-4 py-2 font-black text-black transition hover:bg-[#00b885]">{content.about.primaryButton.label}</a> : null}
+                    {content.about.secondaryButton?.label ? <a href={content.about.secondaryButton.href} className={`rounded-full border px-4 py-2 font-black transition hover:border-[var(--primary)] hover:text-[var(--primary)] ${darkMode ? "border-white/15 text-white/80" : "border-black/10 text-black/80"}`}>{content.about.secondaryButton.label}</a> : null}
                   </div>
                 </div>
               </div>
@@ -323,11 +290,11 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
       <section id="skills" className="relative px-4 py-12 sm:px-6 lg:px-8" style={orderFor("skills")}>
         <div className="mx-auto max-w-5xl">
           <motion.div {...reveal()} className="mb-6">
-            <SectionKicker number="02" label="Technical Skills" />
+            <SectionKicker number="02" label="Technical Skills" darkMode={darkMode} />
           </motion.div>
           <div className="skills-list-grid grid gap-2 md:grid-cols-2">
             {content.skills.map((skill, index) => (
-              <SkillCard key={skill.id} skill={skill} index={index} shouldAnimate={shouldAnimate} />
+              <SkillCard key={skill.id} skill={skill} index={index} shouldAnimate={shouldAnimate} darkMode={darkMode} />
             ))}
           </div>
         </div>
@@ -336,14 +303,14 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
       <section id="services" className="relative px-4 py-12 sm:px-6 lg:px-8" style={orderFor("services")}>
         <div className="mx-auto max-w-5xl">
           <motion.div {...reveal()} className="mb-6">
-            <SectionKicker number="03" label="Services" />
-            <h2 className="mt-4 max-w-3xl text-balance text-xl font-black leading-tight sm:text-2xl lg:text-3xl">
+            <SectionKicker number="03" label="Services" darkMode={darkMode} />
+            <h2 className={`mt-4 max-w-3xl text-balance text-xl font-black leading-tight sm:text-2xl lg:text-3xl ${darkMode ? "text-white" : "text-[#111111]"}`}>
               Salesforce, CRM, automation, AI and web development services for cleaner workflows and faster execution.
             </h2>
           </motion.div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {content.services.map((service, index) => (
-              <ServiceCard key={service.id} service={service} index={index} shouldAnimate={shouldAnimate} />
+              <ServiceCard key={service.id} service={service} index={index} shouldAnimate={shouldAnimate} darkMode={darkMode} />
             ))}
           </div>
         </div>
@@ -352,31 +319,31 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
       <section id="projects" className="relative px-4 py-12 sm:px-6 lg:px-8" style={orderFor("projects")}>
         <div className="mx-auto max-w-5xl">
           <motion.div {...reveal()} className="mb-6">
-            <SectionKicker number="04" label="Projects" />
+            <SectionKicker number="04" label="Projects" darkMode={darkMode} />
           </motion.div>
-          <ProjectSlider projects={content.projects} slides={content.sliders.projectSlides} shouldAnimate={shouldAnimate} />
+          <ProjectSlider projects={content.projects} slides={content.sliders.projectSlides} shouldAnimate={shouldAnimate} darkMode={darkMode} />
         </div>
       </section>
 
       <section id="contact" className="relative px-4 py-12 sm:px-6 lg:px-8" style={orderFor("contact")}>
         <div className="mx-auto grid max-w-5xl gap-5 lg:grid-cols-[0.85fr_1fr]">
           <motion.div {...reveal()}>
-            <SectionKicker number="05" label="Contact" />
-            <h2 className="mt-5 text-balance text-2xl font-black leading-tight sm:text-3xl">{content.contact.formHeadline}</h2>
+            <SectionKicker number="05" label="Contact" darkMode={darkMode} />
+            <h2 className={`mt-5 text-balance text-2xl font-black leading-tight sm:text-3xl ${darkMode ? "text-white" : "text-[#111111]"}`}>{content.contact.formHeadline}</h2>
             <div className="mt-7 grid gap-3">
-              <ContactLine icon={Mail} label="Email" value={content.contact.email} href={`mailto:${content.contact.email}`} />
-              <ContactLine icon={Phone} label="Phone" value={content.contact.phone} href={`tel:${content.contact.phone}`} />
-              <ContactLine icon={MapPin} label="Location" value={content.contact.location} />
-              {content.contact.googleMapUrl ? <ContactLine icon={MapPin} label="Google Map" value="Open location" href={content.contact.googleMapUrl} /> : null}
+              <ContactLine icon={Mail} label="Email" value={content.contact.email} href={`mailto:${content.contact.email}`} darkMode={darkMode} />
+              <ContactLine icon={Phone} label="Phone" value={content.contact.phone} href={`tel:${content.contact.phone}`} darkMode={darkMode} />
+              <ContactLine icon={MapPin} label="Location" value={content.contact.location} darkMode={darkMode} />
+              {content.contact.googleMapUrl ? <ContactLine icon={MapPin} label="Google Map" value="Open location" href={content.contact.googleMapUrl} darkMode={darkMode} /> : null}
             </div>
-            <SocialLinks socials={content.socials} compact />
+            <SocialLinks socials={content.socials} compact darkMode={darkMode} />
           </motion.div>
 
-          <ContactForm email={content.contact.email} fields={content.contact.formFields} shouldAnimate={shouldAnimate} />
+          <ContactForm email={content.contact.email} fields={content.contact.formFields} shouldAnimate={shouldAnimate} darkMode={darkMode} />
         </div>
       </section>
 
-      <footer className="portfolio-footer relative z-10 border-t border-white/10 px-5 py-8 text-center text-sm text-white/45 sm:px-8" style={{ order: 100 }}>
+      <footer className={`portfolio-footer relative z-10 border-t px-5 py-8 text-center text-sm sm:px-8 ${darkMode ? "border-white/10 bg-black text-white/50" : "border-black/8 bg-white text-black/50"}`} style={{ order: 100 }}>
         <p>&copy; {new Date().getFullYear()} Usman Iqbal - NURAXTECH. Built for CRM, automation, web, and AI solutions.</p>
       </footer>
     </main>
@@ -402,16 +369,30 @@ function FloatingNav({
   heroImageSrc: string;
   logoLink: string;
 }) {
-  const { hidden, scrolled } = useScrollDirection();
+  const { scrolled } = useScrollDirection();
   const brandName = "Usman Iqbal";
-  const navLogoUrl = !logoUrl || logoUrl.includes("usman-profile.png") ? heroImageSrc : logoUrl;
+  const [imgError, setImgError] = useState(false);
+  const navLogoUrl = logoUrl || heroImageSrc || "/images/usman-hero.png";
 
   return (
-    <motion.header animate={{ y: hidden ? -92 : 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="fixed left-0 right-0 top-4 z-50 px-5">
-      <nav className={`mx-auto flex max-w-[calc(100vw-2.5rem)] items-center justify-between rounded-full border border-white/10 px-3 py-2.5 shadow-cyan transition md:max-w-5xl ${scrolled ? "bg-black/72 backdrop-blur-2xl" : "bg-black/48 backdrop-blur-xl"}`}>
-        <a href={logoLink || "#home"} className="flex min-w-0 items-center gap-2.5 font-black text-white">
-          <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[var(--primary)] p-0.5 text-black">
-            {navLogoUrl ? <img src={navLogoUrl} alt="" className="h-full w-full rounded-full object-cover object-top" /> : brandName.charAt(0)}
+    <header className="fixed left-0 right-0 top-0 z-50 px-4 py-3 sm:px-6 transition-all duration-300">
+      <nav className={`mx-auto flex max-w-[calc(100vw-2rem)] items-center justify-between rounded-full border px-3 py-2.5 transition md:max-w-5xl ${
+        darkMode
+          ? scrolled ? "border-white/15 bg-black/90 text-white backdrop-blur-2xl shadow-lg shadow-black/40" : "border-white/10 bg-black/75 text-white backdrop-blur-xl"
+          : scrolled ? "border-black/10 bg-white/95 text-[#111111] backdrop-blur-2xl shadow-md shadow-black/5" : "border-black/8 bg-white/85 text-[#111111] backdrop-blur-xl"
+      }`}>
+        <a href={logoLink || "#home"} className={`flex min-w-0 items-center gap-2.5 font-black ${darkMode ? "text-white" : "text-[#111111]"}`}>
+          <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full border border-black/10 bg-[var(--primary)] text-black">
+            {!imgError && navLogoUrl ? (
+              <img
+                src={navLogoUrl}
+                alt={brandName}
+                onError={() => setImgError(true)}
+                className="h-full w-full rounded-full object-cover object-top"
+              />
+            ) : (
+              <span className="text-xs font-black tracking-wider">UI</span>
+            )}
           </span>
           <span className="hidden max-w-[160px] truncate sm:block">{brandName}</span>
         </a>
@@ -422,23 +403,41 @@ function FloatingNav({
               <a
                 key={item.href}
                 href={item.href}
-                className="group relative flex items-center gap-2 rounded-full px-3 py-2 font-semibold text-white/62 transition hover:bg-white/[0.06] hover:text-white"
+                className={`group relative flex items-center gap-2 rounded-full px-3 py-2 font-semibold transition ${
+                  darkMode
+                    ? "text-white/70 hover:bg-white/[0.08] hover:text-white"
+                    : "text-black/70 hover:bg-black/[0.05] hover:text-[#111111]"
+                }`}
               >
-                <Icon size={20} className="transition group-hover:text-[var(--primary)]" />
+                <Icon size={18} className="transition group-hover:text-[var(--primary)]" />
                 {item.label}
-                <span className="absolute inset-x-3 bottom-1 h-px origin-left scale-x-0 bg-[var(--primary)] shadow-[0_0_12px_var(--primary)] transition-transform duration-300 group-hover:scale-x-100" />
+                <span className="absolute inset-x-3 bottom-1 h-0.5 origin-left scale-x-0 bg-[var(--primary)] transition-transform duration-300 group-hover:scale-x-100" />
               </a>
             );
           })}
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" aria-label={darkMode ? "Switch to neon theme" : "Switch to current theme"} title={darkMode ? "Neon theme" : "Current theme"} className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-white/78 transition hover:border-[var(--primary)] hover:text-[var(--primary)]" onClick={toggleColorMode}>
+          <button
+            type="button"
+            aria-label={darkMode ? "Switch to light theme" : "Switch to dark theme"}
+            title={darkMode ? "Switch to light theme" : "Switch to dark theme"}
+            className={`grid h-10 w-10 place-items-center rounded-full border transition hover:border-[var(--primary)] hover:text-[var(--primary)] ${
+              darkMode
+                ? "border-white/10 bg-white/[0.05] text-white/80"
+                : "border-black/10 bg-black/[0.04] text-black/80"
+            }`}
+            onClick={toggleColorMode}
+          >
             {darkMode ? <Sun size={19} /> : <Moon size={19} />}
           </button>
           <button
             type="button"
             aria-label="Open navigation"
-            className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04] md:hidden"
+            className={`grid h-11 w-11 place-items-center rounded-full border md:hidden ${
+              darkMode
+                ? "border-white/10 bg-white/[0.05] text-white"
+                : "border-black/10 bg-black/[0.04] text-black"
+            }`}
             onClick={() => setMenuOpen(!menuOpen)}
           >
             {menuOpen ? <X size={21} /> : <Menu size={21} />}
@@ -451,7 +450,11 @@ function FloatingNav({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="mx-auto mt-3 grid max-w-sm gap-2 rounded-[8px] border border-white/10 bg-black/88 p-3 backdrop-blur-2xl md:hidden"
+            className={`mx-auto mt-3 grid max-w-sm gap-2 rounded-[8px] border p-3 backdrop-blur-2xl md:hidden ${
+              darkMode
+                ? "border-white/12 bg-black/95 text-white"
+                : "border-black/10 bg-white/95 text-[#111111] shadow-lg"
+            }`}
           >
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -460,9 +463,13 @@ function FloatingNav({
                   key={item.href}
                   href={item.href}
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 rounded-[8px] px-4 py-3 font-semibold text-white/75 hover:bg-white/[0.06] hover:text-white"
+                  className={`flex items-center gap-3 rounded-[8px] px-4 py-3 font-semibold transition ${
+                    darkMode
+                      ? "text-white/80 hover:bg-white/[0.08] hover:text-white"
+                      : "text-black/80 hover:bg-black/[0.05] hover:text-black"
+                  }`}
                 >
-                  <Icon size={20} />
+                  <Icon size={20} className="text-[var(--primary)]" />
                   {item.label}
                 </a>
               );
@@ -470,7 +477,7 @@ function FloatingNav({
           </motion.div>
         ) : null}
       </AnimatePresence>
-    </motion.header>
+    </header>
   );
 }
 
@@ -483,7 +490,7 @@ function LoadingExperience() {
       initial={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 1.08, filter: "blur(10px)" }}
       transition={{ duration: 0.2, ease: [0.76, 0, 0.24, 1] }}
-      className="portfolio-loader fixed inset-0 z-[100] grid place-items-center overflow-hidden bg-[#03071c] text-white"
+      className="portfolio-loader fixed inset-0 z-[100] grid place-items-center overflow-hidden bg-black text-white"
       role="status"
       aria-label="Loading Usman Iqbal portfolio"
     >
@@ -694,37 +701,43 @@ function useMobileHeroInteraction() {
   return mobile;
 }
 
-function SectionKicker({ number, label }: { number: string; label: string }) {
+function SectionKicker({ number, label, darkMode }: { number: string; label: string; darkMode?: boolean }) {
   return (
     <div className="flex items-center gap-4">
       <span className="text-3xl font-black text-transparent [-webkit-text-stroke:1px_var(--primary)] sm:text-4xl">{number}</span>
-      <span className="h-px flex-1 glow-line opacity-45" />
-      <h2 className="text-2xl font-black text-white/90 sm:text-3xl">{label}</h2>
+      <span className={`h-px flex-1 ${darkMode ? "bg-white/10" : "bg-black/10"}`} />
+      <h2 className={`text-2xl font-black sm:text-3xl ${darkMode ? "text-white/90" : "text-[#111111]"}`}>{label}</h2>
     </div>
   );
 }
 
-function SkillCard({ skill, index, shouldAnimate }: { skill: SkillContent; index: number; shouldAnimate: boolean }) {
+function SkillCard({ skill, index, shouldAnimate, darkMode }: { skill: SkillContent; index: number; shouldAnimate: boolean; darkMode?: boolean }) {
   return (
     <motion.article
       initial={shouldAnimate ? { opacity: 0, x: index % 2 === 0 ? -18 : 18 } : false}
       whileInView={shouldAnimate ? { opacity: 1, x: 0 } : undefined}
       viewport={{ once: true, amount: 0.12 }}
       transition={{ delay: Math.min((index % 8) * 0.035, 0.22), duration: 0.38, ease: "easeOut" }}
-      className="group relative flex min-w-0 items-center gap-3 overflow-hidden rounded-[8px] border border-white/10 bg-[#151918]/80 p-2.5 transition duration-300 hover:border-[var(--primary)]/40 hover:bg-white/[0.055]"
+      className={`group relative flex min-w-0 items-center gap-3 overflow-hidden rounded-[8px] border p-2.5 transition duration-300 hover:border-[var(--primary)]/50 ${
+        darkMode
+          ? "border-white/10 bg-[#0A0A0A] hover:bg-white/[0.04]"
+          : "border-black/8 bg-white hover:bg-black/[0.02] shadow-sm"
+      }`}
     >
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[8px] border border-white/10 bg-black/35 text-xs font-bold" style={{ color: skill.accent }}>
+      <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-[8px] border text-xs font-bold ${
+        darkMode ? "border-white/10 bg-white/5" : "border-black/8 bg-black/5"
+      }`} style={{ color: skill.accent || "var(--primary)" }}>
         {skill.icon ? <img src={skill.icon} alt="" className="h-6 w-6 object-contain" /> : String(index + 1).padStart(2, "0")}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-baseline justify-between gap-3">
-          <h3 className="truncate text-sm font-bold text-white/90 sm:text-[15px]">{skill.name}</h3>
-          <span className="shrink-0 text-xs font-semibold" style={{ color: skill.accent }}>{skill.level}%</span>
+          <h3 className={`truncate text-sm font-bold sm:text-[15px] ${darkMode ? "text-white" : "text-[#111111]"}`}>{skill.name}</h3>
+          <span className="shrink-0 text-xs font-semibold" style={{ color: skill.accent || "var(--primary)" }}>{skill.level}%</span>
         </div>
         <div className="mt-1.5 flex items-center gap-2">
-          <span className="max-w-[42%] truncate text-[11px] font-medium text-white/48">{skill.category}</span>
-          <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/12">
-            <div className="h-full rounded-full transition-all duration-500 group-hover:brightness-125" style={{ width: `${skill.level}%`, backgroundColor: skill.accent }} />
+          <span className={`max-w-[42%] truncate text-[11px] font-medium ${darkMode ? "text-white/50" : "text-black/50"}`}>{skill.category}</span>
+          <div className={`h-1 flex-1 overflow-hidden rounded-full ${darkMode ? "bg-white/10" : "bg-black/10"}`}>
+            <div className="h-full rounded-full transition-all duration-500 group-hover:brightness-125" style={{ width: `${skill.level}%`, backgroundColor: skill.accent || "var(--primary)" }} />
           </div>
         </div>
       </div>
@@ -746,7 +759,7 @@ function FloatingSkillLogo({ skill, index, shouldAnimate }: { skill: SkillConten
   );
 }
 
-function ServiceCard({ service, index, shouldAnimate }: { service: ServiceContent; index: number; shouldAnimate: boolean }) {
+function ServiceCard({ service, index, shouldAnimate, darkMode }: { service: ServiceContent; index: number; shouldAnimate: boolean; darkMode?: boolean }) {
   const Icon = serviceIcons[index % serviceIcons.length];
   const tilt = useTiltMotion(shouldAnimate);
 
@@ -759,19 +772,20 @@ function ServiceCard({ service, index, shouldAnimate }: { service: ServiceConten
       onMouseMove={tilt.onMouseMove}
       onMouseLeave={tilt.onMouseLeave}
       style={tilt.style}
-      className="tilt-card group relative min-h-[154px] overflow-hidden rounded-[8px] border border-white/10 bg-white/[0.045] p-3.5 transition-colors duration-300 hover:border-[var(--secondary)]/45"
+      className={`tilt-card group relative min-h-[154px] overflow-hidden rounded-[8px] border p-3.5 transition-colors duration-300 hover:border-[var(--primary)]/50 ${
+        darkMode ? "border-white/10 bg-[#0A0A0A]" : "border-black/8 bg-white shadow-sm"
+      }`}
     >
       <div className="relative z-10">
-        {service.image ? <img src={service.image} alt={`${service.title} by Usman Iqbal`} width={1280} height={560} loading="lazy" decoding="async" className="mb-4 aspect-[16/7] w-full rounded-[8px] border border-white/10 object-cover" /> : null}
+        {service.image ? <img src={service.image} alt={`${service.title} by Usman Iqbal`} width={1280} height={560} loading="lazy" decoding="async" className={`mb-4 aspect-[16/7] w-full rounded-[8px] border object-cover ${darkMode ? "border-white/10" : "border-black/8"}`} /> : null}
         <div className="mb-3 grid h-10 w-10 place-items-center overflow-hidden rounded-[8px] bg-[var(--primary)]/12 text-[var(--primary)] transition group-hover:bg-[var(--primary)] group-hover:text-black">
           {service.icon ? <img src={service.icon} alt="" className="h-6 w-6 object-contain" /> : <Icon size={21} />}
         </div>
-        <h3 className="text-lg font-black leading-tight">{service.title}</h3>
-        <p className="mt-2 max-h-11 overflow-hidden text-sm leading-5 text-white/58 transition-all duration-300 group-hover:max-h-48">
+        <h3 className={`text-lg font-black leading-tight ${darkMode ? "text-white" : "text-[#111111]"}`}>{service.title}</h3>
+        <p className={`mt-2 max-h-11 overflow-hidden text-sm leading-5 transition-all duration-300 group-hover:max-h-48 ${darkMode ? "text-white/65" : "text-black/65"}`}>
           {service.description}
         </p>
       </div>
-      <div className="absolute inset-x-0 bottom-0 h-px glow-line opacity-0 transition group-hover:opacity-75" />
     </motion.article>
   );
 }
@@ -779,11 +793,13 @@ function ServiceCard({ service, index, shouldAnimate }: { service: ServiceConten
 function ProjectSlider({
   projects,
   slides,
-  shouldAnimate
+  shouldAnimate,
+  darkMode
 }: {
   projects: ProjectContent[];
   slides: string[];
   shouldAnimate: boolean;
+  darkMode?: boolean;
 }) {
   const [active, setActive] = useState(0);
   const activeProject = projects[active] || projects[0];
@@ -812,7 +828,9 @@ function ProjectSlider({
 
   return (
     <div className="mx-auto grid max-w-5xl gap-5 lg:grid-cols-[0.95fr_0.72fr]">
-      <motion.div onMouseMove={tilt.onMouseMove} onMouseLeave={tilt.onMouseLeave} style={tilt.style} className="tilt-card relative overflow-hidden rounded-[8px] border border-white/10 bg-white/[0.045] p-3 sm:p-4">
+      <motion.div onMouseMove={tilt.onMouseMove} onMouseLeave={tilt.onMouseLeave} style={tilt.style} className={`tilt-card relative overflow-hidden rounded-[8px] border p-3 sm:p-4 ${
+        darkMode ? "border-white/10 bg-[#0A0A0A]" : "border-black/8 bg-white shadow-sm"
+      }`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={activeProject.id}
@@ -821,15 +839,19 @@ function ProjectSlider({
             exit={shouldAnimate ? { opacity: 0, x: -24 } : undefined}
             transition={{ duration: 0.45 }}
           >
-            <ProjectMockup project={activeProject} />
+            <ProjectMockup project={activeProject} darkMode={darkMode} />
             <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
               <div>
-                <h3 className="text-2xl font-black">{activeProject.title}</h3>
-                <p className="mt-2 max-w-2xl line-clamp-2 text-sm leading-6 text-white/62">{activeProject.description}</p>
+                <h3 className={`text-2xl font-black ${darkMode ? "text-white" : "text-[#111111]"}`}>{activeProject.title}</h3>
+                <p className={`mt-2 max-w-2xl line-clamp-2 text-sm leading-6 ${darkMode ? "text-white/65" : "text-black/65"}`}>{activeProject.description}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {activeProject.url ? <a href={activeProject.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-white/12 px-4 py-2 text-sm font-bold text-white/80 transition hover:border-[var(--primary)] hover:text-[var(--primary)]">View<ExternalLink size={16} /></a> : null}
-                {activeProject.githubUrl ? <a href={activeProject.githubUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-white/12 px-4 py-2 text-sm font-bold text-white/80 transition hover:border-[var(--secondary)] hover:text-[var(--secondary)]"><Github size={16} />GitHub</a> : null}
+                {activeProject.url ? <a href={activeProject.url} target="_blank" rel="noreferrer" className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold transition hover:border-[var(--primary)] hover:text-[var(--primary)] ${
+                  darkMode ? "border-white/12 text-white/80" : "border-black/10 text-black/80"
+                }`}>View<ExternalLink size={16} /></a> : null}
+                {activeProject.githubUrl ? <a href={activeProject.githubUrl} target="_blank" rel="noreferrer" className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold transition hover:border-[var(--primary)] hover:text-[var(--primary)] ${
+                  darkMode ? "border-white/12 text-white/80" : "border-black/10 text-black/80"
+                }`}><Github size={16} />GitHub</a> : null}
               </div>
             </div>
           </motion.div>
@@ -843,7 +865,7 @@ function ProjectSlider({
                 type="button"
                 aria-label={`Show ${project.title}`}
                 onClick={() => setActive(index)}
-                className={`h-2 rounded-full transition-all ${index === active ? "w-10 bg-[var(--primary)]" : "w-2 bg-white/25"}`}
+                className={`h-2 rounded-full transition-all ${index === active ? "w-10 bg-[var(--primary)]" : darkMode ? "w-2 bg-white/20" : "w-2 bg-black/20"}`}
               />
             ))}
           </div>
@@ -852,7 +874,9 @@ function ProjectSlider({
               type="button"
               aria-label="Previous project"
               onClick={() => move(-1)}
-              className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/[0.04] transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
+              className={`grid h-9 w-9 place-items-center rounded-full border transition hover:border-[var(--primary)] hover:text-[var(--primary)] ${
+                darkMode ? "border-white/10 bg-white/[0.04] text-white" : "border-black/10 bg-black/[0.04] text-black"
+              }`}
             >
               <ChevronLeft size={20} />
             </button>
@@ -860,7 +884,9 @@ function ProjectSlider({
               type="button"
               aria-label="Next project"
               onClick={() => move(1)}
-              className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/[0.04] transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
+              className={`grid h-9 w-9 place-items-center rounded-full border transition hover:border-[var(--primary)] hover:text-[var(--primary)] ${
+                darkMode ? "border-white/10 bg-white/[0.04] text-white" : "border-black/10 bg-black/[0.04] text-black"
+              }`}
             >
               <ChevronRight size={20} />
             </button>
@@ -873,7 +899,9 @@ function ProjectSlider({
           <p className="text-sm font-bold uppercase text-[var(--primary)]">Slider Focus</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {slides.map((slide, index) => (
-              <span key={`${slide}-${index}`} className="rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-semibold text-white/70">
+              <span key={`${slide}-${index}`} className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                darkMode ? "border-white/10 bg-black/40 text-white/80" : "border-black/8 bg-white text-black/80"
+              }`}>
                 {slide}
               </span>
             ))}
@@ -886,12 +914,14 @@ function ProjectSlider({
             onClick={() => setActive(index)}
             className={`rounded-[8px] border p-3 text-left transition ${
               active === index
-                ? "border-[var(--primary)]/45 bg-[var(--primary)]/10"
-                : "border-white/10 bg-white/[0.035] hover:border-white/20"
+                ? "border-[var(--primary)]/50 bg-[var(--primary)]/10"
+                : darkMode
+                  ? "border-white/10 bg-[#0A0A0A] hover:border-white/20"
+                  : "border-black/8 bg-white hover:border-black/20 shadow-sm"
             }`}
           >
-            <p className="font-black leading-tight">{project.title}</p>
-            <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/52">{project.description}</p>
+            <p className={`font-black leading-tight ${darkMode ? "text-white" : "text-[#111111]"}`}>{project.title}</p>
+            <p className={`mt-2 line-clamp-2 text-xs leading-5 ${darkMode ? "text-white/55" : "text-black/55"}`}>{project.description}</p>
           </button>
         ))}
       </div>
@@ -899,30 +929,36 @@ function ProjectSlider({
   );
 }
 
-function ProjectMockup({ project, compact = false }: { project: ProjectContent; compact?: boolean }) {
+function ProjectMockup({ project, compact = false, darkMode }: { project: ProjectContent; compact?: boolean; darkMode?: boolean }) {
   return (
-    <div className={`relative overflow-hidden rounded-[8px] border border-white/10 bg-[#0a1010] ${compact ? "p-3" : "p-3 sm:p-4"}`}>
+    <div className={`relative overflow-hidden rounded-[8px] border ${compact ? "p-3" : "p-3 sm:p-4"} ${
+      darkMode ? "border-white/10 bg-[#0A0A0A]" : "border-black/8 bg-[#F9FAFB]"
+    }`}>
       {project.image ? (
         <div className="relative aspect-[16/8.5] overflow-hidden rounded-[8px]">
           <Image src={project.image} alt={project.title} fill sizes="(max-width: 1024px) 90vw, 48vw" className="object-cover" />
         </div>
       ) : (
-        <div className={`card-grid relative overflow-hidden rounded-[8px] border border-white/10 bg-black/50 ${compact ? "p-3" : "p-5"}`}>
+        <div className={`relative overflow-hidden rounded-[8px] border ${compact ? "p-3" : "p-5"} ${
+          darkMode ? "border-white/10 bg-black/60" : "border-black/8 bg-white"
+        }`}>
           <div className="mb-4 flex items-center justify-between">
             <div className="flex gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
-              <span className="h-2.5 w-2.5 rounded-full bg-yellow-300/80" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[var(--primary)]/90" />
+              <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+              <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--primary)]" />
             </div>
-            <span className="text-xs font-bold uppercase text-white/40">NURAXTECH</span>
+            <span className={`text-xs font-bold uppercase ${darkMode ? "text-white/40" : "text-black/40"}`}>NURAXTECH</span>
           </div>
           <div className="grid gap-3 sm:grid-cols-[0.8fr_1.2fr]">
-            <div className="rounded-[8px] border border-white/10 bg-white/[0.04] p-3">
-              <p className="text-xs font-bold uppercase text-white/40">Project</p>
-              <p className="mt-2 text-base font-black text-white">{project.title}</p>
+            <div className={`rounded-[8px] border p-3 ${
+              darkMode ? "border-white/10 bg-[#141414]" : "border-black/8 bg-[#F9FAFB]"
+            }`}>
+              <p className={`text-xs font-bold uppercase ${darkMode ? "text-white/40" : "text-black/40"}`}>Project</p>
+              <p className={`mt-2 text-base font-black ${darkMode ? "text-white" : "text-[#111111]"}`}>{project.title}</p>
               <div className="mt-4 grid gap-2">
                 {project.tags.slice(0, 3).map((tag, index) => (
-                  <span key={`${project.id}-${tag}-${index}`} className="rounded-full bg-[var(--primary)]/12 px-3 py-1 text-xs font-bold text-[var(--primary)]">
+                  <span key={`${project.id}-${tag}-${index}`} className="rounded-full bg-[var(--primary)]/15 px-3 py-1 text-xs font-bold text-[var(--primary)]">
                     {tag}
                   </span>
                 ))}
@@ -931,18 +967,22 @@ function ProjectMockup({ project, compact = false }: { project: ProjectContent; 
             <div className="grid gap-3">
               <div className="grid grid-cols-3 gap-2">
                 {[76, 92, 64].map((value, index) => (
-                  <div key={index} className="rounded-[8px] border border-white/10 bg-white/[0.04] p-3">
-                    <p className="text-base font-black text-[var(--secondary)]">{value}%</p>
-                    <div className="mt-2 h-2 rounded-full bg-white/10">
-                      <div className="h-full rounded-full bg-[var(--secondary)]" style={{ width: `${value}%` }} />
+                  <div key={index} className={`rounded-[8px] border p-3 ${
+                    darkMode ? "border-white/10 bg-[#141414]" : "border-black/8 bg-[#F9FAFB]"
+                  }`}>
+                    <p className="text-base font-black text-[var(--primary)]">{value}%</p>
+                    <div className={`mt-2 h-2 rounded-full ${darkMode ? "bg-white/10" : "bg-black/10"}`}>
+                      <div className="h-full rounded-full bg-[var(--primary)]" style={{ width: `${value}%` }} />
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="rounded-[8px] border border-white/10 bg-white/[0.04] p-3">
+              <div className={`rounded-[8px] border p-3 ${
+                darkMode ? "border-white/10 bg-[#141414]" : "border-black/8 bg-[#F9FAFB]"
+              }`}>
                 <div className="flex h-20 items-end gap-2">
                   {[35, 58, 46, 76, 68, 88, 80].map((height, index) => (
-                    <span key={index} className="flex-1 rounded-t bg-[var(--primary)]/80" style={{ height: `${height}%` }} />
+                    <span key={index} className="flex-1 rounded-t bg-[var(--primary)]" style={{ height: `${height}%` }} />
                   ))}
                 </div>
               </div>
@@ -950,30 +990,32 @@ function ProjectMockup({ project, compact = false }: { project: ProjectContent; 
           </div>
         </div>
       )}
-      <div className="soft-scan pointer-events-none absolute inset-0 overflow-hidden" />
     </div>
   );
 }
-
 function ContactLine({
   icon: Icon,
   label,
   value,
-  href
+  href,
+  darkMode
 }: {
   icon: typeof Mail;
   label: string;
   value: string;
   href?: string;
+  darkMode?: boolean;
 }) {
   const content = (
-    <div className="flex items-center gap-3 rounded-[8px] border border-white/10 bg-white/[0.04] p-3 transition hover:border-[var(--primary)]/40">
+    <div className={`flex items-center gap-3 rounded-[8px] border p-3 transition hover:border-[var(--primary)]/50 ${
+      darkMode ? "border-white/10 bg-[#0A0A0A]" : "border-black/8 bg-white shadow-sm"
+    }`}>
       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[8px] bg-[var(--primary)]/12 text-[var(--primary)]">
         <Icon size={19} />
       </span>
       <span className="min-w-0">
-        <span className="block text-xs font-bold uppercase text-white/42">{label}</span>
-        <span className="block truncate text-sm font-bold text-white/82">{value}</span>
+        <span className={`block text-xs font-bold uppercase ${darkMode ? "text-white/45" : "text-black/45"}`}>{label}</span>
+        <span className={`block truncate text-sm font-bold ${darkMode ? "text-white" : "text-[#111111]"}`}>{value}</span>
       </span>
     </div>
   );
@@ -981,7 +1023,7 @@ function ContactLine({
   return href ? <a href={href}>{content}</a> : content;
 }
 
-function ContactForm({ email, fields, shouldAnimate }: { email: string; fields?: string[]; shouldAnimate: boolean }) {
+function ContactForm({ email, fields, shouldAnimate, darkMode }: { email: string; fields?: string[]; shouldAnimate: boolean; darkMode?: boolean }) {
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [formError, setFormError] = useState("");
@@ -1100,7 +1142,9 @@ function ContactForm({ email, fields, shouldAnimate }: { email: string; fields?:
       viewport={{ once: true, amount: 0.25 }}
       ref={formRef}
       onSubmit={submitContactForm}
-      className="glass-panel rounded-[8px] p-4 sm:p-6"
+      className={`glass-panel rounded-[8px] p-4 sm:p-6 border ${
+        darkMode ? "border-white/10 bg-[#0A0A0A]" : "border-black/8 bg-white shadow-sm"
+      }`}
     >
       <input ref={timeInputRef} type="hidden" name="time" />
       {["name", "email", "phone", "project_type", "subject", "message"].filter((field) => !configuredEmailJsFields.has(field)).map((field) => <input key={field} type="hidden" name={field} />)}
@@ -1114,20 +1158,48 @@ function ContactForm({ email, fields, shouldAnimate }: { email: string; fields?:
           const isMessage = field.toLowerCase().includes("message");
           const isEmail = field.toLowerCase().includes("email");
           const fieldName = emailJsFieldName(field);
-          const input = isMessage ? <textarea name={fieldName} className="peer min-h-32 resize-y rounded-[8px] border border-white/10 bg-black/35 px-4 pb-3 pt-6 text-sm text-white outline-none transition focus:border-[var(--primary)] focus:shadow-[0_0_24px_rgba(22,242,164,0.16)]" placeholder=" " required /> : <input name={fieldName} type={isEmail ? "email" : "text"} className="peer rounded-[8px] border border-white/10 bg-black/35 px-4 pb-3 pt-6 text-sm text-white outline-none transition focus:border-[var(--primary)] focus:shadow-[0_0_24px_rgba(22,242,164,0.16)]" placeholder=" " required />;
+          const input = isMessage ? (
+            <textarea
+              name={fieldName}
+              className={`peer min-h-32 resize-y rounded-[8px] border px-4 pb-3 pt-6 text-sm outline-none transition focus:border-[var(--primary)] ${
+                darkMode
+                  ? "border-white/12 bg-[#141414] text-white"
+                  : "border-black/10 bg-[#F9FAFB] text-[#111111]"
+              }`}
+              placeholder=" "
+              required
+            />
+          ) : (
+            <input
+              name={fieldName}
+              type={isEmail ? "email" : "text"}
+              className={`peer rounded-[8px] border px-4 pb-3 pt-6 text-sm outline-none transition focus:border-[var(--primary)] ${
+                darkMode
+                  ? "border-white/12 bg-[#141414] text-white"
+                  : "border-black/10 bg-[#F9FAFB] text-[#111111]"
+              }`}
+              placeholder=" "
+              required
+            />
+          );
 
-          return <label key={`${field}-${index}`} className={`floating-field relative grid text-sm font-bold text-white/70 ${isMessage ? "sm:col-span-2" : ""}`}>{input}<span>{field}</span></label>;
+          return (
+            <label key={`${field}-${index}`} className={`floating-field relative grid text-sm font-bold ${darkMode ? "text-white/60" : "text-black/60"} ${isMessage ? "sm:col-span-2" : ""}`}>
+              {input}
+              <span>{field}</span>
+            </label>
+          );
         })}
       </div>
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-white/48">Messages are submitted securely. Direct email: {email}</p>
-        <button type="submit" disabled={sending} className="inline-flex items-center justify-center gap-3 rounded-full bg-[var(--primary)] px-5 py-3 font-black text-black shadow-glow transition hover:scale-105 hover:bg-white hover:shadow-[0_0_34px_rgba(22,242,164,0.28)] disabled:cursor-wait disabled:opacity-60">
+        <p className={`text-sm ${darkMode ? "text-white/50" : "text-black/50"}`}>Messages are submitted securely. Direct email: {email}</p>
+        <button type="submit" disabled={sending} className="inline-flex items-center justify-center gap-3 rounded-full bg-[var(--primary)] px-5 py-3 font-black text-black transition hover:scale-105 hover:bg-[#00b885] disabled:cursor-wait disabled:opacity-60">
           <motion.span animate={sent ? { scale: [1, 1.2, 1] } : undefined}>{sent ? <CheckCircle2 size={19} /> : <Send size={19} />}</motion.span>
           {sending ? "Sending" : sent ? "Message Sent" : "Send Message"}
         </button>
       </div>
-      {sent ? <p className="mt-4 rounded-[8px] border border-[var(--primary)]/30 bg-[var(--primary)]/10 p-3 text-sm font-semibold text-white">Thank you! Your message has been sent successfully.</p> : null}
-      {formError ? <p className="mt-4 rounded-[8px] border border-red-300/30 bg-red-400/10 p-3 text-sm font-semibold text-red-100">{formError}</p> : null}
+      {sent ? <p className="mt-4 rounded-[8px] border border-[var(--primary)]/30 bg-[var(--primary)]/10 p-3 text-sm font-semibold text-[var(--primary)]">Thank you! Your message has been sent successfully.</p> : null}
+      {formError ? <p className="mt-4 rounded-[8px] border border-red-400/30 bg-red-500/10 p-3 text-sm font-semibold text-red-400">{formError}</p> : null}
     </motion.form>
   );
 }
@@ -1140,7 +1212,7 @@ function useTiltMotion(enabled: boolean) {
   const scale = useSpring(1, { stiffness: 220, damping: 18 });
   const shadowX = useTransform(x, [-0.5, 0.5], [22, -22]);
   const shadowY = useTransform(y, [-0.5, 0.5], [-18, 18]);
-  const boxShadow = useTransform([shadowX, shadowY], ([sx, sy]) => `${sx}px ${sy}px 42px rgba(22,242,164,0.16)`);
+  const boxShadow = useTransform([shadowX, shadowY], ([sx, sy]) => `${sx}px ${sy}px 42px rgba(0, 220, 160, 0.1)`);
 
   return {
     style: enabled ? { rotateX, rotateY, scale, boxShadow, transformPerspective: 900 } : undefined,
@@ -1161,7 +1233,7 @@ function useTiltMotion(enabled: boolean) {
   };
 }
 
-function SocialLinks({ socials, compact = false }: { socials: SocialContent[]; compact?: boolean }) {
+function SocialLinks({ socials, compact = false, darkMode }: { socials: SocialContent[]; compact?: boolean; darkMode?: boolean }) {
   const visibleSocials = socials.filter((social) => social.url.trim());
 
   if (!visibleSocials.length) {
@@ -1177,7 +1249,11 @@ function SocialLinks({ socials, compact = false }: { socials: SocialContent[]; c
           target="_blank"
           rel="noreferrer"
           aria-label={social.label}
-          className="group grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.05] text-white/62 transition hover:-translate-y-0.5 hover:border-[var(--primary)] hover:text-[var(--primary)]"
+          className={`group grid h-11 w-11 shrink-0 place-items-center rounded-full border transition hover:-translate-y-0.5 hover:border-[var(--primary)] hover:text-[var(--primary)] ${
+            darkMode
+              ? "border-white/10 bg-white/[0.04] text-white/70"
+              : "border-black/10 bg-black/[0.03] text-black/70"
+          }`}
         >
           <SocialIcon social={social} />
         </a>
