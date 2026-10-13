@@ -240,8 +240,55 @@ button[class*="bg-[var(--primary)]"]:hover {
 
 .portfolio-loader {
   perspective: 1200px;
-  background: #000000;
-  color: #FFFFFF;
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+  color-scheme: dark !important;
+}
+
+.portfolio-loader * {
+  color-scheme: dark !important;
+}
+
+.light-mode .portfolio-loader,
+.portfolio-loader {
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+}
+
+.light-mode .portfolio-loader [class*="text-white"],
+.portfolio-loader [class*="text-white"] {
+  color: #FFFFFF !important;
+}
+
+.light-mode .portfolio-loader [class*="text-white/"],
+.portfolio-loader [class*="text-white/"] {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.light-mode .portfolio-loader [class*="bg-white/"],
+.portfolio-loader [class*="bg-white/"] {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.light-mode .portfolio-loader [class*="border-white/"],
+.portfolio-loader [class*="border-white/"] {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.light-mode .portfolio-loader .loader-letter,
+.portfolio-loader .loader-letter {
+  color: #FFFFFF !important;
+}
+
+.light-mode .portfolio-loader .loader-name-last .loader-letter,
+.portfolio-loader .loader-name-last .loader-letter {
+  color: #00DCA0 !important;
+  text-shadow: 0 0 24px rgba(0, 220, 160, 0.3) !important;
+}
+
+.light-mode .portfolio-loader .loader-progress,
+.portfolio-loader .loader-progress {
+  background-color: #00DCA0 !important;
 }
 
 .loader-grid {

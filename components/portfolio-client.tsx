@@ -170,9 +170,10 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
   });
 
   return (
-    <main className={`site-shell flex min-h-screen flex-col overflow-hidden ${darkMode ? "dark-mode bg-black text-white" : "light-mode bg-white text-[#111111]"}`} style={style}>
+    <>
       <AnimatePresence>{loading ? <LoadingExperience /> : null}</AnimatePresence>
-      <FloatingNav menuOpen={menuOpen} setMenuOpen={setMenuOpen} darkMode={darkMode} toggleColorMode={toggleColorMode} siteName={content.builder.settings.siteName} logoUrl={content.builder.settings.logoUrl} heroImageSrc={heroImageSrc} logoLink={content.builder.settings.logoLink} />
+      <main className={`site-shell flex min-h-screen flex-col overflow-hidden ${darkMode ? "dark-mode bg-black text-white" : "light-mode bg-white text-[#111111]"}`} style={style}>
+        <FloatingNav menuOpen={menuOpen} setMenuOpen={setMenuOpen} darkMode={darkMode} toggleColorMode={toggleColorMode} siteName={content.builder.settings.siteName} logoUrl={content.builder.settings.logoUrl} heroImageSrc={heroImageSrc} logoLink={content.builder.settings.logoLink} />
 
       <section ref={heroSectionRef} id="home" className={`hero-showcase relative min-h-[100svh] px-5 pb-8 pt-28 sm:px-8 lg:h-[100svh] lg:min-h-0 lg:overflow-hidden lg:px-12 lg:pb-4 lg:pt-28 ${darkMode ? "bg-black" : "bg-white"}`} style={homeStyle}>
         {heroBackgroundType === "image" && heroBackgroundUrl ? <div className="absolute inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroBackgroundUrl})` }} /> : null}
@@ -347,6 +348,7 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
         <p>&copy; {new Date().getFullYear()} Usman Iqbal - NURAXTECH. Built for CRM, automation, web, and AI solutions.</p>
       </footer>
     </main>
+  </>
   );
 }
 
@@ -513,7 +515,7 @@ function LoadingExperience() {
           initial={{ opacity: 0.65, y: 0, letterSpacing: "0.3em" }}
           animate={{ opacity: 1, y: 0, letterSpacing: "0.48em" }}
           transition={{ duration: 0.32, ease: "easeOut" }}
-          className="mb-5 pl-[0.48em] text-[10px] font-bold uppercase text-white/45 sm:text-xs"
+          className="mb-5 pl-[0.48em] text-[10px] font-bold uppercase text-white/80 sm:text-xs"
         >
           Welcome to my portfolio
         </motion.p>
@@ -557,12 +559,12 @@ function LoadingExperience() {
           initial={{ opacity: 0.55, y: 3 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.74, duration: 0.2 }}
-          className="mt-4 text-[10px] font-semibold uppercase tracking-[0.42em] text-white/55 sm:text-xs"
+          className="mt-4 text-[10px] font-semibold uppercase tracking-[0.42em] text-white/80 sm:text-xs"
         >
           CRM · Automation · Web · AI
         </motion.p>
 
-        <div className="mt-9 h-[3px] w-44 overflow-hidden rounded-full bg-white/10 sm:w-52">
+        <div className="mt-9 h-[3px] w-44 overflow-hidden rounded-full bg-white/20 sm:w-52">
           <motion.div
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
