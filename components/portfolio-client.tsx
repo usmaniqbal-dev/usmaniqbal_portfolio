@@ -57,7 +57,7 @@ const navItems = [
 
 const serviceIcons = [Database, Zap, Layers3, Settings2, Code2, BriefcaseBusiness, Bot, Sparkles];
 
-const LOADER_MAX_MS = 320;
+const LOADER_MAX_MS = 2800;
 
 export default function PortfolioClient({ content: initialContent }: PortfolioClientProps) {
   const [content, setContent] = useState(initialContent);
@@ -488,8 +488,8 @@ function LoadingExperience() {
   return (
     <motion.div
       initial={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 1.08, filter: "blur(10px)" }}
-      transition={{ duration: 0.2, ease: [0.76, 0, 0.24, 1] }}
+      exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
+      transition={{ duration: 0.4, ease: [0.76, 0, 0.24, 1] }}
       className="portfolio-loader fixed inset-0 z-[100] grid place-items-center overflow-hidden bg-black text-white"
       role="status"
       aria-label="Loading Usman Iqbal portfolio"
@@ -566,7 +566,7 @@ function LoadingExperience() {
           <motion.div
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
-            transition={{ duration: 1.05, ease: [0.65, 0, 0.35, 1] }}
+            transition={{ duration: 2.6, ease: [0.65, 0, 0.35, 1] }}
             className="loader-progress h-full origin-left rounded-full"
           />
         </div>
