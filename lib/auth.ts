@@ -4,7 +4,8 @@ import path from "path";
 import { getStoredJson, saveStoredJson } from "@/lib/content-store";
 
 const minimumSecretLength = 32;
-const minimumPasswordLength = 8;
+export const minimumPasswordLength = 8;
+
 
 type SessionPayload = {
   username: string;

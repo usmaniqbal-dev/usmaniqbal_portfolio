@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bot, Check, Loader2, Plus, Save, Send, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Bot, LayoutDashboard, Loader2, Plus, Save, Send, Trash2, Users } from "lucide-react";
 import type { ChatbotSettings, KnowledgeBase } from "@/lib/chatbot-store";
+
 
 type SessionState = { authenticated: boolean; configured: boolean; csrfToken: string };
 type Analytics = { totalConversationsToday: number; mostAskedQuestions: string[]; averageResponseTimeMs: number };
@@ -135,11 +137,28 @@ export default function ChatbotAdminPage() {
           <p className="text-sm font-bold uppercase text-[#16f2a4]">AI Chatbot</p>
           <h1 className="text-3xl font-black">Portfolio Chatbot Manager</h1>
         </div>
-        <button type="button" onClick={retrain} className="inline-flex items-center gap-2 rounded-full bg-[#16f2a4] px-5 py-3 font-black text-black">
-          {busy === "retrain" ? <Loader2 className="animate-spin" size={18} /> : <Bot size={18} />}
-          Retrain AI
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/admin1122"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-xs font-bold text-white/80 transition hover:border-[#16f2a4] hover:text-[#16f2a4] sm:text-sm"
+          >
+            <LayoutDashboard size={16} />
+            Builder
+          </Link>
+          <Link
+            href="/admin/visitors"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-xs font-bold text-white/80 transition hover:border-[#16f2a4] hover:text-[#16f2a4] sm:text-sm"
+          >
+            <Users size={16} />
+            Visitors
+          </Link>
+          <button type="button" onClick={retrain} className="inline-flex items-center gap-2 rounded-full bg-[#16f2a4] px-5 py-3 font-black text-black">
+            {busy === "retrain" ? <Loader2 className="animate-spin" size={18} /> : <Bot size={18} />}
+            Retrain AI
+          </button>
+        </div>
       </div>
+
 
       {status ? <p className="mb-5 rounded-[8px] border border-[#16f2a4]/30 bg-[#16f2a4]/10 p-3 text-sm font-bold text-[#bfffe8]">{status}</p> : null}
 

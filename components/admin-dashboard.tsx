@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Bot,
   BriefcaseBusiness,
@@ -17,7 +18,8 @@ import {
   Shield,
   Trash2,
   Upload,
-  UserRound
+  UserRound,
+  Users
 } from "lucide-react";
 import type { ProjectContent, ServiceContent, SiteContent, SkillContent, SocialContent } from "@/types/site-content";
 
@@ -226,6 +228,13 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
+            <Link
+              href="/admin/visitors"
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 font-bold text-white/70 transition hover:border-[#16f2a4] hover:text-[#16f2a4]"
+            >
+              <Users size={18} />
+              Visitors
+            </Link>
             <button
               type="button"
               onClick={saveContent}
@@ -249,6 +258,13 @@ export default function AdminDashboard() {
 
       <div className="mx-auto grid max-w-7xl gap-6 px-5 py-8 lg:grid-cols-[260px_1fr]">
         <aside className="h-fit rounded-[8px] border border-white/10 bg-white/[0.04] p-3">
+          <Link
+            href="/admin/visitors"
+            className="mb-2 flex w-full items-center gap-3 rounded-[8px] border border-[#16f2a4]/20 bg-[#16f2a4]/10 px-4 py-3 text-left font-bold text-[#16f2a4] transition hover:bg-[#16f2a4] hover:text-black"
+          >
+            <Users size={19} />
+            Visitors
+          </Link>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -266,6 +282,7 @@ export default function AdminDashboard() {
             );
           })}
         </aside>
+
 
         <section className="rounded-[8px] border border-white/10 bg-white/[0.035] p-4 sm:p-6">
           {message ? (

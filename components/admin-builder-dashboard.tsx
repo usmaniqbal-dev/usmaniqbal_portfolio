@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import EditWebsiteManager from "@/components/edit-website-manager";
 import {
   AlertCircle,
@@ -16,8 +17,8 @@ import {
   KeyRound,
   LayoutDashboard,
   Loader2,
-  Lock,
   LogOut,
+
   Mail,
   Moon,
   PanelLeft,
@@ -27,7 +28,8 @@ import {
   Shield,
   Sun,
   Trash2,
-  Upload
+  Upload,
+  Users
 } from "lucide-react";
 import type { BuilderTemplate, MediaFile, SiteContent } from "@/types/site-content";
 
@@ -50,8 +52,16 @@ type AdminView =
   | "seo"
   | "ai";
 
-const menu: { id: AdminView; label: string; icon: typeof LayoutDashboard }[] = [
+type MenuItem = {
+  id: AdminView | "visitors";
+  label: string;
+  icon: typeof LayoutDashboard;
+  href?: string;
+};
+
+const menu: MenuItem[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "visitors", label: "Visitors", icon: Users, href: "/admin/visitors" },
   { id: "security", label: "Admin Credentials", icon: KeyRound },
   { id: "email", label: "Email Settings", icon: Mail },
   { id: "content", label: "Content Manager", icon: BriefcaseBusiness },
@@ -61,6 +71,7 @@ const menu: { id: AdminView; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "media", label: "Media Manager", icon: ImagePlus },
   { id: "ai", label: "AI Tools", icon: Bot }
 ];
+
 
 const uploadTimeoutMs = 60_000;
 
@@ -242,11 +253,23 @@ export default function AdminBuilderDashboard() {
           <nav className="grid gap-1">
             {menu.map((item) => {
               const Icon = item.icon;
+              if (item.href) {
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className="flex items-center gap-3 rounded-[8px] px-3 py-3 text-left font-bold text-white/62 transition hover:bg-white/[0.06] hover:text-white"
+                  >
+                    <Icon size={18} />
+                    {item.label}
+                  </Link>
+                );
+              }
               return (
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setView(item.id)}
+                  onClick={() => setView(item.id as AdminView)}
                   className={`flex items-center gap-3 rounded-[8px] px-3 py-3 text-left font-bold transition ${
                     view === item.id ? "bg-[#16f2a4] text-black" : "text-white/62 hover:bg-white/[0.06] hover:text-white"
                   }`}
@@ -271,6 +294,13 @@ export default function AdminBuilderDashboard() {
                 <h1 className="text-2xl font-black">NURAXTECH Admin Panel</h1>
               </div>
               <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/admin/visitors"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-3 font-bold text-white/70 transition hover:border-[#16f2a4] hover:text-[#16f2a4]"
+                >
+                  <Users size={17} />
+                  Visitors
+                </Link>
                 <button
                   type="button"
                   onClick={() => setView("security")}
@@ -298,6 +328,7 @@ export default function AdminBuilderDashboard() {
                 </button>
               </div>
             </div>
+
             {message ? <p className="mt-3 rounded-[8px] border border-[#16f2a4]/25 bg-[#16f2a4]/10 p-3 text-sm font-semibold text-[#bfffe8]">{message}</p> : null}
           </header>
 
@@ -395,8 +426,28 @@ function DashboardView({ templates, activeTheme, lastPublished, mediaCount, stor
           </button>
         </div>
       ) : null}
+
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[8px] border border-white/10 bg-white/[0.035] p-5">
+        <div className="flex items-center gap-3">
+          <div className="grid h-12 w-12 place-items-center rounded-full bg-[#16f2a4]/15 text-[#16f2a4]">
+            <Users size={22} />
+          </div>
+          <div>
+            <p className="font-black text-white">Live Visitor Analytics</p>
+            <p className="text-xs text-white/50">Track live visits, geographical regions, browsers, and traffic in Neon PostgreSQL.</p>
+          </div>
+        </div>
+        <Link
+          href="/admin/visitors"
+          className="inline-flex items-center gap-2 rounded-full bg-[#16f2a4] px-5 py-2.5 text-sm font-black text-black transition hover:bg-white"
+        >
+          <Users size={16} />
+          Open Visitors Dashboard
+        </Link>
+      </div>
     </div>
   );
+
 }
 
 function BrandSeoView({ content, setContent, saveDraft, secureHeaders }: { content: SiteContent; setContent: (content: SiteContent) => void; saveDraft: (content?: SiteContent | null) => void; secureHeaders: (extra?: HeadersInit) => HeadersInit }) {

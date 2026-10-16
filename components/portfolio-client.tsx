@@ -346,10 +346,24 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
 
       <footer className={`portfolio-footer relative z-10 border-t px-5 py-8 text-center text-sm sm:px-8 ${darkMode ? "border-white/10 bg-black text-white/50" : "border-black/8 bg-white text-black/50"}`} style={{ order: 100 }}>
         <p>&copy; {new Date().getFullYear()} Usman Iqbal - NURAXTECH. Built for CRM, automation, web, and AI solutions.</p>
+        <p className="mt-2 text-xs">
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("open-privacy-modal"));
+              }
+            }}
+            className="underline underline-offset-4 opacity-70 transition hover:opacity-100 hover:text-[var(--primary)]"
+          >
+            Privacy Policy &amp; Analytics
+          </button>
+        </p>
       </footer>
     </main>
   </>
   );
+
 }
 
 function FloatingNav({

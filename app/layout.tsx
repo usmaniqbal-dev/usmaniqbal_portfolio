@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import ChatbotWidget from "@/components/chatbot/ChatbotWidget";
 import { getSiteContent } from "@/lib/content-store";
 import { seoDescription, seoKeywords, seoTitle, siteUrl } from "@/lib/seo-config";
+import VisitorTracker from "@/components/visitor-tracker";
+import PrivacyNotice from "@/components/privacy-notice";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -61,7 +63,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         {children}
         <ChatbotWidget />
+        <VisitorTracker />
+        <PrivacyNotice />
       </body>
     </html>
   );
 }
+

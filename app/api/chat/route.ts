@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { getKnowledgeBase, type KnowledgeBase } from "@/lib/chatbot-store";
 import { getSiteContent } from "@/lib/content-store";
 import type { SiteContent } from "@/types/site-content";
+
 
 export const runtime = "nodejs";
 

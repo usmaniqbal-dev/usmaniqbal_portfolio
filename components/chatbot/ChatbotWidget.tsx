@@ -4,7 +4,8 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, Minus, RotateCcw, Trash2, X } from "lucide-react";
+import { Bot, Minus, Trash2, X } from "lucide-react";
+
 import { useChatbot } from "@/hooks/useChatbot";
 import ChatInput from "@/components/chatbot/ChatInput";
 import ChatMessage from "@/components/chatbot/ChatMessage";
