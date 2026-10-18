@@ -17,3 +17,4 @@ __pycache__/
 
 *.tsbuildinfo
 .sf
+data/admin-2fa*.json

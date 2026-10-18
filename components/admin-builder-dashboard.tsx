@@ -6,11 +6,13 @@ import Link from "next/link";
 import EditWebsiteManager from "@/components/edit-website-manager";
 import {
   AlertCircle,
+  ArrowLeft,
   Bot,
   BriefcaseBusiness,
   Check,
   CheckCircle2,
   Copy,
+  Download,
   Eye,
   FileText,
   ImagePlus,
@@ -18,14 +20,18 @@ import {
   LayoutDashboard,
   Loader2,
   LogOut,
-
   Mail,
   Moon,
   PanelLeft,
+  QrCode,
+  RefreshCw,
   Save,
   Search,
   Send,
   Shield,
+  ShieldAlert,
+  ShieldCheck,
+  Smartphone,
   Sun,
   Trash2,
   Upload,
@@ -90,6 +96,9 @@ export default function AdminBuilderDashboard() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [adminDarkMode, setAdminDarkMode] = useState(true);
+  const [loginStep, setLoginStep] = useState<"credentials" | "totp">("credentials");
+  const [totpCode, setTotpCode] = useState("");
+  const [isBackupMode, setIsBackupMode] = useState(false);
 
   useEffect(() => {
     checkSession();
@@ -148,7 +157,11 @@ export default function AdminBuilderDashboard() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password })
     });
-    const result = (await response.json()) as { message?: string; csrfToken?: string };
+    const result = (await response.json()) as {
+      message?: string;
+      csrfToken?: string;
+      requires2FA?: boolean;
+    };
 
     if (!response.ok) {
       setMessage(result.message || "Login failed.");
@@ -156,7 +169,46 @@ export default function AdminBuilderDashboard() {
       return;
     }
 
+    // If account has 2FA enabled, transition to Step 2 OTP verification
+    if (result.requires2FA) {
+      setLoginStep("totp");
+      setBusy(false);
+      setMessage("");
+      return;
+    }
+
     setSession({ authenticated: true, configured: true, csrfToken: result.csrfToken });
+    await loadContent();
+    setBusy(false);
+  }
+
+  // Completes Step 2 2FA verification using a 6-digit TOTP code or backup code
+  async function verify2FA(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage("");
+
+    const response = await fetch("/api/admin/2fa/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: totpCode })
+    });
+    const result = (await response.json()) as {
+      message?: string;
+      csrfToken?: string;
+      ok?: boolean;
+      usedBackupCode?: boolean;
+    };
+
+    if (!response.ok) {
+      setMessage(result.message || "Verification failed.");
+      setBusy(false);
+      return;
+    }
+
+    setSession({ authenticated: true, configured: true, csrfToken: result.csrfToken });
+    setLoginStep("credentials");
+    setTotpCode("");
     await loadContent();
     setBusy(false);
   }
@@ -166,6 +218,8 @@ export default function AdminBuilderDashboard() {
     await fetch("/api/admin/logout", { method: "POST" });
     setSession({ authenticated: false, configured: true });
     setContent(null);
+    setLoginStep("credentials");
+    setTotpCode("");
   }
 
   // Saves the entire content document as an unpublished draft.
@@ -230,7 +284,25 @@ export default function AdminBuilderDashboard() {
   }
 
   if (!session.authenticated) {
-    return <LoginScreen session={session} username={username} password={password} setUsername={setUsername} setPassword={setPassword} login={login} busy={busy} message={message} />;
+    return (
+      <LoginScreen
+        session={session}
+        username={username}
+        password={password}
+        setUsername={setUsername}
+        setPassword={setPassword}
+        login={login}
+        loginStep={loginStep}
+        setLoginStep={setLoginStep}
+        totpCode={totpCode}
+        setTotpCode={setTotpCode}
+        verify2FA={verify2FA}
+        isBackupMode={isBackupMode}
+        setIsBackupMode={setIsBackupMode}
+        busy={busy}
+        message={message}
+      />
+    );
   }
 
   if (!content) {
@@ -364,24 +436,154 @@ function LoadingScreen() {
   );
 }
 
-function LoginScreen({ session, username, password, setUsername, setPassword, login, busy, message }: { session: SessionState; username: string; password: string; setUsername: (value: string) => void; setPassword: (value: string) => void; login: (event: React.FormEvent<HTMLFormElement>) => void; busy: boolean; message: string }) {
+function LoginScreen({
+  session,
+  username,
+  password,
+  setUsername,
+  setPassword,
+  login,
+  loginStep,
+  setLoginStep,
+  totpCode,
+  setTotpCode,
+  verify2FA,
+  isBackupMode,
+  setIsBackupMode,
+  busy,
+  message
+}: {
+  session: SessionState;
+  username: string;
+  password: string;
+  setUsername: (value: string) => void;
+  setPassword: (value: string) => void;
+  login: (event: React.FormEvent<HTMLFormElement>) => void;
+  loginStep: "credentials" | "totp";
+  setLoginStep: (step: "credentials" | "totp") => void;
+  totpCode: string;
+  setTotpCode: (code: string) => void;
+  verify2FA: (event: React.FormEvent<HTMLFormElement>) => void;
+  isBackupMode: boolean;
+  setIsBackupMode: (mode: boolean) => void;
+  busy: boolean;
+  message: string;
+}) {
   return (
     <main className="grid min-h-screen place-items-center bg-[#070b12] px-5 text-white">
-      <form onSubmit={login} className="w-full max-w-md rounded-[8px] border border-white/10 bg-white/[0.04] p-6 shadow-glow">
-        <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-white/70">
-          <Shield size={18} className="text-[#16f2a4]" />
-          Protected Admin
-        </div>
-        <h1 className="text-3xl font-black">Sign in to Builder</h1>
-        {session.configured ? null : <p className="mt-4 rounded-[8px] border border-yellow-400/25 bg-yellow-400/10 p-3 text-sm text-yellow-100">{session.message}</p>}
-        <TextField label="Username" value={username} onChange={setUsername} />
-        <TextField label="Password" value={password} onChange={setPassword} type="password" />
-        {message ? <p className="mt-4 rounded-[8px] border border-red-400/25 bg-red-400/10 p-3 text-sm text-red-100">{message}</p> : null}
-        <button type="submit" disabled={busy || !session.configured} className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#16f2a4] px-5 py-4 font-black text-black disabled:opacity-50">
-          {busy ? <Loader2 className="animate-spin" size={18} /> : <Shield size={18} />}
-          Login
-        </button>
-      </form>
+      {loginStep === "credentials" ? (
+        <form onSubmit={login} className="w-full max-w-md rounded-[16px] border border-white/10 bg-white/[0.04] p-6 sm:p-8 shadow-glow backdrop-blur-md">
+          <div className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white/70">
+            <Shield size={16} className="text-[#16f2a4]" />
+            Protected Admin Access
+          </div>
+          <h1 className="text-3xl font-black tracking-tight">Sign in to Builder</h1>
+          <p className="mt-2 text-xs text-white/50">Enter your administrator credentials to proceed.</p>
+          {session.configured ? null : (
+            <p className="mt-4 rounded-[8px] border border-yellow-400/25 bg-yellow-400/10 p-3 text-sm text-yellow-100">
+              {session.message}
+            </p>
+          )}
+          <TextField label="Username" value={username} onChange={setUsername} />
+          <TextField label="Password" value={password} onChange={setPassword} type="password" />
+          {message ? (
+            <div className="mt-4 flex items-center gap-2 rounded-[8px] border border-red-400/25 bg-red-400/10 p-3 text-sm text-red-100">
+              <AlertCircle size={16} className="shrink-0 text-red-400" />
+              <span>{message}</span>
+            </div>
+          ) : null}
+          <button
+            type="submit"
+            disabled={busy || !session.configured}
+            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#16f2a4] px-5 py-4 font-black text-black transition-all hover:bg-white disabled:opacity-50"
+          >
+            {busy ? <Loader2 className="animate-spin" size={18} /> : <Shield size={18} />}
+            Continue
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={verify2FA} className="w-full max-w-md rounded-[16px] border border-white/10 bg-white/[0.04] p-6 sm:p-8 shadow-glow backdrop-blur-md">
+          <div className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-[#16f2a4]/25 bg-[#16f2a4]/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#16f2a4]">
+            <ShieldCheck size={16} />
+            Two-Factor Verification
+          </div>
+
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+            {isBackupMode ? "Enter Backup Code" : "Authenticator Code"}
+          </h1>
+
+          <p className="mt-2 text-xs sm:text-sm text-white/60 leading-relaxed">
+            {isBackupMode
+              ? "Enter one of your 8-digit emergency backup recovery codes (e.g. ABCD-1234)."
+              : "Open Google Authenticator, Microsoft Authenticator, or Authy on your phone and enter the 6-digit code."}
+          </p>
+
+          <div className="mt-6">
+            <label className="block text-xs font-bold uppercase tracking-wider text-white/70">
+              {isBackupMode ? "Recovery Code" : "6-Digit Security Code"}
+            </label>
+            <input
+              type="text"
+              autoFocus
+              inputMode={isBackupMode ? "text" : "numeric"}
+              pattern={isBackupMode ? undefined : "[0-9]*"}
+              maxLength={isBackupMode ? 14 : 6}
+              value={totpCode}
+              onChange={(e) => {
+                if (isBackupMode) {
+                  setTotpCode(e.target.value.toUpperCase());
+                } else {
+                  setTotpCode(e.target.value.replace(/[^0-9]/g, ""));
+                }
+              }}
+              placeholder={isBackupMode ? "ABCD-1234" : "000 000"}
+              className="mt-2 w-full rounded-[10px] border border-white/15 bg-black/50 px-4 py-3.5 text-center font-mono text-2xl tracking-[0.25em] text-white outline-none transition focus:border-[#16f2a4]"
+              required
+            />
+          </div>
+
+          {message ? (
+            <div className="mt-4 flex items-center gap-2 rounded-[8px] border border-red-400/25 bg-red-400/10 p-3 text-sm text-red-100">
+              <AlertCircle size={16} className="shrink-0 text-red-400" />
+              <span>{message}</span>
+            </div>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={busy || !totpCode}
+            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#16f2a4] px-5 py-4 font-black text-black transition-all hover:bg-white disabled:opacity-50"
+          >
+            {busy ? <Loader2 className="animate-spin" size={18} /> : <ShieldCheck size={18} />}
+            Verify &amp; Sign In
+          </button>
+
+          <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-4 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsBackupMode(!isBackupMode);
+                setTotpCode("");
+              }}
+              className="text-xs text-white/60 transition hover:text-[#16f2a4] hover:underline"
+            >
+              {isBackupMode ? "Use 6-digit authenticator code instead" : "Lost phone? Use a backup recovery code"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setLoginStep("credentials");
+                setTotpCode("");
+                setIsBackupMode(false);
+              }}
+              className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-white/50 transition hover:text-white"
+            >
+              <ArrowLeft size={14} /> Back to username &amp; password
+            </button>
+          </div>
+        </form>
+      )}
     </main>
   );
 }
@@ -1071,22 +1273,73 @@ function AdminSecurityView({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // 2FA Management State
+  const [twoFactorLoading, setTwoFactorLoading] = useState(true);
+  const [twoFactorStatus, setTwoFactorStatus] = useState<{
+    enabled: boolean;
+    backupCodesRemaining: number;
+    updatedAt?: string | null;
+  } | null>(null);
+
+  // Setup Modal State
+  const [setupModalOpen, setSetupModalOpen] = useState(false);
+  const [setupLoading, setSetupLoading] = useState(false);
+  const [setupData, setSetupData] = useState<{
+    secret: string;
+    qrCodeUrl: string;
+    backupCodes: string[];
+  } | null>(null);
+  const [confirmCode, setConfirmCode] = useState("");
+  const [confirming, setConfirming] = useState(false);
+  const [confirmStatus, setConfirmStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [copiedSecret, setCopiedSecret] = useState(false);
+  const [copiedCodes, setCopiedCodes] = useState(false);
+
+  // Disable Modal State
+  const [disableModalOpen, setDisableModalOpen] = useState(false);
+  const [disablePassword, setDisablePassword] = useState("");
+  const [disableCode, setDisableCode] = useState("");
+  const [disabling, setDisabling] = useState(false);
+  const [disableError, setDisableError] = useState("");
+
+  // Regenerate Backup Codes Modal State
+  const [regenModalOpen, setRegenModalOpen] = useState(false);
+  const [regenPassword, setRegenPassword] = useState("");
+  const [regenCode, setRegenCode] = useState("");
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenError, setRegenError] = useState("");
+  const [freshCodes, setFreshCodes] = useState<string[] | null>(null);
+
   useEffect(() => {
-    async function fetchCurrentUsername() {
+    async function fetchSecurityData() {
       try {
-        const response = await fetch("/api/admin/credentials", { cache: "no-store" });
-        if (response.ok) {
-          const data = (await response.json()) as { username?: string };
-          if (data.username) setUsername(data.username);
+        const [credsRes, twoFactorRes] = await Promise.all([
+          fetch("/api/admin/credentials", { cache: "no-store" }),
+          fetch("/api/admin/2fa", { cache: "no-store" })
+        ]);
+
+        if (credsRes.ok) {
+          const creds = (await credsRes.json()) as { username?: string };
+          if (creds.username) setUsername(creds.username);
+        }
+
+        if (twoFactorRes.ok) {
+          const tfa = (await twoFactorRes.json()) as {
+            enabled: boolean;
+            backupCodesRemaining: number;
+            updatedAt?: string | null;
+          };
+          setTwoFactorStatus(tfa);
         }
       } catch {
         // Fallback default
       } finally {
         setLoading(false);
+        setTwoFactorLoading(false);
       }
     }
 
-    fetchCurrentUsername();
+    fetchSecurityData();
   }, []);
 
   async function handleUpdateCredentials(event: React.FormEvent) {
@@ -1136,7 +1389,6 @@ function AdminSecurityView({
         onUsernameUpdated(data.username);
       }
 
-      // Clear password fields
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -1150,7 +1402,161 @@ function AdminSecurityView({
     }
   }
 
-  if (loading) {
+  // Initiates 2FA setup flow
+  async function handleStartSetup() {
+    setSetupLoading(true);
+    setConfirmStatus(null);
+    setConfirmCode("");
+
+    try {
+      const res = await fetch("/api/admin/2fa", {
+        method: "POST",
+        headers: secureHeaders({ "Content-Type": "application/json" })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to initiate 2FA setup.");
+      }
+
+      setSetupData(data);
+      setSetupModalOpen(true);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to initiate 2FA setup.");
+    } finally {
+      setSetupLoading(false);
+    }
+  }
+
+  // Confirms 2FA setup with initial 6-digit code
+  async function handleConfirmSetup(e: React.FormEvent) {
+    e.preventDefault();
+    setConfirming(true);
+    setConfirmStatus(null);
+
+    try {
+      const res = await fetch("/api/admin/2fa", {
+        method: "PUT",
+        headers: secureHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ code: confirmCode })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Verification code failed.");
+      }
+
+      setConfirmStatus({
+        type: "success",
+        text: "Two-Factor Authentication is now enabled!"
+      });
+
+      setTwoFactorStatus({
+        enabled: true,
+        backupCodesRemaining: setupData?.backupCodes.length || 10,
+        updatedAt: new Date().toISOString()
+      });
+
+      setTimeout(() => {
+        setSetupModalOpen(false);
+        setConfirmCode("");
+        setSetupData(null);
+      }, 1500);
+    } catch (err) {
+      setConfirmStatus({
+        type: "error",
+        text: err instanceof Error ? err.message : "Invalid verification code."
+      });
+    } finally {
+      setConfirming(false);
+    }
+  }
+
+  // Disables 2FA with password & code confirmation
+  async function handleDisable2FA(e: React.FormEvent) {
+    e.preventDefault();
+    setDisabling(true);
+    setDisableError("");
+
+    try {
+      const res = await fetch("/api/admin/2fa", {
+        method: "DELETE",
+        headers: secureHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          currentPassword: disablePassword,
+          code: disableCode
+        })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to disable 2FA.");
+      }
+
+      setTwoFactorStatus({
+        enabled: false,
+        backupCodesRemaining: 0,
+        updatedAt: new Date().toISOString()
+      });
+
+      setDisableModalOpen(false);
+      setDisablePassword("");
+      setDisableCode("");
+    } catch (err) {
+      setDisableError(err instanceof Error ? err.message : "Failed to disable 2FA.");
+    } finally {
+      setDisabling(false);
+    }
+  }
+
+  // Regenerates new backup codes
+  async function handleRegenerateCodes(e: React.FormEvent) {
+    e.preventDefault();
+    setRegenerating(true);
+    setRegenError("");
+
+    try {
+      const res = await fetch("/api/admin/2fa/backup-codes", {
+        method: "POST",
+        headers: secureHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          currentPassword: regenPassword,
+          code: regenCode
+        })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to regenerate backup codes.");
+      }
+
+      setFreshCodes(data.backupCodes);
+      setTwoFactorStatus((prev) =>
+        prev ? { ...prev, backupCodesRemaining: data.backupCodes.length } : null
+      );
+      setRegenPassword("");
+      setRegenCode("");
+    } catch (err) {
+      setRegenError(err instanceof Error ? err.message : "Failed to regenerate backup codes.");
+    } finally {
+      setRegenerating(false);
+    }
+  }
+
+  function downloadCodes(codes: string[]) {
+    const text = `NURAXTECH / USMAN IQBAL PORTFOLIO\nTwo-Factor Authentication Emergency Backup Recovery Codes\nGenerated: ${new Date().toLocaleString()}\n\nEach backup code can be used ONCE to sign in if you lose access to your authenticator app:\n\n${codes
+      .map((c, i) => `${i + 1}. ${c}`)
+      .join("\n")}\n\nKeep these codes strictly confidential and stored securely.`;
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `portfolio-2fa-backup-codes-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  if (loading || twoFactorLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="animate-spin text-[#16f2a4]" size={32} />
@@ -1159,15 +1565,16 @@ function AdminSecurityView({
   }
 
   return (
-    <div className="max-w-2xl">
-      <div className="rounded-[8px] border border-white/10 bg-white/[0.035] p-5 sm:p-7">
+    <div className="grid max-w-4xl gap-6">
+      {/* 1. ADMIN CREDENTIALS FORM */}
+      <div className="rounded-[12px] border border-white/10 bg-white/[0.035] p-5 sm:p-7">
         <div className="mb-6 border-b border-white/10 pb-4">
           <div className="flex items-center gap-2">
-            <KeyRound className="text-[#16f2a4]" size={24} />
-            <h2 className="text-2xl font-black text-white">Admin Credentials &amp; Security</h2>
+            <KeyRound className="text-[#16f2a4]" size={22} />
+            <h2 className="text-xl sm:text-2xl font-black text-white">Admin Credentials</h2>
           </div>
-          <p className="mt-2 text-sm text-white/50">
-            Change your admin dashboard login username and password. Changes persist in the database and local backup.
+          <p className="mt-2 text-xs sm:text-sm text-white/50">
+            Change your admin dashboard username and password. Changes persist in the database and local backup.
           </p>
         </div>
 
@@ -1245,7 +1652,7 @@ function AdminSecurityView({
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-full bg-[#16f2a4] px-6 py-3.5 font-black text-black transition hover:bg-white disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-full bg-[#16f2a4] px-6 py-3 font-black text-black transition hover:bg-white disabled:opacity-50"
             >
               {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
               Update Credentials
@@ -1253,6 +1660,408 @@ function AdminSecurityView({
           </div>
         </form>
       </div>
+
+      {/* 2. TWO-FACTOR AUTHENTICATION (2FA) SECTION */}
+      <div className="rounded-[12px] border border-white/10 bg-white/[0.035] p-5 sm:p-7">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck className="text-[#16f2a4]" size={24} />
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black text-white">Two-Factor Authentication (2FA)</h2>
+              <p className="mt-1 text-xs sm:text-sm text-white/50">
+                Secure your admin login using Google Authenticator, Microsoft Authenticator, or Authy.
+              </p>
+            </div>
+          </div>
+
+          {/* Status Badge */}
+          {twoFactorStatus?.enabled ? (
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#16f2a4]/30 bg-[#16f2a4]/15 px-3.5 py-1 text-xs font-bold text-[#16f2a4]">
+              <span className="h-2 w-2 rounded-full bg-[#16f2a4] animate-pulse" />
+              Active &amp; Protected
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1 text-xs font-bold text-white/60">
+              <span className="h-2 w-2 rounded-full bg-yellow-400" />
+              Disabled
+            </span>
+          )}
+        </div>
+
+        {/* When 2FA is Disabled */}
+        {!twoFactorStatus?.enabled ? (
+          <div className="rounded-[10px] border border-white/10 bg-black/20 p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-bold text-white">Protect your account with an Authenticator App</p>
+                <p className="mt-1 max-w-lg text-xs sm:text-sm text-white/50 leading-relaxed">
+                  Every time you sign in, you will be prompted for your username, password, and a 6-digit TOTP code generated on your phone.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleStartSetup}
+                disabled={setupLoading}
+                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#16f2a4] px-5 py-3 text-sm font-black text-black transition hover:bg-white disabled:opacity-50"
+              >
+                {setupLoading ? <Loader2 className="animate-spin" size={16} /> : <QrCode size={16} />}
+                Set Up Authenticator
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* When 2FA is Active */
+          <div className="grid gap-4">
+            <div className="grid gap-3 rounded-[10px] border border-[#16f2a4]/20 bg-[#16f2a4]/5 p-4 sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-sm font-bold text-[#bfffe8]">
+                  <Smartphone size={18} className="text-[#16f2a4]" />
+                  <span>Authenticator App (TOTP RFC 6238): Connected</span>
+                </div>
+                <span className="text-xs text-white/40">
+                  Updated: {twoFactorStatus.updatedAt ? new Date(twoFactorStatus.updatedAt).toLocaleDateString() : "Active"}
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-white/60">
+                You have <strong className="text-white">{twoFactorStatus.backupCodesRemaining}</strong> unused emergency recovery codes remaining.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setRegenModalOpen(true);
+                  setFreshCodes(null);
+                  setRegenError("");
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2.5 text-xs sm:text-sm font-bold text-white/80 transition hover:border-[#16f2a4] hover:text-[#16f2a4]"
+              >
+                <RefreshCw size={15} />
+                Regenerate Backup Codes
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setDisableModalOpen(true);
+                  setDisableError("");
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-red-500/25 px-4 py-2.5 text-xs sm:text-sm font-bold text-red-300 transition hover:bg-red-500/10 hover:border-red-500/50"
+              >
+                <ShieldAlert size={15} />
+                Disable 2FA
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* SETUP 2FA MODAL */}
+      {setupModalOpen && setupData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+          <div className="relative max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-[20px] border border-white/15 bg-[#0b0f19] p-6 sm:p-8 text-white shadow-2xl">
+            <h3 className="text-xl sm:text-2xl font-black">Set Up Two-Factor Authentication</h3>
+            <p className="mt-1 text-xs sm:text-sm text-white/60">
+              Follow these three quick steps to pair your authenticator app.
+            </p>
+
+            {/* STEP 1: SCAN QR CODE */}
+            <div className="mt-6 rounded-[12px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#16f2a4]">Step 1: Scan QR Code</p>
+              <p className="mt-1 text-xs text-white/50">
+                Open Google Authenticator, Microsoft Authenticator, or Authy and scan the barcode below:
+              </p>
+
+              <div className="mt-4 flex flex-col items-center justify-center">
+                <div className="relative h-56 w-56 overflow-hidden rounded-[12px] border-4 border-white bg-white p-2 shadow-md">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={setupData.qrCodeUrl} alt="2FA QR Code" className="h-full w-full object-contain" />
+                </div>
+
+                {/* Manual entry key */}
+                <div className="mt-4 w-full">
+                  <p className="text-center text-xs text-white/40 mb-1.5">Or enter this secret key manually:</p>
+                  <div className="flex items-center justify-between rounded-[8px] border border-white/10 bg-black/50 px-3 py-2 font-mono text-xs sm:text-sm text-[#16f2a4]">
+                    <span className="truncate tracking-wider">{setupData.secret}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(setupData.secret);
+                        setCopiedSecret(true);
+                        setTimeout(() => setCopiedSecret(false), 2000);
+                      }}
+                      className="ml-2 inline-flex items-center gap-1 text-xs text-white/60 hover:text-white"
+                    >
+                      {copiedSecret ? <Check size={14} className="text-[#16f2a4]" /> : <Copy size={14} />}
+                      {copiedSecret ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* STEP 2: SAVE BACKUP RECOVERY CODES */}
+            <div className="mt-4 rounded-[12px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-[#16f2a4]">Step 2: Emergency Recovery Codes</p>
+                  <p className="mt-1 text-xs text-white/50">Save these one-time codes in a safe place. Each can be used once if you lose your phone.</p>
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2 rounded-[8px] border border-white/10 bg-black/50 p-3 font-mono text-xs text-white/90">
+                {setupData.backupCodes.map((code, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="text-white/30 text-[10px] w-4">{idx + 1}.</span>
+                    <span>{code}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(setupData.backupCodes.join("\n"));
+                    setCopiedCodes(true);
+                    setTimeout(() => setCopiedCodes(false), 2000);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-[6px] border border-white/10 px-3 py-1.5 text-xs font-semibold text-white/70 hover:bg-white/5"
+                >
+                  {copiedCodes ? <Check size={13} className="text-[#16f2a4]" /> : <Copy size={13} />}
+                  {copiedCodes ? "Codes Copied" : "Copy All Codes"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => downloadCodes(setupData.backupCodes)}
+                  className="inline-flex items-center gap-1.5 rounded-[6px] border border-white/10 px-3 py-1.5 text-xs font-semibold text-white/70 hover:bg-white/5"
+                >
+                  <Download size={13} />
+                  Download (.txt)
+                </button>
+              </div>
+            </div>
+
+            {/* STEP 3: CONFIRMATION CODE */}
+            <form onSubmit={handleConfirmSetup} className="mt-4 rounded-[12px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#16f2a4]">Step 3: Confirm Setup</p>
+              <p className="mt-1 text-xs text-white/50">Enter the current 6-digit code from your authenticator app to verify:</p>
+
+              <div className="mt-3">
+                <input
+                  type="text"
+                  maxLength={6}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={confirmCode}
+                  onChange={(e) => setConfirmCode(e.target.value.replace(/[^0-9]/g, ""))}
+                  placeholder="000 000"
+                  className="w-full rounded-[8px] border border-white/15 bg-black/50 px-4 py-3 text-center font-mono text-2xl tracking-[0.25em] text-white outline-none focus:border-[#16f2a4]"
+                  required
+                />
+              </div>
+
+              {confirmStatus ? (
+                <div
+                  className={`mt-3 flex items-center gap-2 rounded-[8px] p-3 text-xs font-semibold ${
+                    confirmStatus.type === "success"
+                      ? "border border-[#16f2a4]/30 bg-[#16f2a4]/10 text-[#bfffe8]"
+                      : "border border-red-400/30 bg-red-400/10 text-red-200"
+                  }`}
+                >
+                  {confirmStatus.type === "success" ? <CheckCircle2 size={16} className="text-[#16f2a4]" /> : <AlertCircle size={16} />}
+                  {confirmStatus.text}
+                </div>
+              ) : null}
+
+              <div className="mt-4 flex gap-3">
+                <button
+                  type="submit"
+                  disabled={confirming || confirmCode.length !== 6}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-[#16f2a4] px-5 py-3 text-sm font-black text-black transition hover:bg-white disabled:opacity-50"
+                >
+                  {confirming ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
+                  Activate Two-Factor Authentication
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSetupModalOpen(false);
+                    setSetupData(null);
+                    setConfirmCode("");
+                  }}
+                  className="rounded-full border border-white/15 px-4 py-3 text-sm font-semibold text-white/60 hover:text-white"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* REGENERATE BACKUP CODES MODAL */}
+      {regenModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+          <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[20px] border border-white/15 bg-[#0b0f19] p-6 sm:p-7 text-white shadow-2xl">
+            <h3 className="text-xl font-black">Regenerate Backup Codes</h3>
+            <p className="mt-1 text-xs text-white/60 leading-relaxed">
+              Generating new backup codes will immediately invalidate all existing backup codes. Confirm your password and current 6-digit code.
+            </p>
+
+            {!freshCodes ? (
+              <form onSubmit={handleRegenerateCodes} className="mt-5 grid gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-white/70">Current Password</label>
+                  <input
+                    type="password"
+                    value={regenPassword}
+                    onChange={(e) => setRegenPassword(e.target.value)}
+                    className="mt-1.5 w-full rounded-[8px] border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#16f2a4]"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-white/70">6-Digit Code from Authenticator</label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    inputMode="numeric"
+                    value={regenCode}
+                    onChange={(e) => setRegenCode(e.target.value.replace(/[^0-9]/g, ""))}
+                    placeholder="000 000"
+                    className="mt-1.5 w-full rounded-[8px] border border-white/10 bg-black/40 px-3.5 py-2.5 text-center font-mono text-lg tracking-widest text-white outline-none focus:border-[#16f2a4]"
+                    required
+                  />
+                </div>
+
+                {regenError ? (
+                  <div className="flex items-center gap-2 rounded-[8px] border border-red-400/25 bg-red-400/10 p-2.5 text-xs text-red-200">
+                    <AlertCircle size={15} className="shrink-0 text-red-400" />
+                    <span>{regenError}</span>
+                  </div>
+                ) : null}
+
+                <div className="mt-2 flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={regenerating}
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-[#16f2a4] px-4 py-2.5 text-xs font-bold text-black transition hover:bg-white disabled:opacity-50"
+                  >
+                    {regenerating ? <Loader2 className="animate-spin" size={15} /> : <RefreshCw size={15} />}
+                    Generate New Codes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRegenModalOpen(false)}
+                    className="rounded-full border border-white/10 px-4 py-2.5 text-xs font-semibold text-white/60 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="mt-5">
+                <p className="text-xs font-bold text-[#16f2a4] mb-2">New Backup Codes Generated:</p>
+                <div className="grid grid-cols-2 gap-2 rounded-[8px] border border-white/10 bg-black/50 p-3 font-mono text-xs text-white">
+                  {freshCodes.map((code, idx) => (
+                    <div key={idx} className="flex items-center gap-1.5">
+                      <span className="text-white/30 text-[10px]">{idx + 1}.</span>
+                      <span>{code}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => downloadCodes(freshCodes)}
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[#16f2a4] px-4 py-2.5 text-xs font-bold text-black hover:bg-white"
+                  >
+                    <Download size={14} /> Download (.txt)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRegenModalOpen(false)}
+                    className="rounded-full border border-white/10 px-4 py-2.5 text-xs font-semibold text-white/60 hover:text-white"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* DISABLE 2FA CONFIRMATION MODAL */}
+      {disableModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+          <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[20px] border border-white/15 bg-[#0b0f19] p-6 sm:p-7 text-white shadow-2xl">
+            <div className="flex items-center gap-2 text-red-400">
+              <ShieldAlert size={22} />
+              <h3 className="text-xl font-black text-white">Disable Two-Factor Authentication</h3>
+            </div>
+            <p className="mt-2 text-xs text-white/60 leading-relaxed">
+              Disabling 2FA reduces your account security. To proceed, please confirm your current administrator password and enter the current 6-digit code or a backup code.
+            </p>
+
+            <form onSubmit={handleDisable2FA} className="mt-5 grid gap-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-white/70">Current Password</label>
+                <input
+                  type="password"
+                  value={disablePassword}
+                  onChange={(e) => setDisablePassword(e.target.value)}
+                  className="mt-1.5 w-full rounded-[8px] border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white outline-none focus:border-red-400"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-white/70">6-Digit Code or Backup Code</label>
+                <input
+                  type="text"
+                  value={disableCode}
+                  onChange={(e) => setDisableCode(e.target.value)}
+                  placeholder="000000 or ABCD-1234"
+                  className="mt-1.5 w-full rounded-[8px] border border-white/10 bg-black/40 px-3.5 py-2.5 text-center font-mono text-base tracking-wider text-white outline-none focus:border-red-400"
+                  required
+                />
+              </div>
+
+              {disableError ? (
+                <div className="flex items-center gap-2 rounded-[8px] border border-red-400/25 bg-red-400/10 p-2.5 text-xs text-red-200">
+                  <AlertCircle size={15} className="shrink-0 text-red-400" />
+                  <span>{disableError}</span>
+                </div>
+              ) : null}
+
+              <div className="mt-2 flex gap-3">
+                <button
+                  type="submit"
+                  disabled={disabling}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-red-500 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-red-600 disabled:opacity-50"
+                >
+                  {disabling ? <Loader2 className="animate-spin" size={15} /> : <ShieldAlert size={15} />}
+                  Confirm &amp; Disable 2FA
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDisableModalOpen(false)}
+                  className="rounded-full border border-white/10 px-4 py-2.5 text-xs font-semibold text-white/60 hover:text-white"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -34,7 +34,7 @@ export default function CvViewer() {
       onDragStart={(event) => event.preventDefault()}
     >
       <header className="no-print mx-auto mb-4 flex max-w-5xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#071033]/90 px-4 py-3 backdrop-blur-xl">
-        <Link href="/#home" className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-white/72 transition hover:bg-white/5 hover:text-white">
+        <Link href="/" className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-white/72 transition hover:bg-white/5 hover:text-white">
           <ArrowLeft size={18} />
           Back to Portfolio
         </Link>

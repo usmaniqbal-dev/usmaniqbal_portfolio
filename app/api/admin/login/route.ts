@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
-import { authConfigReady, cookieName, createSessionToken, credentialsMatch, getAuthSetupMessage } from "@/lib/auth";
+import {
+  authConfigReady,
+  cookieName,
+  createPending2faToken,
+  createSessionToken,
+  credentialsMatch,
+  getAuthSetupMessage,
+  pending2faCookieName
+} from "@/lib/auth";
 import { createCsrfToken, csrfCookieName } from "@/lib/admin-api";
+import { isTwoFactorEnabled } from "@/lib/two-factor";
 
 export const runtime = "nodejs";
 
@@ -47,8 +56,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Invalid admin credentials." }, { status: 401 });
   }
 
+  // Check if Two-Factor Authentication is enabled
+  const twoFactorActive = await isTwoFactorEnabled();
+
+  if (twoFactorActive) {
+    const pendingToken = createPending2faToken(body.username);
+    const response = NextResponse.json({
+      ok: true,
+      requires2FA: true,
+      message: "Two-Factor Authentication required. Enter the 6-digit code from your authenticator app."
+    });
+
+    response.cookies.set(pending2faCookieName, pendingToken, {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 5, // 5 minutes
+      path: "/"
+    });
+
+    return response;
+  }
+
+  // 2FA not enabled: issue full admin session
   const csrfToken = createCsrfToken();
-  const response = NextResponse.json({ ok: true, csrfToken });
+  const response = NextResponse.json({ ok: true, requires2FA: false, csrfToken });
   response.cookies.set(cookieName, createSessionToken(body.username || ""), {
     httpOnly: true,
     sameSite: "strict",

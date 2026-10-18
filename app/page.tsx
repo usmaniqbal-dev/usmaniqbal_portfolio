@@ -62,7 +62,7 @@ export default async function HomePage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-      <PortfolioClient content={content} />
+      <PortfolioClient content={content} initialSection="home" />
     </>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import emailjs from "@emailjs/browser";
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
@@ -16,30 +17,26 @@ import {
   ExternalLink,
   Eye,
   Github,
-  Home,
   Instagram,
   Layers3,
   Linkedin,
   Mail,
   MapPin,
-  Menu,
   MessageCircle,
-  Moon,
   Phone,
   Send,
   Settings2,
   Sparkles,
-  Sun,
-  UserRound,
   X,
   Zap
 } from "lucide-react";
 import type { ProjectContent, ServiceContent, SiteContent, SkillContent, SocialContent } from "@/types/site-content";
 import { useCursorParallax } from "@/hooks/useCursorParallax";
-import { useScrollDirection } from "@/hooks/useScrollDirection";
+import FloatingNav from "@/components/floating-nav";
 
 type PortfolioClientProps = {
   content: SiteContent;
+  initialSection?: "home" | "about" | "skills" | "services" | "projects" | "contact";
 };
 
 type MotionOptions = {
@@ -47,26 +44,96 @@ type MotionOptions = {
   className?: string;
 };
 
-const navItems = [
-  { label: "Home", href: "#home", icon: Home },
-  { label: "About", href: "#about", icon: UserRound },
-  { label: "Skills", href: "#skills", icon: Settings2 },
-  { label: "Projects", href: "#projects", icon: BriefcaseBusiness },
-  { label: "Contact", href: "#contact", icon: Mail }
-];
-
 const serviceIcons = [Database, Zap, Layers3, Settings2, Code2, BriefcaseBusiness, Bot, Sparkles];
 
 const LOADER_MAX_MS = 2800;
 
-export default function PortfolioClient({ content: initialContent }: PortfolioClientProps) {
+export default function PortfolioClient({ content: initialContent, initialSection = "home" }: PortfolioClientProps) {
   const [content, setContent] = useState(initialContent);
+  const [activeNav, setActiveNav] = useState<string>(
+    initialSection === "home" || !initialSection ? "/" : `/${initialSection}`
+  );
   const reducedMotion = useReducedMotion();
   const shouldAnimate = content.theme.animations && !reducedMotion;
   const heroSectionRef = useRef<HTMLElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Smooth scroll handler for same-page sections with URL history push
+  function handleNavClick(e: React.MouseEvent, href: string) {
+    if (href === "/projects" || href.startsWith("http")) {
+      return;
+    }
+
+    const sectionId = href === "/" ? "home" : href.replace("/", "");
+    const targetElement = document.getElementById(sectionId);
+    if (targetElement) {
+      e.preventDefault();
+      targetElement.scrollIntoView({ behavior: "smooth" });
+      window.history.pushState(null, "", href);
+      setActiveNav(href);
+    }
+  }
+
+  // Position at requested initialSection on direct route entry (e.g., /about, /skills, /contact)
+  useEffect(() => {
+    if (initialSection && initialSection !== "home") {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(initialSection);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth" });
+          setActiveNav(`/${initialSection}`);
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [initialSection]);
+
+  // Pre-fill contact form if project query param was passed from /projects
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const projectParam = params.get("project");
+      if (projectParam) {
+        const subjectInput = document.querySelector('input[name="subject"]') as HTMLInputElement | null;
+        const projectInput = document.querySelector('input[name="project_type"]') as HTMLInputElement | null;
+        const msgInput = document.querySelector('textarea[name="message"]') as HTMLTextAreaElement | null;
+        if (projectInput) projectInput.value = projectParam;
+        if (subjectInput) subjectInput.value = `Inquiry regarding ${projectParam}`;
+        if (msgInput) msgInput.value = `Hello Usman,\n\nI would like to inquire about your project: ${projectParam}.`;
+      }
+    }
+  }, []);
+
+  // Update browser URL and active nav indicator as user scrolls naturally through sections
+  useEffect(() => {
+    const sections = ["home", "about", "skills", "services", "contact"];
+    const handleIntersect = (entries: IntersectionObserverEntry[]) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          const newPath = id === "home" ? "/" : `/${id}`;
+          setActiveNav(newPath);
+          if (typeof window !== "undefined" && window.location.pathname !== "/projects") {
+            window.history.replaceState(null, "", newPath);
+          }
+        }
+      }
+    };
+
+    const observer = new IntersectionObserver(handleIntersect, {
+      rootMargin: "-25% 0px -60% 0px",
+      threshold: 0
+    });
+
+    sections.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const savedMode = window.localStorage.getItem("nuraxtech-portfolio-theme");
@@ -173,7 +240,18 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
     <>
       <AnimatePresence>{loading ? <LoadingExperience /> : null}</AnimatePresence>
       <main className={`site-shell flex min-h-screen flex-col overflow-hidden ${darkMode ? "dark-mode bg-black text-white" : "light-mode bg-white text-[#111111]"}`} style={style}>
-        <FloatingNav menuOpen={menuOpen} setMenuOpen={setMenuOpen} darkMode={darkMode} toggleColorMode={toggleColorMode} siteName={content.builder.settings.siteName} logoUrl={content.builder.settings.logoUrl} heroImageSrc={heroImageSrc} logoLink={content.builder.settings.logoLink} />
+        <FloatingNav
+          menuOpen={menuOpen}
+          setMenuOpen={setMenuOpen}
+          darkMode={darkMode}
+          toggleColorMode={toggleColorMode}
+          siteName={content.builder.settings.siteName}
+          logoUrl={content.builder.settings.logoUrl}
+          heroImageSrc={heroImageSrc}
+          logoLink="/"
+          activePath={activeNav}
+          onNavigate={handleNavClick}
+        />
 
       <section ref={heroSectionRef} id="home" className={`hero-showcase relative min-h-[100svh] px-5 pb-8 pt-28 sm:px-8 lg:h-[100svh] lg:min-h-0 lg:overflow-hidden lg:px-12 lg:pb-4 lg:pt-28 ${darkMode ? "bg-black" : "bg-white"}`} style={homeStyle}>
         {heroBackgroundType === "image" && heroBackgroundUrl ? <div className="absolute inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroBackgroundUrl})` }} /> : null}
@@ -198,22 +276,23 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
             </motion.p>
 
             <motion.div {...heroIn(shouldAnimate, loading, 0.64, false, "spring")} className="mt-5 flex w-full flex-col gap-2.5 sm:flex-row">
-              <a
-                href={content.home.primaryButton.href}
+              <Link
+                href="/projects"
                 className="group inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-black text-black transition duration-300 hover:-translate-y-0.5 hover:bg-[#00b885] sm:w-auto sm:max-w-none"
               >
                 <span className="truncate">{content.home.primaryButton.label}</span>
                 <span className="grid h-7 w-7 place-items-center rounded-full bg-black/10 transition group-hover:translate-x-0.5">
                   <ArrowRight size={17} />
                 </span>
-              </a>
-              <a
-                href={content.home.secondaryButton.href}
+              </Link>
+              <Link
+                href="/contact"
+                onClick={(e) => handleNavClick(e, "/contact")}
                 className={`inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-sm font-black transition duration-300 hover:-translate-y-0.5 hover:border-[var(--primary)] hover:text-[var(--primary)] sm:w-auto sm:max-w-none ${darkMode ? "border-white/15 bg-white/[0.04] text-white" : "border-black/10 bg-black/[0.03] text-[#111111]"}`}
               >
                 <MessageCircle size={17} />
                 <span className="truncate">{content.home.secondaryButton.label}</span>
-              </a>
+              </Link>
               <a
                 href="/cv"
                 target="_blank"
@@ -317,11 +396,8 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
         </div>
       </section>
 
-      <section id="projects" className="relative px-4 py-12 sm:px-6 lg:px-8" style={orderFor("projects")}>
-        <div className="mx-auto max-w-5xl">
-          <motion.div {...reveal()} className="mb-6">
-            <SectionKicker number="04" label="Projects" darkMode={darkMode} />
-          </motion.div>
+      <section id="projects" className="relative px-4 py-16 sm:px-6 lg:px-8" style={orderFor("projects")}>
+        <div className="mx-auto max-w-6xl">
           <ProjectSlider projects={content.projects} slides={content.sliders.projectSlides} shouldAnimate={shouldAnimate} darkMode={darkMode} />
         </div>
       </section>
@@ -362,138 +438,6 @@ export default function PortfolioClient({ content: initialContent }: PortfolioCl
       </footer>
     </main>
   </>
-  );
-
-}
-
-function FloatingNav({
-  menuOpen,
-  setMenuOpen,
-  darkMode,
-  toggleColorMode,
-  siteName,
-  logoUrl,
-  heroImageSrc,
-  logoLink
-}: {
-  menuOpen: boolean;
-  setMenuOpen: (open: boolean) => void;
-  darkMode: boolean;
-  toggleColorMode: () => void;
-  siteName: string;
-  logoUrl: string;
-  heroImageSrc: string;
-  logoLink: string;
-}) {
-  const { scrolled } = useScrollDirection();
-  const brandName = "Usman Iqbal";
-  const [imgError, setImgError] = useState(false);
-  const navLogoUrl = logoUrl || heroImageSrc || "/images/usman-hero.png";
-
-  return (
-    <header className="fixed left-0 right-0 top-0 z-50 px-4 py-3 sm:px-6 transition-all duration-300">
-      <nav className={`mx-auto flex max-w-[calc(100vw-2rem)] items-center justify-between rounded-full border px-3 py-2.5 transition md:max-w-5xl ${
-        darkMode
-          ? scrolled ? "border-white/15 bg-black/90 text-white backdrop-blur-2xl shadow-lg shadow-black/40" : "border-white/10 bg-black/75 text-white backdrop-blur-xl"
-          : scrolled ? "border-black/10 bg-white/95 text-[#111111] backdrop-blur-2xl shadow-md shadow-black/5" : "border-black/8 bg-white/85 text-[#111111] backdrop-blur-xl"
-      }`}>
-        <a href={logoLink || "#home"} className={`flex min-w-0 items-center gap-2.5 font-black ${darkMode ? "text-white" : "text-[#111111]"}`}>
-          <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full border border-black/10 bg-[var(--primary)] text-black">
-            {!imgError && navLogoUrl ? (
-              <img
-                src={navLogoUrl}
-                alt={brandName}
-                onError={() => setImgError(true)}
-                className="h-full w-full rounded-full object-cover object-top"
-              />
-            ) : (
-              <span className="text-xs font-black tracking-wider">UI</span>
-            )}
-          </span>
-          <span className="hidden max-w-[160px] truncate sm:block">{brandName}</span>
-        </a>
-        <div className="hidden items-center gap-2 md:flex">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <a
-                key={item.href}
-                href={item.href}
-                className={`group relative flex items-center gap-2 rounded-full px-3 py-2 font-semibold transition ${
-                  darkMode
-                    ? "text-white/70 hover:bg-white/[0.08] hover:text-white"
-                    : "text-black/70 hover:bg-black/[0.05] hover:text-[#111111]"
-                }`}
-              >
-                <Icon size={18} className="transition group-hover:text-[var(--primary)]" />
-                {item.label}
-                <span className="absolute inset-x-3 bottom-1 h-0.5 origin-left scale-x-0 bg-[var(--primary)] transition-transform duration-300 group-hover:scale-x-100" />
-              </a>
-            );
-          })}
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-label={darkMode ? "Switch to light theme" : "Switch to dark theme"}
-            title={darkMode ? "Switch to light theme" : "Switch to dark theme"}
-            className={`grid h-10 w-10 place-items-center rounded-full border transition hover:border-[var(--primary)] hover:text-[var(--primary)] ${
-              darkMode
-                ? "border-white/10 bg-white/[0.05] text-white/80"
-                : "border-black/10 bg-black/[0.04] text-black/80"
-            }`}
-            onClick={toggleColorMode}
-          >
-            {darkMode ? <Sun size={19} /> : <Moon size={19} />}
-          </button>
-          <button
-            type="button"
-            aria-label="Open navigation"
-            className={`grid h-11 w-11 place-items-center rounded-full border md:hidden ${
-              darkMode
-                ? "border-white/10 bg-white/[0.05] text-white"
-                : "border-black/10 bg-black/[0.04] text-black"
-            }`}
-            onClick={() => setMenuOpen(!menuOpen)}
-          >
-            {menuOpen ? <X size={21} /> : <Menu size={21} />}
-          </button>
-        </div>
-      </nav>
-      <AnimatePresence>
-        {menuOpen ? (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={`mx-auto mt-3 grid max-w-sm gap-2 rounded-[8px] border p-3 backdrop-blur-2xl md:hidden ${
-              darkMode
-                ? "border-white/12 bg-black/95 text-white"
-                : "border-black/10 bg-white/95 text-[#111111] shadow-lg"
-            }`}
-          >
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMenuOpen(false)}
-                  className={`flex items-center gap-3 rounded-[8px] px-4 py-3 font-semibold transition ${
-                    darkMode
-                      ? "text-white/80 hover:bg-white/[0.08] hover:text-white"
-                      : "text-black/80 hover:bg-black/[0.05] hover:text-black"
-                  }`}
-                >
-                  <Icon size={20} className="text-[var(--primary)]" />
-                  {item.label}
-                </a>
-              );
-            })}
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-    </header>
   );
 }
 
@@ -808,204 +752,322 @@ function ServiceCard({ service, index, shouldAnimate, darkMode }: { service: Ser
 
 function ProjectSlider({
   projects,
-  slides,
+  slides: _slides,
   shouldAnimate,
   darkMode
 }: {
   projects: ProjectContent[];
-  slides: string[];
+  slides?: string[];
   shouldAnimate: boolean;
   darkMode?: boolean;
 }) {
-  const [active, setActive] = useState(0);
-  const activeProject = projects[active] || projects[0];
+  const [startIndex, setStartIndex] = useState(0);
+  const [selectedProject, setSelectedProject] = useState<ProjectContent | null>(null);
+  const [visibleCount, setVisibleCount] = useState(3);
 
+  // Update visible card count dynamically based on window width
   useEffect(() => {
-    if (!shouldAnimate || projects.length < 2) {
-      return;
+    function updateVisible() {
+      if (typeof window === "undefined") return;
+      if (window.innerWidth < 640) {
+        setVisibleCount(1);
+      } else if (window.innerWidth < 1024) {
+        setVisibleCount(2);
+      } else {
+        setVisibleCount(3);
+      }
     }
+    updateVisible();
+    window.addEventListener("resize", updateVisible);
+    return () => window.removeEventListener("resize", updateVisible);
+  }, []);
 
-    const interval = window.setInterval(() => {
-      setActive((current) => (current + 1) % projects.length);
-    }, 4300);
+  const total = projects.length;
 
-    return () => window.clearInterval(interval);
-  }, [projects.length, shouldAnimate]);
-
-  const move = (direction: number) => {
-    setActive((current) => (current + direction + projects.length) % projects.length);
+  const nextSlide = () => {
+    setStartIndex((prev) => (prev + 1) % total);
   };
 
-  const tilt = useTiltMotion(shouldAnimate);
+  const prevSlide = () => {
+    setStartIndex((prev) => (prev - 1 + total) % total);
+  };
 
-  if (!activeProject) {
-    return null;
+  // Compute the visible slice for the carousel
+  const carouselProjects = [];
+  if (total > 0) {
+    for (let i = 0; i < visibleCount; i++) {
+      const idx = (startIndex + i) % total;
+      carouselProjects.push(projects[idx]);
+    }
   }
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-5 lg:grid-cols-[0.95fr_0.72fr]">
-      <motion.div onMouseMove={tilt.onMouseMove} onMouseLeave={tilt.onMouseLeave} style={tilt.style} className={`tilt-card relative overflow-hidden rounded-[8px] border p-3 sm:p-4 ${
-        darkMode ? "border-white/10 bg-[#0A0A0A]" : "border-black/8 bg-white shadow-sm"
-      }`}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeProject.id}
-            initial={shouldAnimate ? { opacity: 0, x: 24 } : false}
-            animate={shouldAnimate ? { opacity: 1, x: 0 } : undefined}
-            exit={shouldAnimate ? { opacity: 0, x: -24 } : undefined}
-            transition={{ duration: 0.45 }}
-          >
-            <ProjectMockup project={activeProject} darkMode={darkMode} />
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h3 className={`text-2xl font-black ${darkMode ? "text-white" : "text-[#111111]"}`}>{activeProject.title}</h3>
-                <p className={`mt-2 max-w-2xl line-clamp-2 text-sm leading-6 ${darkMode ? "text-white/65" : "text-black/65"}`}>{activeProject.description}</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {activeProject.url ? <a href={activeProject.url} target="_blank" rel="noreferrer" className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold transition hover:border-[var(--primary)] hover:text-[var(--primary)] ${
-                  darkMode ? "border-white/12 text-white/80" : "border-black/10 text-black/80"
-                }`}>View<ExternalLink size={16} /></a> : null}
-                {activeProject.githubUrl ? <a href={activeProject.githubUrl} target="_blank" rel="noreferrer" className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold transition hover:border-[var(--primary)] hover:text-[var(--primary)] ${
-                  darkMode ? "border-white/12 text-white/80" : "border-black/10 text-black/80"
-                }`}><Github size={16} />GitHub</a> : null}
-              </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        <div className="mt-4 flex items-center justify-between">
-          <div className="flex gap-2">
-            {projects.map((project, index) => (
-              <button
-                key={project.id}
-                type="button"
-                aria-label={`Show ${project.title}`}
-                onClick={() => setActive(index)}
-                className={`h-2 rounded-full transition-all ${index === active ? "w-10 bg-[var(--primary)]" : darkMode ? "w-2 bg-white/20" : "w-2 bg-black/20"}`}
-              />
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              aria-label="Previous project"
-              onClick={() => move(-1)}
-              className={`grid h-9 w-9 place-items-center rounded-full border transition hover:border-[var(--primary)] hover:text-[var(--primary)] ${
-                darkMode ? "border-white/10 bg-white/[0.04] text-white" : "border-black/10 bg-black/[0.04] text-black"
-              }`}
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <button
-              type="button"
-              aria-label="Next project"
-              onClick={() => move(1)}
-              className={`grid h-9 w-9 place-items-center rounded-full border transition hover:border-[var(--primary)] hover:text-[var(--primary)] ${
-                darkMode ? "border-white/10 bg-white/[0.04] text-white" : "border-black/10 bg-black/[0.04] text-black"
-              }`}
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-        </div>
-      </motion.div>
-
-      <div className="grid gap-4">
-        <div className="rounded-[8px] border border-[var(--primary)]/20 bg-[var(--primary)]/8 p-4">
-          <p className="text-sm font-bold uppercase text-[var(--primary)]">Slider Focus</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {slides.map((slide, index) => (
-              <span key={`${slide}-${index}`} className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
-                darkMode ? "border-white/10 bg-black/40 text-white/80" : "border-black/8 bg-white text-black/80"
-              }`}>
-                {slide}
-              </span>
-            ))}
-          </div>
-        </div>
-        {projects.map((project, index) => (
-          <button
-            key={project.id}
-            type="button"
-            onClick={() => setActive(index)}
-            className={`rounded-[8px] border p-3 text-left transition ${
-              active === index
-                ? "border-[var(--primary)]/50 bg-[var(--primary)]/10"
-                : darkMode
-                  ? "border-white/10 bg-[#0A0A0A] hover:border-white/20"
-                  : "border-black/8 bg-white hover:border-black/20 shadow-sm"
-            }`}
-          >
-            <p className={`font-black leading-tight ${darkMode ? "text-white" : "text-[#111111]"}`}>{project.title}</p>
-            <p className={`mt-2 line-clamp-2 text-xs leading-5 ${darkMode ? "text-white/55" : "text-black/55"}`}>{project.description}</p>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ProjectMockup({ project, compact = false, darkMode }: { project: ProjectContent; compact?: boolean; darkMode?: boolean }) {
-  return (
-    <div className={`relative overflow-hidden rounded-[8px] border ${compact ? "p-3" : "p-3 sm:p-4"} ${
-      darkMode ? "border-white/10 bg-[#0A0A0A]" : "border-black/8 bg-[#F9FAFB]"
-    }`}>
-      {project.image ? (
-        <div className="relative aspect-[16/8.5] overflow-hidden rounded-[8px]">
-          <Image src={project.image} alt={project.title} fill sizes="(max-width: 1024px) 90vw, 48vw" className="object-cover" />
-        </div>
-      ) : (
-        <div className={`relative overflow-hidden rounded-[8px] border ${compact ? "p-3" : "p-5"} ${
-          darkMode ? "border-white/10 bg-black/60" : "border-black/8 bg-white"
+    <div className="w-full">
+      {/* Header matching reference image: Title centered with pagination arrows */}
+      <div className="relative mb-8 flex flex-col items-center justify-center sm:mb-10">
+        <h2 className={`text-center text-3xl font-extrabold sm:text-4xl lg:text-5xl tracking-tight ${
+          darkMode ? "text-white" : "text-[#111111]"
         }`}>
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-              <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[var(--primary)]" />
-            </div>
-            <span className={`text-xs font-bold uppercase ${darkMode ? "text-white/40" : "text-black/40"}`}>NURAXTECH</span>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-[0.8fr_1.2fr]">
-            <div className={`rounded-[8px] border p-3 ${
-              darkMode ? "border-white/10 bg-[#141414]" : "border-black/8 bg-[#F9FAFB]"
-            }`}>
-              <p className={`text-xs font-bold uppercase ${darkMode ? "text-white/40" : "text-black/40"}`}>Project</p>
-              <p className={`mt-2 text-base font-black ${darkMode ? "text-white" : "text-[#111111]"}`}>{project.title}</p>
-              <div className="mt-4 grid gap-2">
-                {project.tags.slice(0, 3).map((tag, index) => (
-                  <span key={`${project.id}-${tag}-${index}`} className="rounded-full bg-[var(--primary)]/15 px-3 py-1 text-xs font-bold text-[var(--primary)]">
-                    {tag}
-                  </span>
-                ))}
+          Latest Projects
+        </h2>
+
+        {/* Carousel Arrow Navigation Buttons */}
+        <div className="mt-4 flex items-center justify-center gap-3 sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 sm:mt-0">
+          <button
+            type="button"
+            onClick={prevSlide}
+            aria-label="Previous project"
+            className="grid h-10 w-10 place-items-center rounded-full bg-[#E0F7FA] text-[#00A3C4] transition-all hover:bg-[#00A3C4] hover:text-white shadow-sm active:scale-95"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            type="button"
+            onClick={nextSlide}
+            aria-label="Next project"
+            className="grid h-10 w-10 place-items-center rounded-full bg-[#E0F7FA] text-[#00A3C4] transition-all hover:bg-[#00A3C4] hover:text-white shadow-sm active:scale-95"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      </div>
+
+      {/* CAROUSEL VIEW */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {carouselProjects.map((project, index) => (
+            <motion.div
+              key={`${project.id}-${startIndex}-${index}`}
+              initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
+              animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
+              transition={{ duration: 0.35, delay: index * 0.08 }}
+              className={`group flex h-full flex-col justify-between rounded-[24px] border p-4 sm:p-5 transition-all duration-300 ${
+                darkMode
+                  ? "border-white/10 bg-[#141416] hover:border-white/20 hover:shadow-2xl hover:shadow-cyan-950/20"
+                  : "border-gray-100 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_36px_rgba(0,0,0,0.12)]"
+              }`}
+            >
+              <div>
+                {/* Image container with rounded corners and clean padding frame */}
+                <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[16px] bg-gray-100 dark:bg-zinc-800">
+                  <Image
+                    src={project.image || "/images/projects/salesforce-automation.jpg"}
+                    alt={project.title}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  {project.category ? (
+                    <span className="absolute top-3 left-3 rounded-full bg-black/65 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
+                      {project.category.replace(" Projects", "")}
+                    </span>
+                  ) : null}
+                </div>
+
+                {/* Card Title */}
+                <h3 className={`mt-4 line-clamp-1 text-lg font-bold transition-colors group-hover:text-[#00A3C4] ${
+                  darkMode ? "text-white" : "text-[#111111]"
+                }`}>
+                  {project.title}
+                </h3>
+
+                {/* Card Description */}
+                <p className={`mt-2 line-clamp-3 text-xs sm:text-sm leading-relaxed ${
+                  darkMode ? "text-gray-400" : "text-gray-500"
+                }`}>
+                  {project.description}
+                </p>
               </div>
-            </div>
-            <div className="grid gap-3">
-              <div className="grid grid-cols-3 gap-2">
-                {[76, 92, 64].map((value, index) => (
-                  <div key={index} className={`rounded-[8px] border p-3 ${
-                    darkMode ? "border-white/10 bg-[#141414]" : "border-black/8 bg-[#F9FAFB]"
+
+              {/* Card Footer: View Details link */}
+              <div className="mt-4 flex items-center justify-between pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedProject(project)}
+                  className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-[#00A3C4] transition-colors hover:text-[#008ba8] hover:underline"
+                >
+                  View Details
+                </button>
+                {project.url && project.url !== "#" ? (
+                  <a
+                    href={project.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Open link for ${project.title}`}
+                    className="text-gray-400 hover:text-[#00A3C4] dark:hover:text-white transition-colors"
+                  >
+                    <ExternalLink size={16} />
+                  </a>
+                ) : null}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+      {/* "Show All Projects" Centered Link Button to Dedicated /projects Page */}
+      <div className="mt-8 flex justify-center sm:mt-10">
+        <Link
+          href="/projects"
+          className="group inline-flex items-center gap-2 rounded-full bg-[#00A3C4] hover:bg-[#008ea6] text-white font-bold px-8 py-3.5 text-sm sm:text-base shadow-md hover:shadow-lg transition-all duration-200 active:scale-95"
+        >
+          <span>Show All Projects ({projects.length})</span>
+          <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+        </Link>
+      </div>
+
+      {/* INTERACTIVE "PROJECT DETAILS" MODAL */}
+      <AnimatePresence>
+        {selectedProject && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/65 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ duration: 0.25 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border shadow-2xl ${
+                darkMode
+                  ? "border-white/10 bg-[#161618] text-white"
+                  : "border-gray-100 bg-white text-[#111111]"
+              }`}
+            >
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setSelectedProject(null)}
+                aria-label="Close details"
+                className="absolute right-4 top-4 z-20 grid h-9 w-9 place-items-center rounded-full bg-black/50 text-white backdrop-blur-md transition hover:bg-black/75"
+              >
+                <X size={18} />
+              </button>
+
+              {/* Scrollable Modal Content */}
+              <div className="overflow-y-auto">
+                {/* Hero Project Image */}
+                <div className="relative aspect-[16/9] w-full bg-gray-100 dark:bg-zinc-800">
+                  <Image
+                    src={selectedProject.image || "/images/projects/salesforce-automation.jpg"}
+                    alt={selectedProject.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 680px"
+                    className="object-cover"
+                  />
+                  {selectedProject.category && (
+                    <span className="absolute bottom-4 left-4 rounded-full bg-black/70 px-3.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
+                      {selectedProject.category}
+                    </span>
+                  )}
+                </div>
+
+                {/* Body Content */}
+                <div className="p-6 sm:p-8">
+                  <h3 className="text-xl sm:text-2xl font-black leading-snug">
+                    {selectedProject.title}
+                  </h3>
+
+                  <p className={`mt-4 text-sm sm:text-base leading-relaxed ${
+                    darkMode ? "text-gray-300" : "text-gray-600"
                   }`}>
-                    <p className="text-base font-black text-[var(--primary)]">{value}%</p>
-                    <div className={`mt-2 h-2 rounded-full ${darkMode ? "bg-white/10" : "bg-black/10"}`}>
-                      <div className="h-full rounded-full bg-[var(--primary)]" style={{ width: `${value}%` }} />
+                    {selectedProject.description}
+                  </p>
+
+                  {/* Technology Tags */}
+                  {selectedProject.tags && selectedProject.tags.length > 0 && (
+                    <div className="mt-6">
+                      <p className={`text-xs font-bold uppercase tracking-wider ${
+                        darkMode ? "text-gray-400" : "text-gray-500"
+                      }`}>
+                        Technologies & Focus
+                      </p>
+                      <div className="mt-2.5 flex flex-wrap gap-2">
+                        {selectedProject.tags.map((tag, i) => (
+                          <span
+                            key={`${tag}-${i}`}
+                            className="rounded-full bg-[#00A3C4]/10 px-3 py-1 text-xs font-bold text-[#00A3C4] border border-[#00A3C4]/20"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
                     </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="mt-8 flex flex-wrap items-center gap-3 border-t pt-6 dark:border-white/10 border-gray-100">
+                    {selectedProject.url && selectedProject.url !== "#" ? (
+                      <a
+                        href={selectedProject.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#00A3C4] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#008ea6]"
+                      >
+                        Visit Project <ExternalLink size={15} />
+                      </a>
+                    ) : null}
+
+                    {selectedProject.githubUrl ? (
+                      <a
+                        href={selectedProject.githubUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={`inline-flex items-center gap-2 rounded-lg border px-5 py-2.5 text-sm font-semibold transition ${
+                          darkMode
+                            ? "border-white/15 text-white hover:border-[#00A3C4] hover:text-[#00A3C4]"
+                            : "border-gray-200 text-gray-800 hover:border-[#00A3C4] hover:text-[#00A3C4]"
+                        }`}
+                      >
+                        <Github size={16} /> GitHub Repo
+                      </a>
+                    ) : null}
+
+                    <a
+                      href="/contact"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const targetTitle = selectedProject.title;
+                        setSelectedProject(null);
+                        const contactEl = document.getElementById("contact");
+                        if (contactEl) {
+                          contactEl.scrollIntoView({ behavior: "smooth" });
+                        }
+                        if (typeof window !== "undefined") {
+                          window.history.pushState(null, "", "/contact");
+                        }
+                        setTimeout(() => {
+                          const subjectInput = document.querySelector('input[name="subject"]') as HTMLInputElement | null;
+                          const projectInput = document.querySelector('input[name="project_type"]') as HTMLInputElement | null;
+                          const msgInput = document.querySelector('textarea[name="message"]') as HTMLTextAreaElement | null;
+                          if (projectInput) projectInput.value = targetTitle;
+                          if (subjectInput) subjectInput.value = `Inquiry regarding ${targetTitle}`;
+                          if (msgInput) msgInput.value = `Hello Usman,\n\nI would like to inquire about your project: ${targetTitle}.`;
+                        }, 250);
+                      }}
+                      className={`inline-flex items-center gap-2 rounded-lg border px-5 py-2.5 text-sm font-semibold transition ${
+                        darkMode
+                          ? "border-white/15 text-white hover:border-[#00A3C4] hover:text-[#00A3C4]"
+                          : "border-gray-200 text-gray-800 hover:border-[#00A3C4] hover:text-[#00A3C4]"
+                      }`}
+                    >
+                      Inquire About This Project
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProject(null)}
+                      className={`ml-auto rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                        darkMode
+                          ? "text-gray-400 hover:text-white"
+                          : "text-gray-500 hover:text-gray-900"
+                      }`}
+                    >
+                      Close
+                    </button>
                   </div>
-                ))}
-              </div>
-              <div className={`rounded-[8px] border p-3 ${
-                darkMode ? "border-white/10 bg-[#141414]" : "border-black/8 bg-[#F9FAFB]"
-              }`}>
-                <div className="flex h-20 items-end gap-2">
-                  {[35, 58, 46, 76, 68, 88, 80].map((height, index) => (
-                    <span key={index} className="flex-1 rounded-t bg-[var(--primary)]" style={{ height: `${height}%` }} />
-                  ))}
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -10,6 +10,7 @@ export const minimumPasswordLength = 8;
 type SessionPayload = {
   username: string;
   expiresAt: number;
+  stage?: string;
 };
 
 function getSecret() {
@@ -42,6 +43,7 @@ function safeEqual(left: string, right: string) {
 }
 
 export const cookieName = "nurax_admin_session";
+export const pending2faCookieName = "nurax_2fa_pending";
 
 type AdminCredentials = {
   username: string;
@@ -166,6 +168,55 @@ export function verifySessionToken(token?: string) {
   }
 
   if (!payload.username || !Number.isFinite(payload.expiresAt) || payload.expiresAt < Date.now()) {
+    return null;
+  }
+
+  return payload;
+}
+
+export function createPending2faToken(username: string) {
+  const secret = getSecret();
+
+  if (!secret) {
+    throw new Error(getAuthSetupMessage());
+  }
+
+  const payload: SessionPayload = {
+    username,
+    stage: "2fa_pending",
+    expiresAt: Date.now() + 1000 * 60 * 5 // 5 minutes
+  };
+  const body = base64Url(JSON.stringify(payload));
+
+  return `${body}.${sign(body, secret)}`;
+}
+
+export function verifyPending2faToken(token?: string) {
+  const secret = getSecret();
+
+  if (!token || !secret) {
+    return null;
+  }
+
+  const [body, signature] = token.split(".");
+
+  if (!body || !signature || !safeEqual(signature, sign(body, secret))) {
+    return null;
+  }
+
+  let payload: SessionPayload;
+  try {
+    payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as SessionPayload;
+  } catch {
+    return null;
+  }
+
+  if (
+    !payload.username ||
+    payload.stage !== "2fa_pending" ||
+    !Number.isFinite(payload.expiresAt) ||
+    payload.expiresAt < Date.now()
+  ) {
     return null;
   }
 

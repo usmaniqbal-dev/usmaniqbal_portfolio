@@ -62,6 +62,7 @@ export type ProjectContent = {
   tags: string[];
   url: string;
   githubUrl?: string;
+  category?: string;
 };
 
 export type SocialContent = {

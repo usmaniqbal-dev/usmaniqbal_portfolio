@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
+  ArrowLeft,
   Bot,
   BriefcaseBusiness,
   CheckCircle2,
   ImagePlus,
+  KeyRound,
   LayoutDashboard,
   Loader2,
   LogOut,
@@ -52,6 +54,9 @@ export default function AdminDashboard() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [totpCode, setTotpCode] = useState("");
+  const [useBackupCode, setUseBackupCode] = useState(false);
 
   useEffect(() => {
     async function checkSession() {
@@ -85,7 +90,7 @@ export default function AdminDashboard() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password })
     });
-    const result = (await response.json()) as { message?: string };
+    const result = (await response.json()) as { message?: string; requires2FA?: boolean; csrfToken?: string };
 
     if (!response.ok) {
       setMessage(result.message || "Login failed.");
@@ -93,7 +98,42 @@ export default function AdminDashboard() {
       return;
     }
 
-    setSession({ authenticated: true, configured: true, csrfToken: (result as { csrfToken?: string }).csrfToken });
+    if (result.requires2FA) {
+      setRequires2FA(true);
+      setMessage("");
+      setBusy(false);
+      return;
+    }
+
+    setSession({ authenticated: true, configured: true, csrfToken: result.csrfToken });
+    await loadContent();
+    setBusy(false);
+  }
+
+  async function verify2FA(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage("");
+
+    const response = await fetch("/api/admin/2fa/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: totpCode.trim(),
+        isBackupCode: useBackupCode
+      })
+    });
+    const result = (await response.json()) as { ok?: boolean; message?: string; csrfToken?: string };
+
+    if (!response.ok) {
+      setMessage(result.message || "2FA verification failed.");
+      setBusy(false);
+      return;
+    }
+
+    setSession({ authenticated: true, configured: true, csrfToken: result.csrfToken });
+    setRequires2FA(false);
+    setTotpCode("");
     await loadContent();
     setBusy(false);
   }
@@ -160,47 +200,122 @@ export default function AdminDashboard() {
             )}
           </section>
 
-          <form onSubmit={login} className="rounded-[8px] border border-white/10 bg-black/55 p-6 shadow-glow backdrop-blur-xl sm:p-8">
-            <div className="mb-7 flex items-center gap-4">
-              <div className="relative h-16 w-16 overflow-hidden rounded-[8px] border border-white/10">
-                <Image src="/images/usman-profile.png" alt="Usman Iqbal" fill sizes="64px" className="object-cover object-top" />
+          {requires2FA ? (
+            <form onSubmit={verify2FA} className="rounded-[8px] border border-white/10 bg-black/55 p-6 shadow-glow backdrop-blur-xl sm:p-8">
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-[#16f2a4]/10 p-2.5 text-[#16f2a4]">
+                    <KeyRound size={22} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-white">Two-Factor Authentication</h2>
+                    <p className="text-xs text-white/50">
+                      {useBackupCode ? "Enter an 8-character backup recovery code" : "Enter the 6-digit code from your authenticator app"}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="font-black">Usman Iqbal</p>
-                <p className="text-sm text-white/52">Salesforce Admin & Developer</p>
+
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs leading-relaxed text-white/60">
+                Logged in as <strong className="text-white">{username}</strong>. Additional verification is required to access the admin area.
               </div>
-            </div>
-            <label className="grid gap-2 text-sm font-bold text-white/70">
-              Username
-              <input
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                className="rounded-[8px] border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none focus:border-[#16f2a4]"
-                autoComplete="username"
-                required
-              />
-            </label>
-            <label className="mt-5 grid gap-2 text-sm font-bold text-white/70">
-              Password
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="rounded-[8px] border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none focus:border-[#16f2a4]"
-                autoComplete="current-password"
-                required
-              />
-            </label>
-            {message ? <p className="mt-4 rounded-[8px] border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-100">{message}</p> : null}
-            <button
-              type="submit"
-              disabled={busy || !session.configured}
-              className="mt-6 inline-flex w-full items-center justify-center gap-3 rounded-full bg-[#16f2a4] px-6 py-4 font-black text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {busy ? <Loader2 className="animate-spin" size={19} /> : <Shield size={19} />}
-              Login
-            </button>
-          </form>
+
+              <label className="mt-5 grid gap-2 text-sm font-bold text-white/70">
+                {useBackupCode ? "Emergency Backup Code" : "6-Digit Authenticator Code"}
+                <input
+                  type="text"
+                  value={totpCode}
+                  onChange={(e) => setTotpCode(e.target.value)}
+                  placeholder={useBackupCode ? "XXXX-XXXX" : "123456"}
+                  maxLength={useBackupCode ? 16 : 8}
+                  autoComplete="one-time-code"
+                  autoFocus
+                  required
+                  className="rounded-[8px] border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-2xl font-mono tracking-widest text-[#16f2a4] outline-none focus:border-[#16f2a4]"
+                />
+              </label>
+
+              {message ? (
+                <p className="mt-4 rounded-[8px] border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-100">{message}</p>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={busy || !totpCode.trim()}
+                className="mt-6 inline-flex w-full items-center justify-center gap-3 rounded-full bg-[#16f2a4] px-6 py-4 font-black text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {busy ? <Loader2 className="animate-spin" size={19} /> : <KeyRound size={19} />}
+                Verify &amp; Enter Dashboard
+              </button>
+
+              <div className="mt-4 flex items-center justify-between text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseBackupCode(!useBackupCode);
+                    setTotpCode("");
+                    setMessage("");
+                  }}
+                  className="text-white/60 underline hover:text-[#16f2a4]"
+                >
+                  {useBackupCode ? "Use Authenticator App instead" : "Lost access? Use backup recovery code"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRequires2FA(false);
+                    setTotpCode("");
+                    setMessage("");
+                  }}
+                  className="inline-flex items-center gap-1 text-white/50 hover:text-white"
+                >
+                  <ArrowLeft size={13} /> Back
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={login} className="rounded-[8px] border border-white/10 bg-black/55 p-6 shadow-glow backdrop-blur-xl sm:p-8">
+              <div className="mb-7 flex items-center gap-4">
+                <div className="relative h-16 w-16 overflow-hidden rounded-[8px] border border-white/10">
+                  <Image src="/images/usman-profile.png" alt="Usman Iqbal" fill sizes="64px" className="object-cover object-top" />
+                </div>
+                <div>
+                  <p className="font-black">Usman Iqbal</p>
+                  <p className="text-sm text-white/52">Salesforce Admin & Developer</p>
+                </div>
+              </div>
+              <label className="grid gap-2 text-sm font-bold text-white/70">
+                Username
+                <input
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  className="rounded-[8px] border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none focus:border-[#16f2a4]"
+                  autoComplete="username"
+                  required
+                />
+              </label>
+              <label className="mt-5 grid gap-2 text-sm font-bold text-white/70">
+                Password
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="rounded-[8px] border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none focus:border-[#16f2a4]"
+                  autoComplete="current-password"
+                  required
+                />
+              </label>
+              {message ? <p className="mt-4 rounded-[8px] border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-100">{message}</p> : null}
+              <button
+                type="submit"
+                disabled={busy || !session.configured}
+                className="mt-6 inline-flex w-full items-center justify-center gap-3 rounded-full bg-[#16f2a4] px-6 py-4 font-black text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {busy ? <Loader2 className="animate-spin" size={19} /> : <Shield size={19} />}
+                Login
+              </button>
+            </form>
+          )}
         </div>
       </main>
     );

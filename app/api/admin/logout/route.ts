@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookieName } from "@/lib/auth";
+import { cookieName, pending2faCookieName } from "@/lib/auth";
 import { csrfCookieName } from "@/lib/admin-api";
 
 export async function POST() {
@@ -7,6 +7,7 @@ export async function POST() {
 
   response.cookies.set(cookieName, "", { maxAge: 0, path: "/" });
   response.cookies.set(csrfCookieName, "", { maxAge: 0, path: "/" });
+  response.cookies.set(pending2faCookieName, "", { maxAge: 0, path: "/" });
 
   return response;
 }

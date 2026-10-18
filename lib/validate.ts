@@ -80,7 +80,8 @@ export function validateSiteContent(content: SiteContent): SiteContent {
       tags: project.tags.map(sanitizeText).filter(Boolean),
       image: sanitizeUrl(project.image),
       url: sanitizeUrl(project.url),
-      githubUrl: sanitizeUrl(project.githubUrl || "")
+      githubUrl: sanitizeUrl(project.githubUrl || ""),
+      category: sanitizeText(project.category || "")
     })),
     contact: {
       ...content.contact,

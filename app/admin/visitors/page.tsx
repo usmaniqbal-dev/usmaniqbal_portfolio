@@ -14,6 +14,7 @@ import {
   Eye,
   Globe,
   HardDrive,
+  KeyRound,
   Laptop,
   Layers,
   LayoutDashboard,
@@ -66,6 +67,9 @@ export default function VisitorsAdminPage() {
   const [loginPass, setLoginPass] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [totpCode, setTotpCode] = useState("");
+  const [useBackupCode, setUseBackupCode] = useState(false);
 
   useEffect(() => {
     checkSession();
@@ -99,11 +103,18 @@ export default function VisitorsAdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: loginUser, password: loginPass })
       });
-      const data = (await res.json()) as { message?: string; csrfToken?: string; ok?: boolean };
+      const data = (await res.json()) as { message?: string; csrfToken?: string; ok?: boolean; requires2FA?: boolean };
 
       if (!res.ok) {
         setLoginError(data.message || "Invalid credentials.");
         setLoginLoading(false);
+        return;
+      }
+
+      if (data.requires2FA) {
+        setRequires2FA(true);
+        setLoginLoading(false);
+        setLoginError("");
         return;
       }
 
@@ -115,6 +126,42 @@ export default function VisitorsAdminPage() {
       setLoginLoading(false);
     } catch {
       setLoginError("Login failed. Check your network connection.");
+      setLoginLoading(false);
+    }
+  }
+
+  async function handleVerify2FA(e: React.FormEvent) {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError("");
+
+    try {
+      const res = await fetch("/api/admin/2fa/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: totpCode.trim(),
+          isBackupCode: useBackupCode
+        })
+      });
+      const data = (await res.json()) as { message?: string; csrfToken?: string; ok?: boolean };
+
+      if (!res.ok) {
+        setLoginError(data.message || "2FA verification failed.");
+        setLoginLoading(false);
+        return;
+      }
+
+      setSession({
+        authenticated: true,
+        configured: true,
+        csrfToken: data.csrfToken
+      });
+      setRequires2FA(false);
+      setTotpCode("");
+      setLoginLoading(false);
+    } catch {
+      setLoginError("2FA verification failed. Check your network connection.");
       setLoginLoading(false);
     }
   }
@@ -305,47 +352,113 @@ export default function VisitorsAdminPage() {
             Please log in with your authorized admin credentials to inspect visitor analytics.
           </p>
 
-          <form onSubmit={handleLogin} className="mt-6 space-y-4">
-            <div>
-              <label className="text-xs font-bold uppercase text-white/60">Admin Username</label>
-              <input
-                type="text"
-                required
-                value={loginUser}
-                onChange={(e) => setLoginUser(e.target.value)}
-                placeholder="Username"
-                className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-[#16f2a4]"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-bold uppercase text-white/60">Admin Password</label>
-              <input
-                type="password"
-                required
-                value={loginPass}
-                onChange={(e) => setLoginPass(e.target.value)}
-                placeholder="Password"
-                className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-[#16f2a4]"
-              />
-            </div>
-
-            {loginError && (
-              <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-200">
-                <AlertCircle size={16} className="shrink-0 text-red-400" />
-                {loginError}
+          {requires2FA ? (
+            <form onSubmit={handleVerify2FA} className="mt-6 space-y-4">
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs leading-relaxed text-white/70">
+                Logged in as <strong className="text-white">{loginUser}</strong>. Additional verification is required.
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={loginLoading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#16f2a4] px-4 py-3 font-black text-black transition hover:bg-white"
-            >
-              {loginLoading ? <Loader2 className="animate-spin" size={18} /> : <Lock size={18} />}
-              Log In to Visitors
-            </button>
-          </form>
+              <div>
+                <label className="text-xs font-bold uppercase text-white/60">
+                  {useBackupCode ? "Emergency Backup Code" : "6-Digit Authenticator Code"}
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  autoComplete="one-time-code"
+                  value={totpCode}
+                  onChange={(e) => setTotpCode(e.target.value)}
+                  placeholder={useBackupCode ? "XXXX-XXXX" : "123456"}
+                  maxLength={useBackupCode ? 16 : 8}
+                  className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-center font-mono text-xl tracking-widest text-[#16f2a4] outline-none focus:border-[#16f2a4]"
+                />
+              </div>
+
+              {loginError && (
+                <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-200">
+                  <AlertCircle size={16} className="shrink-0 text-red-400" />
+                  {loginError}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loginLoading || !totpCode.trim()}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#16f2a4] px-4 py-3 font-black text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loginLoading ? <Loader2 className="animate-spin" size={18} /> : <KeyRound size={18} />}
+                Verify &amp; Enter Analytics
+              </button>
+
+              <div className="flex items-center justify-between pt-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseBackupCode(!useBackupCode);
+                    setTotpCode("");
+                    setLoginError("");
+                  }}
+                  className="text-white/60 underline hover:text-[#16f2a4]"
+                >
+                  {useBackupCode ? "Use Authenticator App" : "Use Backup Code"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRequires2FA(false);
+                    setTotpCode("");
+                    setLoginError("");
+                  }}
+                  className="text-white/50 hover:text-white"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleLogin} className="mt-6 space-y-4">
+              <div>
+                <label className="text-xs font-bold uppercase text-white/60">Admin Username</label>
+                <input
+                  type="text"
+                  required
+                  value={loginUser}
+                  onChange={(e) => setLoginUser(e.target.value)}
+                  placeholder="Username"
+                  className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-[#16f2a4]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase text-white/60">Admin Password</label>
+                <input
+                  type="password"
+                  required
+                  value={loginPass}
+                  onChange={(e) => setLoginPass(e.target.value)}
+                  placeholder="Password"
+                  className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-[#16f2a4]"
+                />
+              </div>
+
+              {loginError && (
+                <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-200">
+                  <AlertCircle size={16} className="shrink-0 text-red-400" />
+                  {loginError}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#16f2a4] px-4 py-3 font-black text-black transition hover:bg-white"
+              >
+                {loginLoading ? <Loader2 className="animate-spin" size={18} /> : <Lock size={18} />}
+                Log In to Visitors
+              </button>
+            </form>
+          )}
 
           <div className="mt-6 border-t border-white/10 pt-4 text-center">
             <Link
