@@ -1,22 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, X, Eye, Lock, Clock, Check } from "lucide-react";
+import { Shield, X, Eye, Lock, Clock } from "lucide-react";
 
 export default function PrivacyNotice() {
-  const [showBanner, setShowBanner] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    try {
-      const acknowledged = window.localStorage.getItem("va_privacy_ack");
-      if (!acknowledged) {
-        setShowBanner(true);
-      }
-    } catch {
-      // Storage unavailable
-    }
-
     const handleOpenModal = () => setShowModal(true);
     window.addEventListener("open-privacy-modal", handleOpenModal);
 
@@ -25,63 +15,8 @@ export default function PrivacyNotice() {
     };
   }, []);
 
-  const dismiss = () => {
-    setShowBanner(false);
-    try {
-      window.localStorage.setItem("va_privacy_ack", "true");
-    } catch {
-      // Storage unavailable
-    }
-  };
-
   return (
     <>
-      {/* Discreet Bottom Banner */}
-      {showBanner && (
-        <aside
-          role="region"
-          aria-label="Privacy Notice"
-          className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-xl rounded-2xl border border-white/10 bg-[#070b12]/95 p-4 text-white shadow-2xl backdrop-blur-xl transition sm:bottom-6 sm:p-5"
-        >
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#16f2a4]/15 text-[#16f2a4]">
-              <Shield size={20} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-bold text-white">Privacy-First Portfolio Analytics</h3>
-              <p className="mt-1 text-xs leading-relaxed text-white/70">
-                This site uses lightweight, first-party analytics to understand traffic (approximate country, device type, pages visited). No personal data or cross-site cookies are collected.
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={dismiss}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#16f2a4] px-4 py-1.5 text-xs font-bold text-black transition hover:bg-white"
-                >
-                  <Check size={14} />
-                  Got it
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(true)}
-                  className="rounded-full border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-white/80 transition hover:border-[#16f2a4] hover:text-[#16f2a4]"
-                >
-                  Privacy Details
-                </button>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={dismiss}
-              aria-label="Dismiss privacy notice"
-              className="rounded-lg p-1 text-white/50 hover:bg-white/10 hover:text-white"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </aside>
-      )}
-
       {/* Detailed Privacy Policy Modal */}
       {showModal && (
         <div
@@ -166,13 +101,10 @@ export default function PrivacyNotice() {
             <div className="mt-8 flex justify-end border-t border-white/10 pt-4">
               <button
                 type="button"
-                onClick={() => {
-                  setShowModal(false);
-                  dismiss();
-                }}
+                onClick={() => setShowModal(false)}
                 className="rounded-full bg-[#16f2a4] px-6 py-2.5 text-sm font-black text-black transition hover:bg-white"
               >
-                Close &amp; Accept
+                Close
               </button>
             </div>
           </div>
