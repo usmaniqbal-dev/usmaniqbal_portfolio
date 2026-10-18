@@ -88,8 +88,8 @@ export async function POST(request: Request) {
       : "Two-Factor Authentication successful."
   });
 
-  // Issue full session cookie
-  response.cookies.set(cookieName, createSessionToken(pendingSession.username), {
+  // Issue full session cookie with twoFactorVerified = true
+  response.cookies.set(cookieName, createSessionToken(pendingSession.username, true), {
     httpOnly: true,
     sameSite: "strict",
     secure: process.env.NODE_ENV === "production",
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
   });
 
   // Clear pending 2FA cookie
-  response.cookies.delete(pending2faCookieName);
+  response.cookies.set(pending2faCookieName, "", { maxAge: 0, path: "/" });
 
   return response;
 }

@@ -67,6 +67,10 @@ export async function POST(request: Request) {
       message: "Two-Factor Authentication required. Enter the 6-digit code from your authenticator app."
     });
 
+    // Invalidate any pre-existing session cookies
+    response.cookies.set(cookieName, "", { maxAge: 0, path: "/" });
+    response.cookies.set(csrfCookieName, "", { maxAge: 0, path: "/" });
+
     response.cookies.set(pending2faCookieName, pendingToken, {
       httpOnly: true,
       sameSite: "strict",
@@ -81,7 +85,8 @@ export async function POST(request: Request) {
   // 2FA not enabled: issue full admin session
   const csrfToken = createCsrfToken();
   const response = NextResponse.json({ ok: true, requires2FA: false, csrfToken });
-  response.cookies.set(cookieName, createSessionToken(body.username || ""), {
+  response.cookies.set(pending2faCookieName, "", { maxAge: 0, path: "/" });
+  response.cookies.set(cookieName, createSessionToken(body.username || "", false), {
     httpOnly: true,
     sameSite: "strict",
     secure: process.env.NODE_ENV === "production",

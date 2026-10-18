@@ -10,7 +10,6 @@ import {
   Mail,
   Menu,
   Moon,
-  Settings2,
   Sparkles,
   Sun,
   UserRound,
@@ -27,7 +26,6 @@ export type NavItem = {
 export const defaultNavItems: NavItem[] = [
   { label: "Home", href: "/", icon: Home },
   { label: "About", href: "/about", icon: UserRound },
-  { label: "Skills", href: "/skills", icon: Settings2 },
   { label: "Services", href: "/services", icon: Sparkles },
   { label: "Projects", href: "/projects", icon: BriefcaseBusiness },
   { label: "Contact", href: "/contact", icon: Mail }
@@ -68,6 +66,9 @@ export default function FloatingNav({
   function isItemActive(href: string) {
     if (href === "/") {
       return currentPath === "/" || currentPath === "";
+    }
+    if (href === "/about" && (currentPath === "/skills" || currentPath.startsWith("/skills/"))) {
+      return true;
     }
     return currentPath === href || currentPath.startsWith(href + "/");
   }

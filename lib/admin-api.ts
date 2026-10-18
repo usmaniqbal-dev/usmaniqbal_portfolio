@@ -1,13 +1,22 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { cookieName, verifySessionToken } from "@/lib/auth";
+import { isTwoFactorEnabled } from "@/lib/two-factor";
 
 export const csrfCookieName = "nurax_admin_csrf";
 
 // Checks the signed admin session cookie for protected API routes.
 export async function requireAdminSession() {
   const cookieStore = await cookies();
-  return Boolean(verifySessionToken(cookieStore.get(cookieName)?.value));
+  const session = verifySessionToken(cookieStore.get(cookieName)?.value);
+  if (!session) return false;
+
+  const twoFactorActive = await isTwoFactorEnabled();
+  if (twoFactorActive && !session.twoFactorVerified) {
+    return false;
+  }
+
+  return true;
 }
 
 // Checks session and CSRF token for state-changing requests.
@@ -19,6 +28,11 @@ export async function requireAdminMutation(request: Request) {
 
   if (!session) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const twoFactorActive = await isTwoFactorEnabled();
+  if (twoFactorActive && !session.twoFactorVerified) {
+    return NextResponse.json({ message: "Two-Factor Authentication required." }, { status: 401 });
   }
 
   if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {

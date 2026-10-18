@@ -38,8 +38,14 @@ export type PendingSetup = {
 };
 
 const twoFactorConfigKey = "admin-2fa";
-const localConfigPath = path.join(process.cwd(), "data", "admin-2fa.json");
-const localPendingPath = path.join(process.cwd(), "data", "admin-2fa-pending.json");
+const localConfigPaths = [
+  path.join(process.cwd(), ".data", "admin-2fa.json"),
+  path.join(process.cwd(), "data", "admin-2fa.json")
+];
+const localPendingPaths = [
+  path.join(process.cwd(), ".data", "admin-2fa-pending.json"),
+  path.join(process.cwd(), "data", "admin-2fa-pending.json")
+];
 
 // In-memory fallback for pending enrollment session (expires after 10 mins)
 const pendingSetups = new Map<string, PendingSetup>();
@@ -121,14 +127,16 @@ export async function getTwoFactorConfig(): Promise<TwoFactorConfig | null> {
     // Continue to local file
   }
 
-  try {
-    const raw = await readFile(localConfigPath, "utf8");
-    const parsed = JSON.parse(raw) as TwoFactorConfig;
-    if (parsed && typeof parsed.enabled === "boolean") {
-      return parsed;
+  for (const configPath of localConfigPaths) {
+    try {
+      const raw = await readFile(configPath, "utf8");
+      const parsed = JSON.parse(raw) as TwoFactorConfig;
+      if (parsed && typeof parsed.enabled === "boolean") {
+        return parsed;
+      }
+    } catch {
+      // Try next location
     }
-  } catch {
-    // Not found
   }
 
   return null;
@@ -140,8 +148,14 @@ export async function saveTwoFactorConfig(config: TwoFactorConfig): Promise<bool
     if (process.env.VERCEL) {
       throw new Error("2FA storage requires Neon PostgreSQL. Add DATABASE_URL to your Vercel deployment.");
     }
-    await mkdir(path.dirname(localConfigPath), { recursive: true });
-    await writeFile(localConfigPath, JSON.stringify(config, null, 2), "utf8");
+    for (const configPath of localConfigPaths) {
+      try {
+        await mkdir(path.dirname(configPath), { recursive: true });
+        await writeFile(configPath, JSON.stringify(config, null, 2), "utf8");
+      } catch {
+        // Continue
+      }
+    }
   }
 
   return true;
@@ -185,11 +199,13 @@ export async function startTwoFactorSetup(username: string): Promise<{
   pendingSetups.set(username, pending);
 
   // Also persist pending setup to disk for multi-process dev if needed
-  try {
-    await mkdir(path.dirname(localPendingPath), { recursive: true });
-    await writeFile(localPendingPath, JSON.stringify({ [username]: pending }), "utf8");
-  } catch {
-    // Ignore in read-only environments
+  for (const pendingPath of localPendingPaths) {
+    try {
+      await mkdir(path.dirname(pendingPath), { recursive: true });
+      await writeFile(pendingPath, JSON.stringify({ [username]: pending }), "utf8");
+    } catch {
+      // Ignore in read-only environments
+    }
   }
 
   return {
@@ -205,15 +221,17 @@ async function getPendingSetup(username: string): Promise<PendingSetup | null> {
     return mem;
   }
 
-  try {
-    const raw = await readFile(localPendingPath, "utf8");
-    const parsed = JSON.parse(raw) as Record<string, PendingSetup>;
-    const filePending = parsed[username];
-    if (filePending && Date.now() - filePending.createdAt < 1000 * 60 * 15) {
-      return filePending;
+  for (const pendingPath of localPendingPaths) {
+    try {
+      const raw = await readFile(pendingPath, "utf8");
+      const parsed = JSON.parse(raw) as Record<string, PendingSetup>;
+      const filePending = parsed[username];
+      if (filePending && Date.now() - filePending.createdAt < 1000 * 60 * 15) {
+        return filePending;
+      }
+    } catch {
+      // Try next
     }
-  } catch {
-    // Not found
   }
 
   return null;
@@ -236,7 +254,8 @@ export async function confirmTwoFactorSetup(
   const cleanToken = verificationCode.replace(/\s+/g, "").trim();
   const verifyResult = verifySync({
     token: cleanToken,
-    secret: pending.secret
+    secret: pending.secret,
+    epochTolerance: 30
   }) as { valid: boolean; timeStep?: number };
 
   if (!verifyResult || !verifyResult.valid) {
@@ -269,10 +288,12 @@ export async function confirmTwoFactorSetup(
 
   // Clear pending state
   pendingSetups.delete(username);
-  try {
-    await writeFile(localPendingPath, JSON.stringify({}), "utf8");
-  } catch {
-    // ignore
+  for (const pendingPath of localPendingPaths) {
+    try {
+      await writeFile(pendingPath, JSON.stringify({}), "utf8");
+    } catch {
+      // ignore
+    }
   }
 
   return {
@@ -336,7 +357,8 @@ export async function verifyTwoFactorAttempt(
       const secret = decryptSecret(config.encryptedSecret, config.iv, config.authTag);
       const result = verifySync({
         token: clean,
-        secret
+        secret,
+        epochTolerance: 30
       }) as { valid: boolean; timeStep?: number };
 
       if (result && result.valid) {

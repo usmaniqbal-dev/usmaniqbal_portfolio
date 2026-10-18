@@ -85,8 +85,11 @@ export default function VisitorsAdminPage() {
   async function checkSession() {
     try {
       const res = await fetch("/api/admin/session", { cache: "no-store" });
-      const state = (await res.json()) as SessionState;
+      const state = (await res.json()) as SessionState & { requires2FA?: boolean };
       setSession(state);
+      if (state.requires2FA) {
+        setRequires2FA(true);
+      }
     } catch {
       setSession({ authenticated: false, configured: false });
     }

@@ -45,6 +45,7 @@ type SessionState = {
   csrfToken?: string;
   storageMode?: string;
   message?: string;
+  requires2FA?: boolean;
 };
 
 type AdminView =
@@ -126,6 +127,8 @@ export default function AdminBuilderDashboard() {
 
     if (state.authenticated) {
       await loadContent();
+    } else if (state.requires2FA) {
+      setLoginStep("totp");
     }
   }
 
@@ -1766,8 +1769,16 @@ function AdminSecurityView({
               Follow these three quick steps to pair your authenticator app.
             </p>
 
+            {/* ACTION REQUIRED NOTICE */}
+            <div className="mt-4 flex items-start gap-3 rounded-[12px] border border-amber-400/30 bg-amber-400/10 p-3.5 text-xs text-amber-200">
+              <AlertCircle size={18} className="shrink-0 text-amber-400 mt-0.5" />
+              <p className="leading-relaxed">
+                <strong>Action Required:</strong> Scanning the QR code is only Step 1. You <strong>MUST</strong> scroll to <strong>Step 3</strong> below, type the 6-digit code shown in your authenticator app, and click <strong>Activate Two-Factor Authentication</strong>. 2FA is NOT active until this confirmation step is completed.
+              </p>
+            </div>
+
             {/* STEP 1: SCAN QR CODE */}
-            <div className="mt-6 rounded-[12px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+            <div className="mt-5 rounded-[12px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
               <p className="text-xs font-bold uppercase tracking-wider text-[#16f2a4]">Step 1: Scan QR Code</p>
               <p className="mt-1 text-xs text-white/50">
                 Open Google Authenticator, Microsoft Authenticator, or Authy and scan the barcode below:
@@ -1845,9 +1856,12 @@ function AdminSecurityView({
             </div>
 
             {/* STEP 3: CONFIRMATION CODE */}
-            <form onSubmit={handleConfirmSetup} className="mt-4 rounded-[12px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
-              <p className="text-xs font-bold uppercase tracking-wider text-[#16f2a4]">Step 3: Confirm Setup</p>
-              <p className="mt-1 text-xs text-white/50">Enter the current 6-digit code from your authenticator app to verify:</p>
+            <form onSubmit={handleConfirmSetup} className="mt-4 rounded-[12px] border-2 border-[#16f2a4]/40 bg-[#16f2a4]/[0.04] p-4 sm:p-5">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wider text-[#16f2a4]">Step 3: Confirm Setup &amp; Activate</p>
+                <span className="rounded-full bg-[#16f2a4] px-2.5 py-0.5 text-[10px] font-black uppercase text-black">Required</span>
+              </div>
+              <p className="mt-1 text-xs text-white/60">Enter the current 6-digit code from your authenticator app to activate 2FA:</p>
 
               <div className="mt-3">
                 <input
@@ -1858,7 +1872,7 @@ function AdminSecurityView({
                   value={confirmCode}
                   onChange={(e) => setConfirmCode(e.target.value.replace(/[^0-9]/g, ""))}
                   placeholder="000 000"
-                  className="w-full rounded-[8px] border border-white/15 bg-black/50 px-4 py-3 text-center font-mono text-2xl tracking-[0.25em] text-white outline-none focus:border-[#16f2a4]"
+                  className="w-full rounded-[8px] border border-white/20 bg-black/60 px-4 py-3 text-center font-mono text-2xl tracking-[0.25em] text-white outline-none focus:border-[#16f2a4]"
                   required
                 />
               </div>

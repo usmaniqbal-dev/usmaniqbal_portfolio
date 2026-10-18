@@ -61,11 +61,13 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function checkSession() {
       const response = await fetch("/api/admin/session", { cache: "no-store" });
-      const state = (await response.json()) as SessionState;
+      const state = (await response.json()) as SessionState & { requires2FA?: boolean };
       setSession(state);
 
       if (state.authenticated) {
         await loadContent();
+      } else if (state.requires2FA) {
+        setRequires2FA(true);
       }
     }
 

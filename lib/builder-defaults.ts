@@ -167,7 +167,7 @@ export const defaultTemplates: BuilderTemplate[] = [
     id: "classic-portfolio",
     name: "Classic Portfolio",
     thumbnail: "/images/usman-hero.png",
-    sectionsOrder: ["home", "about", "skills", "services", "projects", "contact"],
+    sectionsOrder: ["home", "about", "services", "projects", "contact"],
     sectionSettings: {},
     isActive: true,
     isDefault: true,
@@ -178,7 +178,7 @@ export const defaultTemplates: BuilderTemplate[] = [
     id: "modern-minimal",
     name: "Modern Minimal",
     thumbnail: "",
-    sectionsOrder: ["home", "projects", "skills", "about", "services", "contact"],
+    sectionsOrder: ["home", "projects", "about", "services", "contact"],
     sectionSettings: {},
     isActive: false,
     isDefault: false,
@@ -189,7 +189,7 @@ export const defaultTemplates: BuilderTemplate[] = [
     id: "creative-dark",
     name: "Creative Dark",
     thumbnail: "",
-    sectionsOrder: ["home", "services", "projects", "skills", "about", "contact"],
+    sectionsOrder: ["home", "services", "projects", "about", "contact"],
     sectionSettings: {},
     isActive: false,
     isDefault: false,
@@ -201,10 +201,9 @@ export const defaultTemplates: BuilderTemplate[] = [
 const defaultSections = [
   createDefaultSection("home", "Hero", "hero", 0, [createDefaultBlock("home-hero", "hero", 0)]),
   createDefaultSection("about", "About", "about", 1, [createDefaultBlock("about-text", "text", 0)]),
-  createDefaultSection("skills", "Skills", "skills", 2, [createDefaultBlock("skills-grid", "skill-card", 0)]),
-  createDefaultSection("services", "Services", "services", 3, [createDefaultBlock("services-grid", "service-card", 0)]),
-  createDefaultSection("projects", "Projects", "projects", 4, [createDefaultBlock("projects-grid", "project-card", 0)]),
-  createDefaultSection("contact", "Contact", "contact", 5, [createDefaultBlock("contact-form", "contact-form", 0)])
+  createDefaultSection("services", "Services", "services", 2, [createDefaultBlock("services-grid", "service-card", 0)]),
+  createDefaultSection("projects", "Projects", "projects", 3, [createDefaultBlock("projects-grid", "project-card", 0)]),
+  createDefaultSection("contact", "Contact", "contact", 4, [createDefaultBlock("contact-form", "contact-form", 0)])
 ];
 
 export const defaultPages: BuilderPage[] = [

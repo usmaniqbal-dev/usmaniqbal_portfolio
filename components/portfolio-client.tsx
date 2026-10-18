@@ -62,7 +62,7 @@ export default function PortfolioClient({ content: initialContent, initialSectio
 
   // Smooth scroll handler for same-page sections with URL history push
   function handleNavClick(e: React.MouseEvent, href: string) {
-    if (href === "/projects" || href.startsWith("http")) {
+    if (href.startsWith("http")) {
       return;
     }
 
@@ -216,7 +216,7 @@ export default function PortfolioClient({ content: initialContent, initialSectio
   } as React.CSSProperties;
 
   const activeTemplate = content.builder.templates.find((template) => template.isActive);
-  const sectionOrder = activeTemplate?.sectionsOrder || ["home", "about", "skills", "services", "projects", "contact"];
+  const sectionOrder = activeTemplate?.sectionsOrder || ["home", "about", "services", "projects", "contact"];
   const orderFor = (id: string) => ({ order: sectionOrder.indexOf(id) === -1 ? 99 : sectionOrder.indexOf(id) });
   const heroBackgroundType = content.home.heroBackgroundType;
   const heroBackgroundUrl = content.home.heroBackgroundUrl;
@@ -365,10 +365,9 @@ export default function PortfolioClient({ content: initialContent, initialSectio
             ) : null}
           </motion.div>
         </div>
-      </section>
 
-      <section id="skills" className="relative px-4 py-12 sm:px-6 lg:px-8" style={orderFor("skills")}>
-        <div className="mx-auto max-w-5xl">
+        {/* Technical Skills Sub-Section with id="skills" */}
+        <div id="skills" className="mx-auto max-w-5xl mt-12 pt-10 border-t dark:border-white/10 border-black/10">
           <motion.div {...reveal()} className="mb-6">
             <SectionKicker number="02" label="Technical Skills" darkMode={darkMode} />
           </motion.div>
@@ -383,7 +382,7 @@ export default function PortfolioClient({ content: initialContent, initialSectio
       <section id="services" className="relative px-4 py-12 sm:px-6 lg:px-8" style={orderFor("services")}>
         <div className="mx-auto max-w-5xl">
           <motion.div {...reveal()} className="mb-6">
-            <SectionKicker number="03" label="Services" darkMode={darkMode} />
+            <SectionKicker number="02" label="Services" darkMode={darkMode} />
             <h2 className={`mt-4 max-w-3xl text-balance text-xl font-black leading-tight sm:text-2xl lg:text-3xl ${darkMode ? "text-white" : "text-[#111111]"}`}>
               Salesforce, CRM, automation, AI and web development services for cleaner workflows and faster execution.
             </h2>
@@ -405,7 +404,7 @@ export default function PortfolioClient({ content: initialContent, initialSectio
       <section id="contact" className="relative px-4 py-12 sm:px-6 lg:px-8" style={orderFor("contact")}>
         <div className="mx-auto grid max-w-5xl gap-5 lg:grid-cols-[0.85fr_1fr]">
           <motion.div {...reveal()}>
-            <SectionKicker number="05" label="Contact" darkMode={darkMode} />
+            <SectionKicker number="04" label="Contact" darkMode={darkMode} />
             <h2 className={`mt-5 text-balance text-2xl font-black leading-tight sm:text-3xl ${darkMode ? "text-white" : "text-[#111111]"}`}>{content.contact.formHeadline}</h2>
             <div className="mt-7 grid gap-3">
               <ContactLine icon={Mail} label="Email" value={content.contact.email} href={`mailto:${content.contact.email}`} darkMode={darkMode} />

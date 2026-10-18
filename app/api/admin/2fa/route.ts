@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { cookieName, credentialsMatch, getAdminCredentials, verifySessionToken } from "@/lib/auth";
+import { cookieName, createSessionToken, credentialsMatch, getAdminCredentials, verifySessionToken } from "@/lib/auth";
 import { requireAdminMutation, requireAdminSession } from "@/lib/admin-api";
 import {
   confirmTwoFactorSetup,
@@ -92,11 +92,22 @@ export async function PUT(request: Request) {
       );
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       backupCodes: result.backupCodes,
       message: "Two-Factor Authentication is now enabled on your account! Save your backup recovery codes securely."
     });
+
+    // Upgrade session to twoFactorVerified: true
+    response.cookies.set(cookieName, createSessionToken(session.username, true), {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 8,
+      path: "/"
+    });
+
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to confirm 2FA setup.";
     return NextResponse.json({ message }, { status: 500 });
@@ -152,10 +163,20 @@ export async function DELETE(request: Request) {
     // 3. Disable 2FA
     await disableTwoFactor();
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       message: "Two-Factor Authentication has been successfully disabled."
     });
+
+    response.cookies.set(cookieName, createSessionToken(session.username, false), {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 8,
+      path: "/"
+    });
+
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to disable 2FA.";
     return NextResponse.json({ message }, { status: 500 });

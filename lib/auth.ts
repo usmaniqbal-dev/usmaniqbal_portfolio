@@ -7,10 +7,11 @@ const minimumSecretLength = 32;
 export const minimumPasswordLength = 8;
 
 
-type SessionPayload = {
+export type SessionPayload = {
   username: string;
   expiresAt: number;
   stage?: string;
+  twoFactorVerified?: boolean;
 };
 
 function getSecret() {
@@ -131,7 +132,7 @@ export function getAuthSetupMessage() {
   return "Set ADMIN_USERNAME, ADMIN_PASSWORD with at least 8 characters, and AUTH_SECRET with at least 32 characters in .env.local.";
 }
 
-export function createSessionToken(username: string) {
+export function createSessionToken(username: string, twoFactorVerified = false) {
   const secret = getSecret();
 
   if (!secret) {
@@ -140,6 +141,7 @@ export function createSessionToken(username: string) {
 
   const payload: SessionPayload = {
     username,
+    twoFactorVerified,
     expiresAt: Date.now() + 1000 * 60 * 60 * 8
   };
   const body = base64Url(JSON.stringify(payload));
