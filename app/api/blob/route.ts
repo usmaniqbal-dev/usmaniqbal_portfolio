@@ -16,19 +16,27 @@ export async function GET(request: NextRequest) {
 
   const target = extractBlobTarget(rawTarget);
 
-  // 1. Authorization: check if request has a valid, non-expired short-lived HMAC signature
-  const expires = searchParams.get("expires");
-  const sig = searchParams.get("sig");
-  const isSignedAuthorized = verifySignedBlobUrl(target, expires, sig);
+  if (!target) {
+    return NextResponse.json({ error: "Invalid pathname or url parameter." }, { status: 400 });
+  }
 
-  // 2. Authorization: check if user has an active authenticated admin session (with 2FA if active)
-  const isAdminAuthorized = await requireAdminSession();
+  // Security & Authorization:
+  // Public portfolio media (stored under "portfolio/" or "test/") are public site assets so visitors and Next.js Image optimizer can view them.
+  // Sensitive/non-portfolio files outside this scope require a valid HMAC signed URL or an active admin session.
+  const isPublicAsset = target.startsWith("portfolio/") || target.startsWith("test/");
 
-  if (!isAdminAuthorized && !isSignedAuthorized) {
-    return NextResponse.json(
-      { error: "Unauthorized. Accessing private files requires admin authentication or a valid signed URL." },
-      { status: 401 }
-    );
+  if (!isPublicAsset) {
+    const expires = searchParams.get("expires");
+    const sig = searchParams.get("sig");
+    const isSignedAuthorized = verifySignedBlobUrl(target, expires, sig);
+    const isAdminAuthorized = await requireAdminSession();
+
+    if (!isAdminAuthorized && !isSignedAuthorized) {
+      return NextResponse.json(
+        { error: "Unauthorized. Accessing private files requires admin authentication or a valid signed URL." },
+        { status: 401 }
+      );
+    }
   }
 
   if (!isBlobStorageConfigured()) {
@@ -44,20 +52,36 @@ export async function GET(request: NextRequest) {
     });
 
     if (result === null) {
-      return new NextResponse("Private blob not found", { status: 404 });
+      return new NextResponse("Blob not found", { status: 404 });
     }
+
+    const contentType =
+      result.blob.contentType ||
+      (target.endsWith(".webp")
+        ? "image/webp"
+        : target.endsWith(".png")
+          ? "image/png"
+          : target.endsWith(".jpg") || target.endsWith(".jpeg")
+            ? "image/jpeg"
+            : target.endsWith(".svg")
+              ? "image/svg+xml"
+              : target.endsWith(".mp4")
+                ? "video/mp4"
+                : target.endsWith(".pdf")
+                  ? "application/pdf"
+                  : "application/octet-stream");
 
     return new NextResponse(result.stream, {
       headers: {
-        "Cache-Control": "private, no-cache, no-transform",
-        "Content-Type": result.blob.contentType || "application/octet-stream",
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Type": contentType,
         "X-Content-Type-Options": "nosniff"
       }
     });
   } catch (err) {
-    console.error("[private-blob-get-error]", err);
+    console.error("[blob-get-error]", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to retrieve private blob." },
+      { error: err instanceof Error ? err.message : "Failed to retrieve blob." },
       { status: 500 }
     );
   }

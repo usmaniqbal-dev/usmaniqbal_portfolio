@@ -418,6 +418,7 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
                       src={project.image || "/images/projects/salesforce-automation.jpg"}
                       alt={project.title}
                       fill
+                      unoptimized={Boolean(project.image?.startsWith("/api/blob"))}
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
@@ -586,6 +587,7 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
                     src={selectedProject.image || "/images/projects/salesforce-automation.jpg"}
                     alt={selectedProject.title}
                     fill
+                    unoptimized={Boolean(selectedProject.image?.startsWith("/api/blob"))}
                     sizes="(max-width: 768px) 100vw, 680px"
                     className="object-cover"
                   />

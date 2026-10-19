@@ -31,16 +31,27 @@ export function getBlobAccessMode(): "private" {
 // Extracts the actual private blob URL or relative pathname from an authenticated serving route URL
 export function extractBlobTarget(urlOrPathname?: string | null): string {
   if (!urlOrPathname || typeof urlOrPathname !== "string") return "";
-  const trimmed = urlOrPathname.trim();
+  let trimmed = urlOrPathname.trim();
 
   if (trimmed.startsWith("/api/blob")) {
     try {
       const parsed = new URL(trimmed, "https://dummy.local");
       const target = parsed.searchParams.get("url") || parsed.searchParams.get("pathname");
-      if (target) return target.trim();
+      if (target) trimmed = target.trim();
     } catch {
       // ignore
     }
+  }
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    try {
+      const parsed = new URL(trimmed);
+      trimmed = parsed.pathname.replace(/^\/+/, "");
+    } catch {
+      // keep
+    }
+  } else {
+    trimmed = trimmed.replace(/^\/+/, "");
   }
 
   return trimmed;

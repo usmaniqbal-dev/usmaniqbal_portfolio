@@ -353,7 +353,16 @@ export default function PortfolioClient({ content: initialContent, initialSectio
             </div>
             {content.about.experience || content.about.image || content.about.primaryButton?.label || content.about.secondaryButton?.label ? (
               <div className={`grid gap-4 rounded-[8px] border p-4 sm:grid-cols-[auto_1fr] ${darkMode ? "border-white/10 bg-[#0A0A0A]" : "border-black/8 bg-white shadow-sm"}`}>
-                {content.about.image ? <Image src={content.about.image} alt="Usman Iqbal" width={80} height={80} className="h-20 w-20 rounded-[8px] object-cover" /> : null}
+                {content.about.image ? (
+                  <Image
+                    src={content.about.image}
+                    alt="Usman Iqbal"
+                    width={80}
+                    height={80}
+                    unoptimized={Boolean(content.about.image?.startsWith("/api/blob"))}
+                    className="h-20 w-20 rounded-[8px] object-cover"
+                  />
+                ) : null}
                 <div>
                   {content.about.experience ? <p className="font-bold text-[var(--primary)]">{content.about.experience}</p> : null}
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -636,6 +645,7 @@ function HeroVisual({
               fill
               priority
               draggable={false}
+              unoptimized={Boolean(imageSrc?.startsWith("/api/blob"))}
               sizes="(max-width: 1024px) 78vw, 380px"
               className="object-contain object-bottom select-none hero-profile-cutout"
             />
@@ -852,6 +862,7 @@ function ProjectSlider({
                     src={project.image || "/images/projects/salesforce-automation.jpg"}
                     alt={project.title}
                     fill
+                    unoptimized={Boolean(project.image?.startsWith("/api/blob"))}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
@@ -947,6 +958,7 @@ function ProjectSlider({
                     src={selectedProject.image || "/images/projects/salesforce-automation.jpg"}
                     alt={selectedProject.title}
                     fill
+                    unoptimized={Boolean(selectedProject.image?.startsWith("/api/blob"))}
                     sizes="(max-width: 768px) 100vw, 680px"
                     className="object-cover"
                   />
