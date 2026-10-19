@@ -985,7 +985,7 @@ function MediaView({ content, setContent, secureHeaders }: { content: SiteConten
     setTimeout(() => setCopiedId(null), 2000);
   }
 
-  const isBlob = (url?: string) => Boolean(url && (url.includes(".blob.vercel-storage.com") || url.includes("vercel-storage.com")));
+  const isBlob = (url?: string) => Boolean(url && (url.includes(".blob.vercel-storage.com") || url.includes("vercel-storage.com") || url.startsWith("/api/blob")));
 
   return (
     <div className="grid gap-6">
@@ -998,11 +998,11 @@ function MediaView({ content, setContent, secureHeaders }: { content: SiteConten
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-black text-white">Vercel Cloud Blob Storage</h3>
+                <h3 className="text-lg font-black text-white">Vercel Cloud Blob Storage (Private Access)</h3>
                 {storageInfo?.connected ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-[#16f2a4]/30 bg-[#16f2a4]/15 px-2.5 py-0.5 text-[11px] font-bold text-[#16f2a4]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#16f2a4] animate-pulse" />
-                    Connected &amp; Active
+                    Private Cloud Active
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-300">
@@ -1013,7 +1013,7 @@ function MediaView({ content, setContent, secureHeaders }: { content: SiteConten
               </div>
               <p className="mt-0.5 text-xs text-white/50">
                 {storageInfo?.connected
-                  ? `Permanent cloud storage enabled. Uploaded images are stored directly on Vercel's global CDN and persist across deployments.`
+                  ? `Permanent private cloud storage enabled. Uploaded files are encrypted & restricted to authenticated administrators and short-lived signed sessions.`
                   : `Connect a Blob store in your Vercel project to automatically enable BLOB_READ_WRITE_TOKEN for permanent cloud storage.`}
               </p>
             </div>
@@ -1112,7 +1112,7 @@ function MediaView({ content, setContent, secureHeaders }: { content: SiteConten
                   {/* Cloud Badge */}
                   <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-black/75 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-md">
                     <Cloud size={10} className={isCloud ? "text-[#16f2a4]" : "text-white/40"} />
-                    <span>{isCloud ? "Vercel Blob" : "Local File"}</span>
+                    <span>{isCloud ? "Vercel Private Blob" : "Local File"}</span>
                   </div>
 
                   {/* Hover Overlay */}

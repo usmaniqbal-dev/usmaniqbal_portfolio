@@ -728,7 +728,7 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
 function ImageUpload({ label, value, onUploaded, csrfToken = "" }: { label: string; value: string; onUploaded: (value: string) => void; csrfToken?: string }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
-  const isCloudBlob = value?.includes("blob.vercel-storage.com");
+  const isCloudBlob = value?.includes("blob.vercel-storage.com") || value?.includes("/api/blob");
 
   async function upload(file?: File) {
     if (!file) {

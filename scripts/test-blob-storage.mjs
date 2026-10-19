@@ -25,13 +25,16 @@ function isVercelBlobUrl(url) {
   return (
     url.includes(".blob.vercel-storage.com") ||
     url.startsWith("https://blob.vercel-storage.com") ||
-    /^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//i.test(url)
+    url.startsWith("/api/blob") ||
+    /^https:\/\/[a-z0-9-]+\.(public|private)\.blob\.vercel-storage\.com\//i.test(url)
   );
 }
 
 const validBlobUrls = [
   "https://abc123xyz.public.blob.vercel-storage.com/portfolio/profile-12345.webp",
+  "https://8b2i8flj9iipcz0l.private.blob.vercel-storage.com/portfolio/test.jpg",
   "https://usmaniqbal-portfolio.public.blob.vercel-storage.com/portfolio/projects/demo.png",
+  "/api/blob?pathname=portfolio%2Favatar.webp",
   "https://blob.vercel-storage.com/v1/test.jpg"
 ];
 

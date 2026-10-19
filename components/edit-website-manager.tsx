@@ -457,7 +457,7 @@ function ImageField({ label, value, onChange, onUploaded, secureHeaders, compact
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
-  const isBlobUrl = Boolean(value && (value.includes(".blob.vercel-storage.com") || value.includes("vercel-storage.com")));
+  const isBlobUrl = Boolean(value && (value.includes(".blob.vercel-storage.com") || value.includes("vercel-storage.com") || value.includes("/api/blob")));
 
   // Saves a selected local image and returns the resulting public URL to the parent editor.
   async function upload(file?: File) {
@@ -508,7 +508,7 @@ function ImageField({ label, value, onChange, onUploaded, secureHeaders, compact
         <p className="text-sm font-bold text-white/70">{label}</p>
         {value && isBlobUrl && (
           <span className="inline-flex items-center gap-1 rounded-full bg-[#16f2a4]/15 px-2 py-0.5 text-[10px] font-bold text-[#16f2a4]">
-            <Cloud size={10} /> Vercel Blob
+            <Cloud size={10} /> Vercel Private Blob
           </span>
         )}
       </div>

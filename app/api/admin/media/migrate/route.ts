@@ -86,16 +86,18 @@ export async function POST(request: Request) {
         const blobName = `portfolio/migrated/${safeBase}-${crypto.randomUUID().slice(0, 8)}.${optimized.extension}`;
 
         const blob = await put(blobName, optimized.buffer, {
-          access: "public",
+          access: "private",
           contentType: optimized.contentType,
           addRandomSuffix: true
         });
 
+        const servedUrl = `/api/blob?pathname=${encodeURIComponent(blob.pathname)}`;
+
         // Replace across content
-        content = replaceUrlReferencesInContent(content, localUrl, blob.url);
+        content = replaceUrlReferencesInContent(content, localUrl, servedUrl);
 
         // Add to media library if not present
-        const alreadyInLibrary = content.builder.media.some((m) => m.url === blob.url);
+        const alreadyInLibrary = content.builder.media.some((m) => m.url === servedUrl || m.url === blob.url);
         if (!alreadyInLibrary) {
           content = {
             ...content,
@@ -105,7 +107,7 @@ export async function POST(request: Request) {
                 {
                   id: crypto.randomUUID(),
                   filename: path.basename(filePath),
-                  url: blob.url,
+                  url: servedUrl,
                   type: "image",
                   size: optimized.buffer.length,
                   uploadedAt: new Date().toISOString(),
@@ -117,7 +119,7 @@ export async function POST(request: Request) {
           };
         }
 
-        migratedList.push({ original: localUrl, blobUrl: blob.url });
+        migratedList.push({ original: localUrl, blobUrl: servedUrl });
       } catch (fileErr) {
         errors.push({
           path: localUrl,

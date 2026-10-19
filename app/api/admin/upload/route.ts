@@ -104,13 +104,13 @@ export async function POST(request: Request) {
 
   try {
     if (usesBlobStorage) {
-      // Upload permanently to Vercel Blob
+      // Upload permanently to Vercel Private Blob
       const blob = await put(`portfolio/${safeFileName}`, optimized.buffer, {
-        access: "public",
+        access: "private",
         contentType: optimized.contentType,
         addRandomSuffix: true
       });
-      mediaUrl = blob.url;
+      mediaUrl = `/api/blob?pathname=${encodeURIComponent(blob.pathname)}`;
     } else {
       if (process.env.VERCEL) {
         return NextResponse.json(
