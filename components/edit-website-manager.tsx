@@ -222,6 +222,7 @@ function ProjectCard({ project, onChange, onDelete, secureHeaders }: { project: 
     <div className="grid gap-4 rounded-[8px] border border-white/10 bg-black/25 p-4 xl:grid-cols-[1fr_1fr_300px]">
       <div className="grid gap-4">
         <Field label="Project Title" value={project.title} onChange={(value) => onChange({ title: value })} />
+        <Field label="Category" value={project.category || ""} onChange={(value) => onChange({ category: value })} />
         <Field label="Live Link" value={project.url} onChange={(value) => onChange({ url: value })} />
         <Field label="GitHub Link" value={project.githubUrl || ""} onChange={(value) => onChange({ githubUrl: value })} />
       </div>

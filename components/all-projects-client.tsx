@@ -70,14 +70,15 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
 
   const allProjects = content.projects || [];
 
-  // Available categories based on real project data
+  // Available categories based on real project data matching exact requirements
   const categories = [
     { id: "All", label: "All Projects", count: allProjects.length },
     {
-      id: "Salesforce & CRM",
+      id: "Salesforce & CRM Projects",
       label: "Salesforce & CRM",
       count: allProjects.filter(
         (p) =>
+          p.category === "Salesforce & CRM Projects" ||
           p.category?.includes("Salesforce") ||
           p.category?.includes("CRM") ||
           p.tags.includes("Salesforce") ||
@@ -85,10 +86,11 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
       ).length
     },
     {
-      id: "AI, ML & Python",
+      id: "AI, Machine Learning & Python Projects",
       label: "AI, ML & Python",
       count: allProjects.filter(
         (p) =>
+          p.category === "AI, Machine Learning & Python Projects" ||
           p.category?.includes("AI") ||
           p.category?.includes("Machine Learning") ||
           p.category?.includes("Python") ||
@@ -97,10 +99,11 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
       ).length
     },
     {
-      id: "Web & Mobile",
+      id: "Web & Mobile Application Projects",
       label: "Web & Mobile Apps",
       count: allProjects.filter(
         (p) =>
+          p.category === "Web & Mobile Application Projects" ||
           p.category?.includes("Web") ||
           p.category?.includes("Mobile") ||
           p.tags.includes("Android") ||
@@ -110,10 +113,11 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
       ).length
     },
     {
-      id: "Academic & Social",
+      id: "Academic & Social Impact Projects",
       label: "Academic & Social Impact",
       count: allProjects.filter(
         (p) =>
+          p.category === "Academic & Social Impact Projects" ||
           p.category?.includes("Academic") ||
           p.category?.includes("Social") ||
           p.tags.includes("Academic") ||
@@ -126,33 +130,37 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
   // Dynamic filter and search
   const filteredProjects = allProjects.filter((project) => {
     let matchesCategory = true;
-    if (selectedCategory === "Salesforce & CRM") {
+    if (selectedCategory === "Salesforce & CRM Projects" || selectedCategory === "Salesforce & CRM") {
       matchesCategory = Boolean(
-        project.category?.includes("Salesforce") ||
+        project.category === "Salesforce & CRM Projects" ||
+          project.category?.includes("Salesforce") ||
           project.category?.includes("CRM") ||
           project.tags.includes("Salesforce") ||
           project.tags.includes("CRM")
       );
-    } else if (selectedCategory === "AI, ML & Python") {
+    } else if (selectedCategory === "AI, Machine Learning & Python Projects" || selectedCategory === "AI, ML & Python") {
       matchesCategory = Boolean(
-        project.category?.includes("AI") ||
+        project.category === "AI, Machine Learning & Python Projects" ||
+          project.category?.includes("AI") ||
           project.category?.includes("Machine Learning") ||
           project.category?.includes("Python") ||
           project.tags.includes("Python") ||
           project.tags.includes("AI")
       );
-    } else if (selectedCategory === "Web & Mobile") {
+    } else if (selectedCategory === "Web & Mobile Application Projects" || selectedCategory === "Web & Mobile") {
       matchesCategory = Boolean(
-        project.category?.includes("Web") ||
+        project.category === "Web & Mobile Application Projects" ||
+          project.category?.includes("Web") ||
           project.category?.includes("Mobile") ||
           project.tags.includes("Android") ||
           project.tags.includes("Next.js") ||
           project.tags.includes("PHP") ||
           project.tags.includes("React")
       );
-    } else if (selectedCategory === "Academic & Social") {
+    } else if (selectedCategory === "Academic & Social Impact Projects" || selectedCategory === "Academic & Social") {
       matchesCategory = Boolean(
-        project.category?.includes("Academic") ||
+        project.category === "Academic & Social Impact Projects" ||
+          project.category?.includes("Academic") ||
           project.category?.includes("Social") ||
           project.tags.includes("Academic") ||
           project.tags.includes("Social Impact") ||
@@ -266,7 +274,7 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
                 }`}
               >
                 <p className="text-2xl sm:text-3xl font-black text-cyan-400">
-                  {categories.find((c) => c.id === "Salesforce & CRM")?.count || 7}
+                  {categories.find((c) => c.id.includes("Salesforce"))?.count || 7}
                 </p>
                 <p className={`mt-1 text-xs font-semibold ${darkMode ? "text-white/60" : "text-black/60"}`}>
                   Salesforce & CRM
@@ -278,7 +286,7 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
                 }`}
               >
                 <p className="text-2xl sm:text-3xl font-black text-emerald-400">
-                  {categories.find((c) => c.id === "AI, ML & Python")?.count || 8}
+                  {categories.find((c) => c.id.includes("AI"))?.count || 8}
                 </p>
                 <p className={`mt-1 text-xs font-semibold ${darkMode ? "text-white/60" : "text-black/60"}`}>
                   AI, ML & Python
@@ -290,7 +298,7 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
                 }`}
               >
                 <p className="text-2xl sm:text-3xl font-black text-amber-400">
-                  {categories.find((c) => c.id === "Web & Mobile")?.count || 13}
+                  {categories.find((c) => c.id.includes("Web"))?.count || 13}
                 </p>
                 <p className={`mt-1 text-xs font-semibold ${darkMode ? "text-white/60" : "text-black/60"}`}>
                   Web & Mobile Apps

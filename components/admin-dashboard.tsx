@@ -537,7 +537,9 @@ function ProjectsEditor({ content, setContent, csrfToken }: EditorProps) {
             <div className="grid gap-4 xl:grid-cols-[1fr_1fr_0.9fr_44px]">
               <div className="grid gap-4">
                 <TextField label="Title" value={project.title} onChange={(value) => update(project.id, { title: value })} />
+                <TextField label="Category" value={project.category || ""} onChange={(value) => update(project.id, { category: value })} />
                 <TextField label="URL" value={project.url} onChange={(value) => update(project.id, { url: value })} />
+                <TextField label="GitHub URL" value={project.githubUrl || ""} onChange={(value) => update(project.id, { githubUrl: value })} />
               </div>
               <TextArea label="Description" value={project.description} onChange={(value) => update(project.id, { description: value })} compact />
               <div className="grid gap-4">

@@ -215,7 +215,32 @@ function normalizeContent(content: Partial<SiteContent>): SiteContent {
     about: { ...defaultContent.about, ...content.about },
     skills: Array.isArray(content.skills) ? content.skills : defaultContent.skills,
     services: Array.isArray(content.services) ? content.services : defaultContent.services,
-    projects: Array.isArray(content.projects) ? content.projects : defaultContent.projects,
+    projects: (() => {
+      if (!Array.isArray(content.projects) || content.projects.length === 0) {
+        return defaultContent.projects;
+      }
+      const existingMap = new Map(content.projects.map((p) => [p.id, p]));
+      const defaultIds = new Set(defaultContent.projects.map((p) => p.id));
+
+      const merged = defaultContent.projects.map((defProject) => {
+        const existing = existingMap.get(defProject.id);
+        if (!existing) return defProject;
+        return {
+          ...defProject,
+          ...existing,
+          image: existing.image || defProject.image,
+          category: defProject.category || existing.category
+        };
+      });
+
+      for (const p of content.projects) {
+        if (!defaultIds.has(p.id)) {
+          merged.push(p);
+        }
+      }
+
+      return merged;
+    })(),
     contact: { ...defaultContent.contact, ...content.contact },
     socials: Array.isArray(content.socials) ? content.socials : defaultContent.socials,
     theme: { ...defaultContent.theme, ...content.theme },
