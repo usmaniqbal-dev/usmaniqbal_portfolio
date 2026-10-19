@@ -7,18 +7,21 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   BriefcaseBusiness,
   CircleUserRound,
+  Cloud,
   ContactRound,
   GripVertical,
   ImagePlus,
   Layers3,
   Loader2,
   Plus,
+  RefreshCw,
   Save,
   Share2,
   Sparkles,
   Trash2,
   Upload,
-  Wrench
+  Wrench,
+  X
 } from "lucide-react";
 import type { HeroTemplate, ProjectContent, ServiceContent, SiteContent, SkillContent, SocialContent, StatisticContent } from "@/types/site-content";
 
@@ -453,6 +456,8 @@ function ImageField({ label, value, onChange, onUploaded, secureHeaders, compact
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
+  const isBlobUrl = Boolean(value && (value.includes(".blob.vercel-storage.com") || value.includes("vercel-storage.com")));
+
   // Saves a selected local image and returns the resulting public URL to the parent editor.
   async function upload(file?: File) {
     if (!file) {
@@ -467,6 +472,11 @@ function ImageField({ label, value, onChange, onUploaded, secureHeaders, compact
     try {
       const formData = new FormData();
       formData.append("file", file);
+      // Pass existing URL so unreferenced old blobs can be safely replaced and cleaned up
+      if (value) {
+        formData.append("replacesUrl", value);
+      }
+
       const response = await fetch("/api/admin/upload", { method: "POST", headers: secureHeaders(), body: formData, signal: controller.signal });
       const result = (await response.json().catch(() => ({ message: "Upload failed. The server returned an invalid response." }))) as { url?: string; message?: string };
 
@@ -493,13 +503,63 @@ function ImageField({ label, value, onChange, onUploaded, secureHeaders, compact
 
   return (
     <div className="grid gap-3 rounded-[8px] border border-white/10 bg-black/20 p-3">
-      <p className="text-sm font-bold text-white/70">{label}</p>
-      {value ? videoPreview ? <video src={value} muted loop autoPlay playsInline className={`w-full rounded-[8px] border border-white/10 object-cover ${compact ? "aspect-square" : "aspect-[16/9]"}`} /> : <img src={value} alt="" className={`w-full rounded-[8px] border border-white/10 object-cover ${compact ? "aspect-square" : "aspect-[16/9]"}`} /> : <div className={`grid place-items-center rounded-[8px] border border-dashed border-white/15 text-sm text-white/35 ${compact ? "aspect-square" : "aspect-[16/9]"}`}><ImagePlus size={20} /></div>}
-      <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-white/72 transition hover:border-[#16f2a4] hover:text-[#16f2a4]">
-        {uploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
-        Upload
-        <input type="file" accept={allowVideo ? "video/mp4,video/webm" : "image/png,image/jpeg,image/webp,image/gif,image/svg+xml"} className="hidden" onChange={(event) => upload(event.target.files?.[0])} />
-      </label>
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-bold text-white/70">{label}</p>
+        {value && isBlobUrl && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-[#16f2a4]/15 px-2 py-0.5 text-[10px] font-bold text-[#16f2a4]">
+            <Cloud size={10} /> Vercel Blob
+          </span>
+        )}
+      </div>
+
+      {value ? (
+        <div className="relative group overflow-hidden rounded-[8px] border border-white/10">
+          {videoPreview ? (
+            <video src={value} muted loop autoPlay playsInline className={`w-full object-cover ${compact ? "aspect-square" : "aspect-[16/9]"}`} />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={value} alt="" className={`w-full object-cover ${compact ? "aspect-square" : "aspect-[16/9]"}`} />
+          )}
+
+          <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              type="button"
+              onClick={() => onChange("")}
+              className="rounded-full bg-black/75 p-1.5 text-red-300 backdrop-blur-md hover:bg-red-500 hover:text-white"
+              title="Remove image"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className={`grid place-items-center rounded-[8px] border border-dashed border-white/15 text-sm text-white/35 ${compact ? "aspect-square" : "aspect-[16/9]"}`}>
+          <ImagePlus size={20} />
+        </div>
+      )}
+
+      <div className="flex items-center gap-2">
+        <label className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-white/72 transition hover:border-[#16f2a4] hover:text-[#16f2a4]">
+          {uploading ? <Loader2 className="animate-spin" size={16} /> : value ? <RefreshCw size={14} /> : <Upload size={16} />}
+          {uploading ? "Uploading to Cloud..." : value ? "Replace Image" : "Upload Image"}
+          <input
+            type="file"
+            accept={allowVideo ? "video/mp4,video/webm" : "image/png,image/jpeg,image/webp,image/gif,image/svg+xml"}
+            className="hidden"
+            onChange={(event) => upload(event.target.files?.[0])}
+          />
+        </label>
+        {value && (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white/50 hover:border-red-400/40 hover:text-red-300"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
       <Field label={allowVideo ? "Video URL" : "Image URL"} value={value} onChange={onChange} />
       {error ? <p className="text-xs font-semibold text-red-200">{error}</p> : null}
     </div>

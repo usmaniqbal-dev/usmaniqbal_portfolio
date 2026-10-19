@@ -8,6 +8,7 @@ import {
   Bot,
   BriefcaseBusiness,
   CheckCircle2,
+  Cloud,
   ImagePlus,
   KeyRound,
   LayoutDashboard,
@@ -725,6 +726,7 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
 function ImageUpload({ label, value, onUploaded, csrfToken = "" }: { label: string; value: string; onUploaded: (value: string) => void; csrfToken?: string }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const isCloudBlob = value?.includes("blob.vercel-storage.com");
 
   async function upload(file?: File) {
     if (!file) {
@@ -739,6 +741,9 @@ function ImageUpload({ label, value, onUploaded, csrfToken = "" }: { label: stri
     try {
       const formData = new FormData();
       formData.append("file", file);
+      if (value) {
+        formData.append("replacesUrl", value);
+      }
 
       const response = await fetch("/api/admin/upload", {
         method: "POST",
@@ -747,7 +752,7 @@ function ImageUpload({ label, value, onUploaded, csrfToken = "" }: { label: stri
         signal: controller.signal
       });
 
-      const result = (await response.json().catch(() => ({ message: "Upload failed. The server returned an invalid response." }))) as { url?: string; message?: string };
+      const result = (await response.json().catch(() => ({ message: "Upload failed. The server returned an invalid response." }))) as { url?: string; message?: string; isBlob?: boolean };
 
       if (!response.ok || !result.url) {
         setError(result.message || "Upload failed.");
@@ -765,7 +770,14 @@ function ImageUpload({ label, value, onUploaded, csrfToken = "" }: { label: stri
 
   return (
     <div className="grid gap-3 rounded-[8px] border border-white/10 bg-black/30 p-4">
-      <p className="text-sm font-bold text-white/70">{label}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-bold text-white/70">{label}</p>
+        {isCloudBlob ? (
+          <span className="inline-flex items-center gap-1 rounded-full border border-sky-400/30 bg-sky-500/10 px-2 py-0.5 text-[11px] font-semibold text-sky-300">
+            <Cloud size={11} /> Vercel Blob
+          </span>
+        ) : null}
+      </div>
       {value ? (
         <div className="relative aspect-[16/10] overflow-hidden rounded-[8px] border border-white/10 bg-black">
           <Image src={value} alt={label} fill sizes="(max-width: 1024px) 80vw, 360px" className="object-cover object-top" />
@@ -775,11 +787,22 @@ function ImageUpload({ label, value, onUploaded, csrfToken = "" }: { label: stri
           No image selected
         </div>
       )}
-      <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-3 font-bold text-white/70 transition hover:border-[#16f2a4] hover:text-[#16f2a4]">
-        {uploading ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
-        Upload Image
-        <input type="file" accept="image/*" className="hidden" onChange={(event) => upload(event.target.files?.[0])} />
-      </label>
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-sm font-bold text-white/70 transition hover:border-[#16f2a4] hover:text-[#16f2a4]">
+          {uploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
+          {value ? "Replace Image" : "Upload Image"}
+          <input type="file" accept="image/*" className="hidden" onChange={(event) => upload(event.target.files?.[0])} />
+        </label>
+        {value ? (
+          <button
+            type="button"
+            onClick={() => onUploaded("")}
+            className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white/40 transition hover:border-red-400/40 hover:text-red-300"
+          >
+            Clear
+          </button>
+        ) : null}
+      </div>
       <TextField label="Image URL" value={value} onChange={onUploaded} />
       {error ? <p className="text-sm text-red-200">{error}</p> : null}
     </div>

@@ -11,8 +11,10 @@ import {
   BriefcaseBusiness,
   Check,
   CheckCircle2,
+  Cloud,
   Copy,
   Download,
+  ExternalLink,
   Eye,
   FileText,
   ImagePlus,
@@ -35,7 +37,8 @@ import {
   Sun,
   Trash2,
   Upload,
-  Users
+  Users,
+  X
 } from "lucide-react";
 import type { BuilderTemplate, MediaFile, SiteContent } from "@/types/site-content";
 
@@ -817,76 +820,444 @@ function TemplatesView({ content, activeTemplate, setContent, secureHeaders }: {
 
 function MediaView({ content, setContent, secureHeaders }: { content: SiteContent; setContent: (content: SiteContent) => void; secureHeaders: (extra?: HeadersInit) => HeadersInit }) {
   const [uploading, setUploading] = useState(false);
+  const [replacingId, setReplacingId] = useState<string | null>(null);
+  const [migrating, setMigrating] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [previewMedia, setPreviewMedia] = useState<MediaFile | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [storageInfo, setStorageInfo] = useState<{ connected: boolean; provider: string; storeUrl: string; blobCount: number; totalFiles: number } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ file: MediaFile; inUseMessage?: string; force?: boolean } | null>(null);
 
-  async function upload(file?: File) {
+  useEffect(() => {
+    async function loadStorageStatus() {
+      try {
+        const res = await fetch("/api/admin/media", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.storage) {
+            setStorageInfo(data.storage);
+          }
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    loadStorageStatus();
+  }, [content.builder.media]);
+
+  async function upload(file?: File, replaceFile?: MediaFile) {
     if (!file) return;
-    setUploading(true);
+    if (replaceFile) {
+      setReplacingId(replaceFile.id);
+    } else {
+      setUploading(true);
+    }
     setError("");
+    setSuccessMessage("");
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), uploadTimeoutMs);
 
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const response = await fetch("/api/admin/upload", { method: "POST", headers: secureHeaders(), body: formData, signal: controller.signal });
-      const result = (await response.json().catch(() => ({ message: "Upload failed. The server returned an invalid response." }))) as { media?: MediaFile; message?: string };
+      if (replaceFile) {
+        formData.append("replacesId", replaceFile.id);
+        formData.append("replacesUrl", replaceFile.url);
+      }
+
+      const response = await fetch("/api/admin/upload", {
+        method: "POST",
+        headers: secureHeaders(),
+        body: formData,
+        signal: controller.signal
+      });
+      const result = (await response.json().catch(() => ({
+        message: "Upload failed. The server returned an invalid response."
+      }))) as { media?: MediaFile; url?: string; message?: string; storage?: string };
 
       if (!response.ok || !result.media) {
         setError(result.message || "Upload failed.");
         return;
       }
 
-      setContent({ ...content, builder: { ...content.builder, media: [result.media, ...content.builder.media] } });
+      if (replaceFile) {
+        setContent({
+          ...content,
+          builder: {
+            ...content.builder,
+            media: content.builder.media.map((m) => (m.id === replaceFile.id ? result.media! : m))
+          }
+        });
+        setSuccessMessage(`Successfully replaced ${replaceFile.filename} with ${result.media.filename}.`);
+      } else {
+        setContent({
+          ...content,
+          builder: {
+            ...content.builder,
+            media: [result.media, ...content.builder.media]
+          }
+        });
+        setSuccessMessage(result.message || "File uploaded successfully to cloud storage.");
+      }
+      setTimeout(() => setSuccessMessage(""), 5000);
     } catch (uploadError) {
       setError(uploadFailureMessage(uploadError));
     } finally {
       window.clearTimeout(timeout);
       setUploading(false);
+      setReplacingId(null);
     }
   }
 
-  async function deleteMedia(file: MediaFile) {
-    if (!window.confirm(`Remove ${file.filename} from the media library? Existing pages using this URL will keep the URL.`)) {
+  async function handleDeleteConfirm(force = false) {
+    if (!confirmDelete) return;
+    const file = confirmDelete.file;
+    setError("");
+
+    try {
+      const url = `/api/admin/media?id=${encodeURIComponent(file.id)}${force ? "&force=true" : ""}`;
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: secureHeaders()
+      });
+      const result = await response.json();
+
+      if (response.status === 409 && result.inUse) {
+        // Show confirmation dialog with references
+        setConfirmDelete({ file, inUseMessage: result.message, force: true });
+        return;
+      }
+
+      if (!response.ok) {
+        setError(result.message || "Failed to delete media.");
+        setConfirmDelete(null);
+        return;
+      }
+
+      const media = (result.media || content.builder.media.filter((m) => m.id !== file.id)) as MediaFile[];
+      setContent({ ...content, builder: { ...content.builder, media } });
+      setConfirmDelete(null);
+      setSuccessMessage("Image deleted from cloud storage and library.");
+      setTimeout(() => setSuccessMessage(""), 4000);
+    } catch {
+      setError("Error deleting media. Check network connection.");
+      setConfirmDelete(null);
+    }
+  }
+
+  async function handleMigrateAll() {
+    if (!window.confirm("Migrate all local portfolio project and site images to Vercel Cloud Blob Storage? This will upload local images permanently and update all portfolio links.")) {
       return;
     }
+    setMigrating(true);
+    setError("");
+    setSuccessMessage("");
 
-    const response = await fetch(`/api/admin/media?id=${encodeURIComponent(file.id)}`, {
-      method: "DELETE",
-      headers: secureHeaders()
-    });
+    try {
+      const res = await fetch("/api/admin/media/migrate", {
+        method: "POST",
+        headers: secureHeaders({ "Content-Type": "application/json" })
+      });
+      const data = await res.json();
 
-    if (response.ok) {
-      const media = (await response.json()) as MediaFile[];
-      setContent({ ...content, builder: { ...content.builder, media } });
+      if (!res.ok) {
+        throw new Error(data.message || "Migration failed.");
+      }
+
+      // Reload fresh content
+      const contentRes = await fetch("/api/admin/content", { cache: "no-store" });
+      if (contentRes.ok) {
+        setContent((await contentRes.json()) as SiteContent);
+      }
+      setSuccessMessage(data.message || "Migration complete! All images stored in Vercel Cloud Blob.");
+      setTimeout(() => setSuccessMessage(""), 6000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Migration failed.");
+    } finally {
+      setMigrating(false);
     }
   }
 
+  function handleCopy(url: string, id: string) {
+    navigator.clipboard.writeText(url);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }
+
+  const isBlob = (url?: string) => Boolean(url && (url.includes(".blob.vercel-storage.com") || url.includes("vercel-storage.com")));
+
   return (
-    <div>
-      <label className="mb-5 inline-flex cursor-pointer items-center gap-2 rounded-full bg-[#16f2a4] px-5 py-3 font-black text-black">
-        {uploading ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
-        {uploading ? "Uploading" : "Upload Media"}
-        <input type="file" accept="image/*,.pdf" className="hidden" onChange={(event) => upload(event.target.files?.[0])} />
-      </label>
-      {error ? <p className="mb-5 rounded-[8px] border border-red-300/30 bg-red-400/10 p-3 text-sm font-semibold text-red-100">{error}</p> : null}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {content.builder.media.map((file) => (
-          <div key={file.id} className="rounded-[8px] border border-white/10 bg-white/[0.04] p-4">
-            <div className="grid aspect-video place-items-center rounded-[8px] bg-black/35 text-white/40">{file.type}</div>
-            <p className="mt-3 truncate font-black">{file.filename}</p>
-            <p className="text-sm text-white/45">{Math.round(file.size / 1024)} KB</p>
-            <button type="button" onClick={() => navigator.clipboard.writeText(file.url)} className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-sm font-bold text-white/70">
-              <Copy size={15} />
-              Copy URL
-            </button>
-            <button type="button" onClick={() => deleteMedia(file)} className="ml-2 mt-3 inline-flex items-center gap-2 rounded-full border border-red-300/30 px-3 py-2 text-sm font-bold text-red-100">
-              <Trash2 size={15} />
-              Delete
-            </button>
+    <div className="grid gap-6">
+      {/* Cloud Storage Header & Configuration Banner */}
+      <div className="rounded-[16px] border border-white/10 bg-white/[0.035] p-5 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`grid h-12 w-12 place-items-center rounded-xl ${storageInfo?.connected ? "bg-[#16f2a4]/15 text-[#16f2a4]" : "bg-amber-400/15 text-amber-400"}`}>
+              <Cloud size={24} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-black text-white">Vercel Cloud Blob Storage</h3>
+                {storageInfo?.connected ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#16f2a4]/30 bg-[#16f2a4]/15 px-2.5 py-0.5 text-[11px] font-bold text-[#16f2a4]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#16f2a4] animate-pulse" />
+                    Connected &amp; Active
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                    Local Fallback Active
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 text-xs text-white/50">
+                {storageInfo?.connected
+                  ? `Permanent cloud storage enabled. Uploaded images are stored directly on Vercel's global CDN and persist across deployments.`
+                  : `Connect a Blob store in your Vercel project to automatically enable BLOB_READ_WRITE_TOKEN for permanent cloud storage.`}
+              </p>
+            </div>
           </div>
-        ))}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href="https://vercel.com/nuraxtech/usmaniqbal-portfolio/stores"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-2 text-xs font-bold text-white/70 transition hover:border-[#16f2a4] hover:text-[#16f2a4]"
+            >
+              <ExternalLink size={13} />
+              Vercel Stores Tab
+            </a>
+
+            {storageInfo?.connected && (
+              <button
+                type="button"
+                onClick={handleMigrateAll}
+                disabled={migrating}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#16f2a4]/30 bg-[#16f2a4]/10 px-3.5 py-2 text-xs font-bold text-[#16f2a4] transition hover:bg-[#16f2a4]/20 disabled:opacity-50"
+              >
+                {migrating ? <Loader2 className="animate-spin" size={13} /> : <RefreshCw size={13} />}
+                Migrate Local Images to Cloud
+              </button>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Action Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[#16f2a4] px-5 py-3 font-black text-black shadow-lg shadow-[#16f2a4]/10 transition hover:bg-white">
+          {uploading ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
+          {uploading ? "Optimizing & Uploading..." : "Upload New Media"}
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,video/mp4,video/webm,.pdf"
+            className="hidden"
+            onChange={(event) => upload(event.target.files?.[0])}
+          />
+        </label>
+
+        <span className="text-xs text-white/40">
+          Showing {content.builder.media.length} media files ({content.builder.media.filter((m) => isBlob(m.url)).length} in Vercel Blob)
+        </span>
+      </div>
+
+      {/* Alerts */}
+      {error && (
+        <div className="flex items-center gap-2 rounded-[10px] border border-red-400/30 bg-red-400/10 p-4 text-sm font-semibold text-red-100">
+          <AlertCircle size={18} className="shrink-0 text-red-400" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="flex items-center gap-2 rounded-[10px] border border-[#16f2a4]/30 bg-[#16f2a4]/10 p-4 text-sm font-semibold text-[#bfffe8]">
+          <CheckCircle2 size={18} className="shrink-0 text-[#16f2a4]" />
+          <span>{successMessage}</span>
+        </div>
+      )}
+
+      {/* Media Gallery Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {content.builder.media.map((file) => {
+          const isCloud = isBlob(file.url);
+          const isImg = file.type === "image" || file.type === "icon";
+
+          return (
+            <div key={file.id} className="group flex flex-col justify-between rounded-[14px] border border-white/10 bg-white/[0.035] p-3.5 transition hover:border-white/20">
+              <div>
+                {/* Media Preview Box */}
+                <div
+                  className="relative aspect-video w-full overflow-hidden rounded-[10px] bg-black/60 cursor-pointer"
+                  onClick={() => setPreviewMedia(file)}
+                >
+                  {isImg ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={file.url}
+                      alt={file.filename}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  ) : file.type === "video" ? (
+                    <video src={file.url} className="h-full w-full object-cover" muted />
+                  ) : (
+                    <div className="grid h-full place-items-center text-xs font-bold uppercase text-white/50">
+                      <FileText size={32} className="text-white/30 mb-1" />
+                      {file.type}
+                    </div>
+                  )}
+
+                  {/* Cloud Badge */}
+                  <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-black/75 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-md">
+                    <Cloud size={10} className={isCloud ? "text-[#16f2a4]" : "text-white/40"} />
+                    <span>{isCloud ? "Vercel Blob" : "Local File"}</span>
+                  </div>
+
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100 text-xs font-bold text-white">
+                    <Eye size={15} /> Click to Preview
+                  </div>
+                </div>
+
+                {/* Details */}
+                <div className="mt-3">
+                  <p className="truncate text-sm font-bold text-white" title={file.filename}>
+                    {file.filename}
+                  </p>
+                  <p className="mt-0.5 text-xs text-white/45">
+                    {Math.round(file.size / 1024)} KB &bull; {new Date(file.uploadedAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="mt-4 flex items-center justify-between gap-1 border-t border-white/10 pt-3">
+                <button
+                  type="button"
+                  onClick={() => handleCopy(file.url, file.id)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-semibold text-white/70 transition hover:bg-white/5 hover:text-white"
+                >
+                  {copiedId === file.id ? <Check size={13} className="text-[#16f2a4]" /> : <Copy size={13} />}
+                  {copiedId === file.id ? "Copied" : "Copy"}
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {/* Replace Button */}
+                  <label className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-semibold text-white/70 transition hover:bg-white/5 hover:text-[#16f2a4]">
+                    {replacingId === file.id ? <Loader2 className="animate-spin" size={13} /> : <RefreshCw size={13} />}
+                    <span>Replace</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,video/mp4,video/webm,.pdf"
+                      className="hidden"
+                      onChange={(e) => upload(e.target.files?.[0], file)}
+                    />
+                  </label>
+
+                  {/* Delete Button */}
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete({ file })}
+                    className="inline-flex items-center gap-1 rounded-lg border border-red-400/20 px-2.5 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-400/10 hover:border-red-400/40"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* LIGHTBOX PREVIEW MODAL */}
+      {previewMedia && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setPreviewMedia(null)}>
+          <div className="relative max-h-[90vh] max-w-4xl overflow-hidden rounded-2xl border border-white/15 bg-[#0b0f19] p-5 shadow-2xl text-white" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div>
+                <h4 className="font-bold text-base truncate max-w-lg">{previewMedia.filename}</h4>
+                <p className="text-xs text-white/50">{Math.round(previewMedia.size / 1024)} KB &bull; Uploaded {new Date(previewMedia.uploadedAt).toLocaleString()}</p>
+              </div>
+              <button type="button" onClick={() => setPreviewMedia(null)} className="rounded-full p-1.5 text-white/50 hover:bg-white/10 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="my-4 flex max-h-[60vh] items-center justify-center overflow-auto rounded-lg bg-black/50 p-2">
+              {previewMedia.type === "image" || previewMedia.type === "icon" ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={previewMedia.url} alt={previewMedia.filename} className="max-h-[58vh] max-w-full object-contain rounded" />
+              ) : previewMedia.type === "video" ? (
+                <video src={previewMedia.url} controls className="max-h-[58vh] max-w-full rounded" />
+              ) : (
+                <div className="p-8 text-center text-white/60">
+                  <FileText size={48} className="mx-auto mb-2 text-white/30" />
+                  <p>Document preview ({previewMedia.type})</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3 text-xs">
+              <span className="font-mono text-white/60 truncate max-w-md">{previewMedia.url}</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleCopy(previewMedia.url, previewMedia.id)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#16f2a4] px-4 py-2 font-bold text-black hover:bg-white"
+                >
+                  {copiedId === previewMedia.id ? <Check size={14} /> : <Copy size={14} />}
+                  {copiedId === previewMedia.id ? "Copied" : "Copy URL"}
+                </button>
+                <a
+                  href={previewMedia.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 font-bold text-white/80 hover:bg-white/10"
+                >
+                  <ExternalLink size={14} /> Open Original
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-[#0b0f19] p-6 text-white shadow-2xl">
+            <div className="flex items-center gap-3 text-red-400">
+              <AlertCircle size={24} />
+              <h4 className="text-lg font-black">
+                {confirmDelete.force ? "Image In Use — Confirm Deletion" : "Delete Media File?"}
+              </h4>
+            </div>
+
+            <p className="mt-3 text-xs sm:text-sm text-white/70 leading-relaxed">
+              {confirmDelete.inUseMessage || `Are you sure you want to permanently delete "${confirmDelete.file.filename}" from cloud storage?`}
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(null)}
+                className="rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/70 hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteConfirm(Boolean(confirmDelete.force))}
+                className="rounded-full bg-red-500 px-5 py-2 text-xs font-black text-white hover:bg-red-400"
+              >
+                {confirmDelete.force ? "Yes, Force Delete" : "Delete Permanently"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
