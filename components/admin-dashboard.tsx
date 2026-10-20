@@ -24,6 +24,7 @@ import {
   UserRound,
   Users
 } from "lucide-react";
+import { prepareFileForUpload } from "@/lib/client-compress";
 import type { ProjectContent, ServiceContent, SiteContent, SkillContent, SocialContent } from "@/types/site-content";
 
 type SessionState = {
@@ -741,8 +742,9 @@ function ImageUpload({ label, value, onUploaded, csrfToken = "" }: { label: stri
     const timeout = window.setTimeout(() => controller.abort(), uploadTimeoutMs);
 
     try {
+      const fileToUpload = await prepareFileForUpload(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", fileToUpload);
       if (value) {
         formData.append("replacesUrl", value);
       }

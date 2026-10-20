@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
+  "name": "usmaniqbal-portfolio",
+  "compatibility_date": "2024-12-30",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "portfolio_db",
+      "database_name": "portfolio-db",
+      "database_id": "ac6e4554-f5aa-461e-b66f-83956356100c"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "PORTFOLIO_MEDIA",
+      "id": "ece41e2e4d8e4b75a6e8062bd23d9341"
+    }
+  ],
+  "vars": {
+    "NEXT_PUBLIC_SITE_URL": "https://www.usmaniqbal.tech",
+    "NEXT_PUBLIC_EMAILJS_SERVICE_ID": "service_7n4s25n",
+    "NEXT_PUBLIC_EMAILJS_TEMPLATE_ID": "template_8wff7xj",
+    "NEXT_PUBLIC_EMAILJS_PUBLIC_KEY": "VGz_2U6qU9d5RyvAl"
+  }
+}

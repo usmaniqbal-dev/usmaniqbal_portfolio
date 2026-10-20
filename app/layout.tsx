@@ -1,3 +1,4 @@
+import "@/lib/polyfill-worker";
 import type { Metadata } from "next";
 import ChatbotWidget from "@/components/chatbot/ChatbotWidget";
 import { getSiteContent } from "@/lib/content-store";

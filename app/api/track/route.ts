@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { recordVisitor } from "@/lib/visitor-store";
 import { parseUserAgent } from "@/lib/user-agent";
 
-export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 // In-memory rate limiting per IP (max 60 requests per minute)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -40,10 +40,11 @@ function sanitizeText(value: unknown, maxLength = 100): string {
 
 export async function POST(request: Request) {
   try {
-    // 1. Extract IP strictly from server headers
+    // 1. Extract IP strictly from server headers (supports Cloudflare and standard proxies)
+    const cfIp = request.headers.get("cf-connecting-ip");
     const forwarded = request.headers.get("x-forwarded-for");
     const realIp = request.headers.get("x-real-ip");
-    const ip = (forwarded ? forwarded.split(",")[0]?.trim() : realIp) || "127.0.0.1";
+    const ip = (cfIp ? cfIp.trim() : forwarded ? forwarded.split(",")[0]?.trim() : realIp) || "127.0.0.1";
 
     if (!checkRateLimit(ip)) {
       return NextResponse.json({ ok: false, error: "Rate limit exceeded" }, { status: 429 });
@@ -64,11 +65,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, skipped: "bot" });
     }
 
-    // 4. Extract trusted Vercel Geolocation headers
-    const country = request.headers.get("x-vercel-ip-country") || "";
-    const region = request.headers.get("x-vercel-ip-country-region") || "";
-    const city = request.headers.get("x-vercel-ip-city") || "";
-    const vercelTimezone = request.headers.get("x-vercel-ip-timezone") || "";
+    // 4. Extract trusted Cloudflare & Vercel Geolocation headers
+    const rawCountry = request.headers.get("cf-ipcountry") || request.headers.get("x-vercel-ip-country") || "";
+    const country = (rawCountry === "XX" || rawCountry === "T1") ? "" : rawCountry;
+    const region = request.headers.get("cf-region") || request.headers.get("cf-region-code") || request.headers.get("x-vercel-ip-country-region") || "";
+    const city = request.headers.get("cf-ipcity") || request.headers.get("x-vercel-ip-city") || "";
+    const cfTimezone = request.headers.get("cf-timezone") || request.headers.get("x-vercel-ip-timezone") || "";
 
     // 5. Parse client JSON body
     let body: Record<string, unknown> = {};
@@ -99,7 +101,7 @@ export async function POST(request: Request) {
     const referrer = sanitizeText(body.referrer, 1000);
     const screenResolution = sanitizeText(body.screenResolution, 30);
     const language = sanitizeText(body.language, 30);
-    const timezone = sanitizeText(body.timezone, 100) || vercelTimezone;
+    const timezone = sanitizeText(body.timezone, 100) || cfTimezone;
 
     // 6. Record visitor asynchronously in Neon database
     await recordVisitor({

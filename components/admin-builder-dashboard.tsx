@@ -40,6 +40,7 @@ import {
   Users,
   X
 } from "lucide-react";
+import { prepareFileForUpload } from "@/lib/client-compress";
 import type { BuilderTemplate, MediaFile, SiteContent } from "@/types/site-content";
 
 type SessionState = {
@@ -675,8 +676,9 @@ function BrandSeoView({ content, setContent, saveDraft, secureHeaders }: { conte
     const timeout = window.setTimeout(() => controller.abort(), uploadTimeoutMs);
 
     try {
+      const fileToUpload = await prepareFileForUpload(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", fileToUpload);
       const response = await fetch("/api/admin/upload", { method: "POST", headers: secureHeaders(), body: formData, signal: controller.signal });
       const result = (await response.json().catch(() => ({ message: "Upload failed. The server returned an invalid response." }))) as { url?: string; message?: string };
 
@@ -859,8 +861,9 @@ function MediaView({ content, setContent, secureHeaders }: { content: SiteConten
     const timeout = window.setTimeout(() => controller.abort(), uploadTimeoutMs);
 
     try {
+      const fileToUpload = await prepareFileForUpload(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", fileToUpload);
       if (replaceFile) {
         formData.append("replacesId", replaceFile.id);
         formData.append("replacesUrl", replaceFile.url);

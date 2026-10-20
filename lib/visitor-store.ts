@@ -42,8 +42,72 @@ function getSql(): NeonQueryFunction<false, false> | null {
   return sqlClient;
 }
 
+type D1Like = {
+  prepare: (query: string) => {
+    bind: (...args: unknown[]) => {
+      first: <T = Record<string, unknown>>() => Promise<T | null>;
+      all: <T = Record<string, unknown>>() => Promise<{ results: T[] }>;
+      run: () => Promise<{ success: boolean; meta?: { changes?: number } }>;
+    };
+    first: <T = Record<string, unknown>>() => Promise<T | null>;
+    all: <T = Record<string, unknown>>() => Promise<{ results: T[] }>;
+    run: () => Promise<{ success: boolean; meta?: { changes?: number } }>;
+  };
+};
+
+async function getD1Database(): Promise<D1Like | null> {
+  try {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const ctx = await getCloudflareContext({ async: true });
+    const env = ctx?.env as Record<string, unknown> | undefined;
+    return (env?.portfolio_db as D1Like) || (env?.DB as D1Like) || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function ensureVisitorTables(): Promise<boolean> {
   if (visitorTableReady) return true;
+
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      await d1.prepare(`
+        CREATE TABLE IF NOT EXISTS visitor_analytics (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          visitor_id TEXT NOT NULL,
+          session_id TEXT NOT NULL,
+          ip TEXT NOT NULL,
+          country TEXT,
+          region TEXT,
+          city TEXT,
+          pathname TEXT NOT NULL,
+          referrer TEXT,
+          user_agent TEXT,
+          browser_name TEXT,
+          browser_version TEXT,
+          os_name TEXT,
+          os_version TEXT,
+          device_type TEXT,
+          screen_resolution TEXT,
+          language TEXT,
+          timezone TEXT,
+          is_returning INTEGER DEFAULT 0,
+          visited_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+        )
+      `).run();
+      await d1.prepare("CREATE INDEX IF NOT EXISTS idx_va_visited_at ON visitor_analytics (visited_at DESC)").run();
+      await d1.prepare("CREATE INDEX IF NOT EXISTS idx_va_visitor_id ON visitor_analytics (visitor_id)").run();
+      await d1.prepare("CREATE INDEX IF NOT EXISTS idx_va_session_id ON visitor_analytics (session_id)").run();
+      await d1.prepare("CREATE INDEX IF NOT EXISTS idx_va_pathname ON visitor_analytics (pathname)").run();
+      await d1.prepare("CREATE INDEX IF NOT EXISTS idx_va_country ON visitor_analytics (country)").run();
+      visitorTableReady = true;
+      return true;
+    } catch (d1Err) {
+      console.warn("[visitor-store] D1 ensure tables error:", d1Err);
+    }
+  }
+
   const sql = getSql();
   if (!sql) return false;
 
@@ -88,7 +152,7 @@ export async function ensureVisitorTables(): Promise<boolean> {
   }
 }
 
-// Local file-based fallback for development without Neon credentials
+// Local file-based fallback for development without database credentials
 async function getLocalRecords(): Promise<VisitorRecord[]> {
   try {
     const raw = await readFile(localVisitorsFile, "utf8");
@@ -99,10 +163,24 @@ async function getLocalRecords(): Promise<VisitorRecord[]> {
 }
 
 async function saveLocalRecords(records: VisitorRecord[]): Promise<void> {
-  await mkdir(dataDirectory, { recursive: true });
-  // Keep max 5,000 records in local development file
-  const trimmed = records.slice(0, 5000);
-  await writeFile(localVisitorsFile, JSON.stringify(trimmed, null, 2), "utf8");
+  try {
+    await mkdir(dataDirectory, { recursive: true });
+    const trimmed = records.slice(0, 5000);
+    await writeFile(localVisitorsFile, JSON.stringify(trimmed, null, 2), "utf8");
+  } catch {
+    // Filesystem may be unavailable in edge runtimes
+  }
+}
+
+/**
+ * Normalizes visited_at date strings to ISO 8601 UTC for client rendering.
+ */
+function normalizeDate(val: unknown): string {
+  if (!val) return new Date().toISOString();
+  if (val instanceof Date) return val.toISOString();
+  const str = String(val);
+  if (str.includes("T")) return str;
+  return str.replace(" ", "T") + "Z";
 }
 
 /**
@@ -119,7 +197,6 @@ function isDuplicateRequest(visitorId: string, pathname: string): boolean {
 
   recentTrackCache.set(key, now);
 
-  // Clean old cache entries
   if (recentTrackCache.size > 2000) {
     for (const [k, timestamp] of recentTrackCache.entries()) {
       if (now - timestamp > 30000) {
@@ -142,6 +219,51 @@ export async function recordVisitor(input: VisitorLogInput): Promise<boolean> {
     return true;
   }
 
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const prior = await d1
+        .prepare("SELECT id FROM visitor_analytics WHERE visitor_id = ? AND session_id != ? LIMIT 1")
+        .bind(visitorId, input.sessionId || "")
+        .first();
+      const isReturning = Boolean(prior);
+
+      await d1
+        .prepare(`
+          INSERT INTO visitor_analytics (
+            visitor_id, session_id, ip, country, region, city, pathname, referrer,
+            user_agent, browser_name, browser_version, os_name, os_version, device_type,
+            screen_resolution, language, timezone, is_returning, visited_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `)
+        .bind(
+          visitorId,
+          (input.sessionId || "").slice(0, 64),
+          (input.ip || "unknown").slice(0, 64),
+          (input.country || "").slice(0, 100),
+          (input.region || "").slice(0, 100),
+          (input.city || "").slice(0, 100),
+          pathname,
+          (input.referrer || "").slice(0, 1000),
+          input.userAgent || "",
+          (input.browserName || "").slice(0, 100),
+          (input.browserVersion || "").slice(0, 50),
+          (input.osName || "").slice(0, 100),
+          (input.osVersion || "").slice(0, 50),
+          (input.deviceType || "unknown").slice(0, 50),
+          (input.screenResolution || "").slice(0, 50),
+          (input.language || "").slice(0, 50),
+          (input.timezone || "").slice(0, 100),
+          isReturning ? 1 : 0
+        )
+        .run();
+
+      return true;
+    } catch (d1Err) {
+      console.warn("[visitor-store] D1 insert error:", d1Err);
+    }
+  }
+
   const sql = getSql();
   const dbReady = sql ? await ensureVisitorTables() : false;
 
@@ -149,7 +271,6 @@ export async function recordVisitor(input: VisitorLogInput): Promise<boolean> {
 
   if (dbReady && sql) {
     try {
-      // Check if visitor has prior visits
       const prior = await sql`
         SELECT id FROM visitor_analytics
         WHERE visitor_id = ${visitorId} AND session_id != ${input.sessionId}
@@ -159,25 +280,9 @@ export async function recordVisitor(input: VisitorLogInput): Promise<boolean> {
 
       await sql`
         INSERT INTO visitor_analytics (
-          visitor_id,
-          session_id,
-          ip,
-          country,
-          region,
-          city,
-          pathname,
-          referrer,
-          user_agent,
-          browser_name,
-          browser_version,
-          os_name,
-          os_version,
-          device_type,
-          screen_resolution,
-          language,
-          timezone,
-          is_returning,
-          visited_at
+          visitor_id, session_id, ip, country, region, city, pathname, referrer,
+          user_agent, browser_name, browser_version, os_name, os_version, device_type,
+          screen_resolution, language, timezone, is_returning, visited_at
         ) VALUES (
           ${visitorId},
           ${(input.sessionId || "").slice(0, 64)},
@@ -203,7 +308,6 @@ export async function recordVisitor(input: VisitorLogInput): Promise<boolean> {
       return true;
     } catch (error) {
       console.error("[visitor-store] Error inserting record to Neon:", error);
-      // Fall through to local fallback
     }
   }
 
@@ -248,6 +352,104 @@ export async function recordVisitor(input: VisitorLogInput): Promise<boolean> {
  * Retrieves aggregate visitor statistics.
  */
 export async function getVisitorStats(filter?: VisitorFilter): Promise<VisitorStats> {
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const startIso = filter?.startDate ? new Date(filter.startDate).toISOString() : null;
+      const endIso = filter?.endDate ? new Date(filter.endDate).toISOString() : null;
+
+      let whereClause = "";
+      const params: unknown[] = [];
+      if (startIso && endIso) {
+        whereClause = "WHERE datetime(visited_at) >= datetime(?) AND datetime(visited_at) <= datetime(?)";
+        params.push(startIso, endIso);
+      } else if (startIso) {
+        whereClause = "WHERE datetime(visited_at) >= datetime(?)";
+        params.push(startIso);
+      } else if (endIso) {
+        whereClause = "WHERE datetime(visited_at) <= datetime(?)";
+        params.push(endIso);
+      }
+
+      const overallQuery = `
+        SELECT 
+          COUNT(*) AS total_page_views,
+          COUNT(DISTINCT session_id) AS total_visits,
+          COUNT(DISTINCT visitor_id) AS unique_visitors,
+          COUNT(DISTINCT CASE WHEN is_returning = 1 THEN visitor_id END) AS returning_visitors
+        FROM visitor_analytics
+        ${whereClause}
+      `;
+      const overallStmt = d1.prepare(overallQuery);
+      const overallRow = await (params.length ? overallStmt.bind(...params) : overallStmt).first<{
+        total_page_views: number;
+        total_visits: number;
+        unique_visitors: number;
+        returning_visitors: number;
+      }>();
+
+      const totalPageViews = Number(overallRow?.total_page_views) || 0;
+      const totalVisits = Number(overallRow?.total_visits) || 0;
+      const uniqueVisitors = Number(overallRow?.unique_visitors) || 0;
+      const returningVisitors = Number(overallRow?.returning_visitors) || 0;
+      const returningRate = uniqueVisitors > 0 ? Math.round((returningVisitors / uniqueVisitors) * 100) : 0;
+
+      const topPagesStmt = d1.prepare(`
+        SELECT pathname, COUNT(*) AS views
+        FROM visitor_analytics
+        ${whereClause}
+        GROUP BY pathname
+        ORDER BY views DESC
+        LIMIT 5
+      `);
+      const topPagesRes = await (params.length ? topPagesStmt.bind(...params) : topPagesStmt).all<{ pathname: string; views: number }>();
+
+      const topCountriesStmt = d1.prepare(`
+        SELECT COALESCE(NULLIF(country, ''), 'Unknown') AS country, COUNT(*) AS count
+        FROM visitor_analytics
+        ${whereClause}
+        GROUP BY country
+        ORDER BY count DESC
+        LIMIT 5
+      `);
+      const topCountriesRes = await (params.length ? topCountriesStmt.bind(...params) : topCountriesStmt).all<{ country: string; count: number }>();
+
+      const topBrowsersStmt = d1.prepare(`
+        SELECT COALESCE(NULLIF(browser_name, ''), 'Unknown') AS browser, COUNT(*) AS count
+        FROM visitor_analytics
+        ${whereClause}
+        GROUP BY browser_name
+        ORDER BY count DESC
+        LIMIT 5
+      `);
+      const topBrowsersRes = await (params.length ? topBrowsersStmt.bind(...params) : topBrowsersStmt).all<{ browser: string; count: number }>();
+
+      const topDevicesStmt = d1.prepare(`
+        SELECT COALESCE(NULLIF(device_type, ''), 'unknown') AS device, COUNT(*) AS count
+        FROM visitor_analytics
+        ${whereClause}
+        GROUP BY device_type
+        ORDER BY count DESC
+        LIMIT 5
+      `);
+      const topDevicesRes = await (params.length ? topDevicesStmt.bind(...params) : topDevicesStmt).all<{ device: string; count: number }>();
+
+      return {
+        totalPageViews,
+        totalVisits,
+        uniqueVisitors,
+        returningVisitors,
+        returningRate,
+        topPages: (topPagesRes?.results || []).map((r) => ({ pathname: String(r.pathname), views: Number(r.views) })),
+        topCountries: (topCountriesRes?.results || []).map((r) => ({ country: String(r.country), count: Number(r.count) })),
+        topBrowsers: (topBrowsersRes?.results || []).map((r) => ({ browser: String(r.browser), count: Number(r.count) })),
+        topDevices: (topDevicesRes?.results || []).map((r) => ({ device: String(r.device), count: Number(r.count) }))
+      };
+    } catch (d1Err) {
+      console.warn("[visitor-store] D1 getVisitorStats error:", d1Err);
+    }
+  }
+
   const sql = getSql();
   const dbReady = sql ? await ensureVisitorTables() : false;
 
@@ -460,6 +662,85 @@ export async function getVisitorRecords(filter: VisitorFilter): Promise<{ record
   const limit = Math.min(100, Math.max(5, Number(filter.limit) || 25));
   const offset = (page - 1) * limit;
 
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const search = filter.search?.trim();
+      const startIso = filter.startDate ? new Date(filter.startDate).toISOString() : null;
+      const endIso = filter.endDate ? new Date(filter.endDate).toISOString() : null;
+
+      const whereClauses: string[] = [];
+      const params: unknown[] = [];
+
+      if (startIso) {
+        whereClauses.push("datetime(visited_at) >= datetime(?)");
+        params.push(startIso);
+      }
+      if (endIso) {
+        whereClauses.push("datetime(visited_at) <= datetime(?)");
+        params.push(endIso);
+      }
+      if (search) {
+        const queryTerm = `%${search}%`;
+        whereClauses.push(`(
+          ip LIKE ? OR
+          country LIKE ? OR
+          city LIKE ? OR
+          pathname LIKE ? OR
+          browser_name LIKE ? OR
+          os_name LIKE ? OR
+          device_type LIKE ? OR
+          referrer LIKE ?
+        )`);
+        for (let i = 0; i < 8; i++) {
+          params.push(queryTerm);
+        }
+      }
+
+      const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
+      const countStmt = d1.prepare(`SELECT COUNT(*) AS count FROM visitor_analytics ${whereSql}`);
+      const countRow = await (params.length ? countStmt.bind(...params) : countStmt).first<{ count: number }>();
+      const total = Number(countRow?.count) || 0;
+
+      const selectSql = `
+        SELECT * FROM visitor_analytics
+        ${whereSql}
+        ORDER BY id DESC
+        LIMIT ? OFFSET ?
+      `;
+      const selectStmt = d1.prepare(selectSql);
+      const rowsRes = await selectStmt.bind(...params, limit, offset).all<Record<string, unknown>>();
+
+      const records: VisitorRecord[] = (rowsRes?.results || []).map((r) => ({
+        id: Number(r.id),
+        visitorId: String(r.visitor_id || ""),
+        sessionId: String(r.session_id || ""),
+        ip: String(r.ip || ""),
+        country: String(r.country || ""),
+        region: String(r.region || ""),
+        city: String(r.city || ""),
+        pathname: String(r.pathname || ""),
+        referrer: String(r.referrer || ""),
+        userAgent: String(r.user_agent || ""),
+        browserName: String(r.browser_name || ""),
+        browserVersion: String(r.browser_version || ""),
+        osName: String(r.os_name || ""),
+        osVersion: String(r.os_version || ""),
+        deviceType: (r.device_type as VisitorRecord["deviceType"]) || "unknown",
+        screenResolution: String(r.screen_resolution || ""),
+        language: String(r.language || ""),
+        timezone: String(r.timezone || ""),
+        isReturning: Boolean(r.is_returning),
+        visitedAt: normalizeDate(r.visited_at)
+      }));
+
+      return { records, total };
+    } catch (d1Err) {
+      console.warn("[visitor-store] D1 getVisitorRecords error:", d1Err);
+    }
+  }
+
   const sql = getSql();
   const dbReady = sql ? await ensureVisitorTables() : false;
 
@@ -576,7 +857,7 @@ export async function getVisitorRecords(filter: VisitorFilter): Promise<{ record
         language: String(r.language || ""),
         timezone: String(r.timezone || ""),
         isReturning: Boolean(r.is_returning),
-        visitedAt: r.visited_at instanceof Date ? r.visited_at.toISOString() : String(r.visited_at || "")
+        visitedAt: normalizeDate(r.visited_at)
       }));
 
       return { records, total };
@@ -598,6 +879,78 @@ export async function getVisitorRecords(filter: VisitorFilter): Promise<{ record
  * Retrieves all matching records for CSV export.
  */
 export async function getAllVisitorsForExport(filter: VisitorFilter): Promise<VisitorRecord[]> {
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const search = filter.search?.trim();
+      const startIso = filter.startDate ? new Date(filter.startDate).toISOString() : null;
+      const endIso = filter.endDate ? new Date(filter.endDate).toISOString() : null;
+
+      const whereClauses: string[] = [];
+      const params: unknown[] = [];
+
+      if (startIso) {
+        whereClauses.push("datetime(visited_at) >= datetime(?)");
+        params.push(startIso);
+      }
+      if (endIso) {
+        whereClauses.push("datetime(visited_at) <= datetime(?)");
+        params.push(endIso);
+      }
+      if (search) {
+        const queryTerm = `%${search}%`;
+        whereClauses.push(`(
+          ip LIKE ? OR
+          country LIKE ? OR
+          city LIKE ? OR
+          pathname LIKE ? OR
+          browser_name LIKE ? OR
+          os_name LIKE ? OR
+          device_type LIKE ? OR
+          referrer LIKE ?
+        )`);
+        for (let i = 0; i < 8; i++) {
+          params.push(queryTerm);
+        }
+      }
+
+      const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+      const selectSql = `
+        SELECT * FROM visitor_analytics
+        ${whereSql}
+        ORDER BY id DESC
+        LIMIT 5000
+      `;
+      const selectStmt = d1.prepare(selectSql);
+      const rowsRes = await (params.length ? selectStmt.bind(...params) : selectStmt).all<Record<string, unknown>>();
+
+      return (rowsRes?.results || []).map((r) => ({
+        id: Number(r.id),
+        visitorId: String(r.visitor_id || ""),
+        sessionId: String(r.session_id || ""),
+        ip: String(r.ip || ""),
+        country: String(r.country || ""),
+        region: String(r.region || ""),
+        city: String(r.city || ""),
+        pathname: String(r.pathname || ""),
+        referrer: String(r.referrer || ""),
+        userAgent: String(r.user_agent || ""),
+        browserName: String(r.browser_name || ""),
+        browserVersion: String(r.browser_version || ""),
+        osName: String(r.os_name || ""),
+        osVersion: String(r.os_version || ""),
+        deviceType: (r.device_type as VisitorRecord["deviceType"]) || "unknown",
+        screenResolution: String(r.screen_resolution || ""),
+        language: String(r.language || ""),
+        timezone: String(r.timezone || ""),
+        isReturning: Boolean(r.is_returning),
+        visitedAt: normalizeDate(r.visited_at)
+      }));
+    } catch (d1Err) {
+      console.warn("[visitor-store] D1 getAllVisitorsForExport error:", d1Err);
+    }
+  }
+
   const sql = getSql();
   const dbReady = sql ? await ensureVisitorTables() : false;
 
@@ -680,7 +1033,7 @@ export async function getAllVisitorsForExport(filter: VisitorFilter): Promise<Vi
         language: String(r.language || ""),
         timezone: String(r.timezone || ""),
         isReturning: Boolean(r.is_returning),
-        visitedAt: r.visited_at instanceof Date ? r.visited_at.toISOString() : String(r.visited_at || "")
+        visitedAt: normalizeDate(r.visited_at)
       }));
     } catch (error) {
       console.error("[visitor-store] Error exporting from Neon:", error);
@@ -696,6 +1049,21 @@ export async function getAllVisitorsForExport(filter: VisitorFilter): Promise<Vi
  */
 export async function pruneVisitorRecords(days = 90): Promise<number> {
   const safeDays = Math.max(1, Math.min(365, days));
+
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const result = await d1
+        .prepare("DELETE FROM visitor_analytics WHERE datetime(visited_at) < datetime('now', '-' || ? || ' days')")
+        .bind(safeDays)
+        .run();
+      const changes = (result as { meta?: { changes?: number } })?.meta?.changes ?? 0;
+      return Number(changes);
+    } catch (d1Err) {
+      console.warn("[visitor-store] D1 prune error:", d1Err);
+    }
+  }
+
   const sql = getSql();
   const dbReady = sql ? await ensureVisitorTables() : false;
 

@@ -18,3 +18,7 @@ __pycache__/
 *.tsbuildinfo
 .sf
 data/admin-2fa*.json
+.open-next
+.wrangler
+migration-staging
+scripts/kv-bulk.json

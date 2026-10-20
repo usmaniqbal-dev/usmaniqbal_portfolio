@@ -2,9 +2,18 @@ import type { SiteContent, VersionHistory } from "@/types/site-content";
 
 // Adds a capped version snapshot before major publish or restore operations.
 export function addVersionSnapshot(content: SiteContent, label: string) {
+  // Strip versionHistory from snapshotData to prevent recursive exponential payload nesting
+  const sanitizedSnapshotData: SiteContent = {
+    ...content,
+    builder: {
+      ...content.builder,
+      versionHistory: []
+    }
+  };
+
   const snapshot: VersionHistory = {
     id: crypto.randomUUID(),
-    snapshotData: content,
+    snapshotData: sanitizedSnapshotData,
     savedAt: new Date().toISOString(),
     label,
     restoredAt: ""

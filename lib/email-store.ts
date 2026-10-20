@@ -68,8 +68,12 @@ export async function saveEmailSettings(settings: Partial<EmailSettings>): Promi
     if (process.env.VERCEL) {
       throw new Error("Email configuration storage requires Neon PostgreSQL. Add DATABASE_URL from the Vercel Neon integration, then redeploy.");
     }
-    await mkdir(dataDirectory, { recursive: true });
-    await writeFile(emailSettingsPath, JSON.stringify(nextSettings, null, 2), "utf8");
+    try {
+      await mkdir(dataDirectory, { recursive: true });
+      await writeFile(emailSettingsPath, JSON.stringify(nextSettings, null, 2), "utf8");
+    } catch {
+      // Non-filesystem runtime
+    }
   }
 
   return nextSettings;

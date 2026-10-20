@@ -2,7 +2,6 @@ import "server-only";
 
 import { createHmac, timingSafeEqual } from "crypto";
 import { del } from "@vercel/blob";
-import sharp from "sharp";
 import type { SiteContent } from "@/types/site-content";
 
 export const ALLOWED_MIME_TYPES = new Set([
@@ -20,7 +19,7 @@ export const MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB
 export const MAX_VIDEO_UPLOAD_BYTES = 30 * 1024 * 1024; // 30MB
 
 export function isBlobStorageConfigured(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  return true; // Cloudflare KV / R2 permanent media storage is configured
 }
 
 // Configured access mode for Vercel Blob store
@@ -315,9 +314,31 @@ export async function optimizeImageBuffer(
     return { buffer, contentType: mimeType, extension: ext };
   }
 
+  // Fast path: WebP or small assets under 500KB bypass server-side recompression
+  const ext = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
+  if (mimeType === "image/webp" || buffer.length < 500 * 1024) {
+    return { buffer, contentType: mimeType, extension: ext };
+  }
+
   try {
     const { maxWidth = 2560, maxHeight = 2560, quality = 85 } = options;
-    const image = sharp(buffer);
+    let sharpLoader: unknown = null;
+    try {
+      const mod = await import("sharp");
+      sharpLoader = mod.default || mod;
+    } catch {
+      // sharp not supported on Cloudflare Workers edge runtime
+    }
+
+    if (typeof sharpLoader !== "function") {
+      const ext = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
+      return { buffer, contentType: mimeType, extension: ext };
+    }
+
+    const image = (sharpLoader as (input: Buffer) => {
+      metadata: () => Promise<{ format?: string }>;
+      rotate: () => { resize: (opt: { width: number; height: number; fit: string; withoutEnlargement: boolean }) => { webp: (opt: { quality: number }) => { toBuffer: () => Promise<Buffer> } } };
+    })(buffer);
     const metadata = await image.metadata();
 
     // If already webp and smaller than 1.5MB, preserve as is

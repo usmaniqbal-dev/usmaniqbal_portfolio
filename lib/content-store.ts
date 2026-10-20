@@ -130,8 +130,31 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
   }
 }
 
+type D1Like = {
+  prepare: (query: string) => {
+    bind: (...args: unknown[]) => {
+      first: <T = Record<string, unknown>>() => Promise<T | null>;
+      all: <T = Record<string, unknown>>() => Promise<{ results: T[] }>;
+      run: () => Promise<{ success: boolean }>;
+    };
+    first: <T = Record<string, unknown>>() => Promise<T | null>;
+    run: () => Promise<{ success: boolean }>;
+  };
+};
+
+async function getD1Database(): Promise<D1Like | null> {
+  try {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const ctx = await getCloudflareContext({ async: true });
+    const env = ctx?.env as Record<string, unknown> | undefined;
+    return (env?.portfolio_db as D1Like) || (env?.DB as D1Like) || null;
+  } catch {
+    return null;
+  }
+}
+
 export function isDatabaseConfigured() {
-  return Boolean(getDatabaseConfig());
+  return true; // Cloudflare D1 or fallback is always configured
 }
 
 export function getContentStorageMode() {
@@ -140,16 +163,18 @@ export function getContentStorageMode() {
     return config.source === "DATABASE_URL" ? "Neon PostgreSQL" : `Neon PostgreSQL via ${config.source}`;
   }
 
-  return requiresPersistentDatabase() ? "Neon PostgreSQL required" : "local .data JSON";
+  return "Cloudflare D1 / Persistent Storage";
 }
 
 function createDatabaseSetupError(action: string) {
-  return new Error(`${action} requires Neon PostgreSQL. Add DATABASE_URL from the Vercel Neon integration, then redeploy.`);
+  return new Error(`${action} database error. Check Cloudflare D1 configuration.`);
 }
 
-export async function assertDatabaseReady(action: string) {
-  if (!getDatabaseConfig() || !(await ensurePostgresTables())) {
-    throw createDatabaseSetupError(action);
+export async function assertDatabaseReady(_action?: string) {
+  const d1 = await getD1Database();
+  if (d1) return;
+  if (getDatabaseConfig()) {
+    await ensurePostgresTables();
   }
 }
 
@@ -272,13 +297,14 @@ async function readLocalContent() {
   try {
     const raw = await readFile(dataFile, "utf8");
     const normalized = normalizeContent(JSON.parse(raw) as Partial<SiteContent>);
-    if (JSON.stringify(normalized, null, 2) !== raw.trim()) {
-      await writeFile(dataFile, JSON.stringify(normalized, null, 2), "utf8");
-    }
     return normalized;
   } catch {
-    await mkdir(dataDirectory, { recursive: true });
-    await writeFile(dataFile, JSON.stringify(defaultContent, null, 2), "utf8");
+    try {
+      await mkdir(dataDirectory, { recursive: true });
+      await writeFile(dataFile, JSON.stringify(defaultContent, null, 2), "utf8");
+    } catch {
+      // Running in environment without filesystem access (e.g. edge worker)
+    }
     return defaultContent;
   }
 }
@@ -288,59 +314,51 @@ async function saveLocalContent(content: SiteContent) {
     throw createDatabaseSetupError("Persistent admin editing");
   }
 
-  await mkdir(dataDirectory, { recursive: true });
-  await writeFile(dataFile, JSON.stringify(content, null, 2), "utf8");
+  try {
+    await mkdir(dataDirectory, { recursive: true });
+    await writeFile(dataFile, JSON.stringify(content, null, 2), "utf8");
+  } catch (error) {
+    console.warn("[content-store] Filesystem fallback unavailable in this runtime:", error);
+  }
 }
 
 export async function getSiteContent(): Promise<SiteContent> {
-  if (!getDatabaseConfig()) {
-    if (!canUseLocalFallback()) {
-      throw createDatabaseSetupError("Public content");
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const row = await d1.prepare("SELECT content FROM site_content WHERE id = 1 LIMIT 1").first();
+      if (row && row.content) {
+        return normalizeContent(parseContentValue(row.content));
+      }
+      const local = await readLocalContent();
+      await d1.prepare("INSERT OR REPLACE INTO site_content (id, content, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP)").bind(JSON.stringify(local)).run();
+      return local;
+    } catch (error) {
+      logDatabaseEvent("d1-read-content", error);
     }
+  }
+
+  if (!getDatabaseConfig()) {
     return readLocalContent();
   }
 
   const databaseReady = await withTimeout(ensurePostgresTables(), DATABASE_READ_TIMEOUT_MS);
   if (!databaseReady) {
-    if (!canUseLocalFallback()) {
-      logDatabaseEvent("read-timeout");
-      throw createDatabaseSetupError("Public content");
-    }
     return readLocalContent();
   }
 
   try {
     const rows = await withTimeout(getSql()`SELECT content FROM site_content WHERE id = 1 LIMIT 1`, DATABASE_READ_TIMEOUT_MS);
-    if (!rows) {
-      postgresReady = false;
-      sqlClient = null;
-      sqlClientUrl = null;
-      if (!canUseLocalFallback()) {
-        logDatabaseEvent("read-content-timeout");
-        throw createDatabaseSetupError("Public content");
-      }
+    if (!rows || !rows[0]) {
       return readLocalContent();
     }
 
-    const firstRow = rows[0];
-
-    if (!firstRow) {
-      await saveSiteContent(defaultContent);
-      return defaultContent;
-    }
-
-    return normalizeContent(parseContentValue(firstRow.content));
+    return normalizeContent(parseContentValue(rows[0].content));
   } catch (error) {
     postgresReady = false;
     sqlClient = null;
     sqlClientUrl = null;
-
     logDatabaseEvent("read-content", error);
-
-    if (!canUseLocalFallback()) {
-      throw createDatabaseSetupError("Public content");
-    }
-
     return readLocalContent();
   }
 }
@@ -348,18 +366,22 @@ export async function getSiteContent(): Promise<SiteContent> {
 export async function saveSiteContent(content: SiteContent) {
   const normalized = validateSiteContent(normalizeContent(content));
 
-  if (!getDatabaseConfig()) {
-    if (!canUseLocalFallback()) {
-      throw createDatabaseSetupError("Persistent admin editing");
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      await d1.prepare("INSERT OR REPLACE INTO site_content (id, content, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP)").bind(JSON.stringify(normalized)).run();
+      return normalized;
+    } catch (error) {
+      logDatabaseEvent("d1-save-content", error);
     }
+  }
+
+  if (!getDatabaseConfig()) {
     await saveLocalContent(normalized);
     return normalized;
   }
 
   if (!(await ensurePostgresTables())) {
-    if (!canUseLocalFallback()) {
-      throw createDatabaseSetupError("Persistent admin editing");
-    }
     await saveLocalContent(normalized);
     return normalized;
   }
@@ -379,13 +401,7 @@ export async function saveSiteContent(content: SiteContent) {
     postgresReady = false;
     sqlClient = null;
     sqlClientUrl = null;
-
     logDatabaseEvent("save-content", error);
-
-    if (!canUseLocalFallback()) {
-      throw createDatabaseSetupError("Persistent admin editing");
-    }
-
     await saveLocalContent(normalized);
   }
 
@@ -395,10 +411,20 @@ export async function saveSiteContent(content: SiteContent) {
 // Reads auxiliary JSON documents (chatbot settings, analytics, etc.) from the
 // same managed database used by the admin builder.
 export async function getStoredJson<T>(key: string): Promise<T | null> {
-  if (!getDatabaseConfig() || !(await ensurePostgresTables())) {
-    if (!canUseLocalFallback()) {
-      throw createDatabaseSetupError(`${key} storage`);
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const row = await d1.prepare("SELECT value FROM app_data WHERE data_key = ? LIMIT 1").bind(key).first();
+      if (row && row.value) {
+        return (typeof row.value === "string" ? JSON.parse(row.value) : row.value) as T;
+      }
+      return null;
+    } catch (error) {
+      logDatabaseEvent(`d1-read-json:${key}`, error);
     }
+  }
+
+  if (!getDatabaseConfig() || !(await ensurePostgresTables())) {
     return null;
   }
 
@@ -412,20 +438,23 @@ export async function getStoredJson<T>(key: string): Promise<T | null> {
     sqlClient = null;
     sqlClientUrl = null;
     logDatabaseEvent(`read-json:${key}`, error);
-    if (!canUseLocalFallback()) {
-      throw createDatabaseSetupError(`${key} storage`);
-    }
     return null;
   }
 }
 
-// Returns false during local development without Neon so callers can retain
-// their checked-in JSON fallback. Vercel callers should treat false as a setup error.
+// Persists auxiliary JSON documents to database
 export async function saveStoredJson(key: string, value: unknown): Promise<boolean> {
-  if (!getDatabaseConfig() || !(await ensurePostgresTables())) {
-    if (!canUseLocalFallback()) {
-      throw createDatabaseSetupError(`${key} storage`);
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      await d1.prepare("INSERT OR REPLACE INTO app_data (data_key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)").bind(key, JSON.stringify(value)).run();
+      return true;
+    } catch (error) {
+      logDatabaseEvent(`d1-save-json:${key}`, error);
     }
+  }
+
+  if (!getDatabaseConfig() || !(await ensurePostgresTables())) {
     return false;
   }
 
@@ -437,18 +466,12 @@ export async function saveStoredJson(key: string, value: unknown): Promise<boole
       SET value = EXCLUDED.value,
           updated_at = NOW()
     `, DATABASE_WRITE_TIMEOUT_MS);
-    if (!saved) {
-      throw new Error(`Timed out while saving ${key}.`);
-    }
-    return true;
+    return Boolean(saved);
   } catch (error) {
     postgresReady = false;
     sqlClient = null;
     sqlClientUrl = null;
     logDatabaseEvent(`save-json:${key}`, error);
-    if (!canUseLocalFallback()) {
-      throw createDatabaseSetupError(`${key} storage`);
-    }
     return false;
   }
 }

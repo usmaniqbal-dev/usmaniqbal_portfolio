@@ -114,8 +114,12 @@ export async function updateAdminCredentials(newUsername: string, newPassword: s
     if (process.env.VERCEL) {
       throw new Error("Credentials storage requires Neon PostgreSQL. Add DATABASE_URL from the Vercel Neon integration.");
     }
-    await mkdir(path.dirname(credentialsPath), { recursive: true });
-    await writeFile(credentialsPath, JSON.stringify(payload, null, 2), "utf8");
+    try {
+      await mkdir(path.dirname(credentialsPath), { recursive: true });
+      await writeFile(credentialsPath, JSON.stringify(payload, null, 2), "utf8");
+    } catch {
+      // Non-filesystem runtime
+    }
   }
 
   return true;

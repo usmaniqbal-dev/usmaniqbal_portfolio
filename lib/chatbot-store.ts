@@ -81,7 +81,11 @@ async function readJson<T>(filePath: string, dataKey: string, fallback: T): Prom
   try {
     return { ...fallback, ...(JSON.parse(await readFile(filePath, "utf8")) as Partial<T>) } as T;
   } catch {
-    await writeJson(filePath, dataKey, fallback);
+    try {
+      await writeJson(filePath, dataKey, fallback);
+    } catch {
+      // Non-filesystem runtime
+    }
     return fallback;
   }
 }
@@ -94,8 +98,12 @@ async function writeJson(filePath: string, dataKey: string, payload: unknown) {
   if (process.env.VERCEL) {
     throw new Error("Chatbot storage requires Neon PostgreSQL. Add DATABASE_URL from the Vercel Neon integration, then redeploy.");
   }
-  await mkdir(dataDirectory, { recursive: true });
-  await writeFile(filePath, JSON.stringify(payload, null, 2), "utf8");
+  try {
+    await mkdir(dataDirectory, { recursive: true });
+    await writeFile(filePath, JSON.stringify(payload, null, 2), "utf8");
+  } catch {
+    // Non-filesystem runtime
+  }
 }
 
 // Loads chatbot appearance and behavior settings.

@@ -23,6 +23,7 @@ import {
   Wrench,
   X
 } from "lucide-react";
+import { prepareFileForUpload } from "@/lib/client-compress";
 import type { HeroTemplate, ProjectContent, ServiceContent, SiteContent, SkillContent, SocialContent, StatisticContent } from "@/types/site-content";
 
 type EditWebsiteTab = "hero" | "projects" | "skills" | "about" | "services" | "contact" | "social";
@@ -471,8 +472,9 @@ function ImageField({ label, value, onChange, onUploaded, secureHeaders, compact
     const timeout = window.setTimeout(() => controller.abort(), uploadTimeoutMs);
 
     try {
+      const fileToUpload = await prepareFileForUpload(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", fileToUpload);
       // Pass existing URL so unreferenced old blobs can be safely replaced and cleaned up
       if (value) {
         formData.append("replacesUrl", value);

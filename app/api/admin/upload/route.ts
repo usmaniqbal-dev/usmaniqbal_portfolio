@@ -99,39 +99,64 @@ export async function POST(request: Request) {
     .slice(0, 48)
     .toLowerCase();
   const safeFileName = `${safeBaseName || "asset"}-${crypto.randomUUID().slice(0, 8)}.${optimized.extension}`;
+  const blobKey = `portfolio/${safeFileName}`;
 
-  let mediaUrl: string;
+  // Concurrent execution: upload asset to Cloudflare KV and fetch site_content in parallel
+  const uploadAssetPromise = (async (): Promise<string> => {
+    try {
+      const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+      const ctx = await getCloudflareContext({ async: true });
+      const env = ctx?.env as Record<string, unknown> | undefined;
+      const kv = env?.PORTFOLIO_MEDIA as { put: (k: string, v: Buffer, opt?: unknown) => Promise<void> } | undefined;
+      if (kv) {
+        await kv.put(blobKey, optimized.buffer, {
+          metadata: {
+            contentType: optimized.contentType,
+            size: optimized.buffer.length
+          }
+        });
+        return `/api/blob?pathname=${encodeURIComponent(blobKey)}`;
+      }
+    } catch {
+      // Not in Cloudflare runtime or context not available
+    }
 
-  try {
-    if (usesBlobStorage) {
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
       // Upload permanently to Vercel Private Blob
-      const blob = await put(`portfolio/${safeFileName}`, optimized.buffer, {
+      const blob = await put(blobKey, optimized.buffer, {
         access: "private",
         contentType: optimized.contentType,
-        addRandomSuffix: true
+        addRandomSuffix: false
       });
-      mediaUrl = `/api/blob?pathname=${encodeURIComponent(blob.pathname)}`;
-    } else {
-      if (process.env.VERCEL) {
-        return NextResponse.json(
-          { message: "Production uploads require Vercel Blob. Connect a Blob store at https://vercel.com/nuraxtech/usmaniqbal-portfolio/stores." },
-          { status: 503 }
-        );
-      }
+      return `/api/blob?pathname=${encodeURIComponent(blob.pathname)}`;
+    }
 
-      // Local fallback for local development without Vercel credentials
-      const uploadDirectory = path.join(process.cwd(), "public", "uploads");
-      const uploadPath = path.join(uploadDirectory, safeFileName);
+    // Local fallback for development
+    const uploadDirectory = path.join(process.cwd(), "public", "uploads");
+    const uploadPath = path.join(uploadDirectory, safeFileName);
+    try {
       await mkdir(uploadDirectory, { recursive: true });
       await writeFile(uploadPath, optimized.buffer);
-      mediaUrl = `/uploads/${safeFileName}`;
+    } catch {
+      // Non-filesystem runtime
     }
+    return `/uploads/${safeFileName}`;
+  })();
+
+  let mediaUrl = "";
+  let content;
+  try {
+    const [uploadedUrl, fetchedContent] = await Promise.all([
+      uploadAssetPromise,
+      getSiteContent()
+    ]);
+    mediaUrl = uploadedUrl;
+    content = fetchedContent;
   } catch (error) {
     return adminSetupErrorResponse(error);
   }
 
   // 4. Update SiteContent and handle replacement
-  let content = await getSiteContent();
 
   const mediaType: "image" | "video" | "document" | "icon" =
     file.type === "application/pdf"
