@@ -14,5 +14,6 @@ export function contentJsonHeaders() {
 export function revalidatePortfolioContent() {
   revalidateTag(portfolioContentTag);
   revalidatePath("/");
+  revalidatePath("/projects");
   revalidatePath("/api/content");
 }

@@ -241,30 +241,36 @@ function normalizeContent(content: Partial<SiteContent>): SiteContent {
     skills: Array.isArray(content.skills) ? content.skills : defaultContent.skills,
     services: Array.isArray(content.services) ? content.services : defaultContent.services,
     projects: (() => {
-      if (!Array.isArray(content.projects) || content.projects.length === 0) {
+      // Only use defaultContent.projects when there is NO saved content at all
+      // (first-run scenario). If projects were explicitly saved (even as an
+      // empty array after all have been deleted), trust what was persisted.
+      if (!Array.isArray(content.projects)) {
         return defaultContent.projects;
       }
-      const existingMap = new Map(content.projects.map((p) => [p.id, p]));
-      const defaultIds = new Set(defaultContent.projects.map((p) => p.id));
 
-      const merged = defaultContent.projects.map((defProject) => {
-        const existing = existingMap.get(defProject.id);
-        if (!existing) return defProject;
-        return {
-          ...defProject,
-          ...existing,
-          image: existing.image || defProject.image,
-          category: defProject.category || existing.category
-        };
-      });
-
-      for (const p of content.projects) {
-        if (!defaultIds.has(p.id)) {
-          merged.push(p);
-        }
+      // Content has been explicitly saved — honour it exactly.
+      // Only merge project-level fields from defaults for projects that STILL
+      // exist in the saved list (e.g. to back-fill new fields added later).
+      if (content.projects.length === 0) {
+        return [];
       }
 
-      return merged;
+      const defaultMap = new Map(defaultContent.projects.map((p) => [p.id, p]));
+
+      return content.projects.map((savedProject) => {
+        const defProject = defaultMap.get(savedProject.id);
+        if (!defProject) {
+          // Custom project added by admin — return as-is
+          return savedProject;
+        }
+        // Back-fill any missing fields from defaults, but trust saved data first
+        return {
+          ...defProject,
+          ...savedProject,
+          image: savedProject.image || defProject.image,
+          category: savedProject.category || defProject.category
+        };
+      });
     })(),
     contact: { ...defaultContent.contact, ...content.contact },
     socials: Array.isArray(content.socials) ? content.socials : defaultContent.socials,
