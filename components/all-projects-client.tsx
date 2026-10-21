@@ -28,6 +28,13 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProject, setSelectedProject] = useState<ProjectContent | null>(null);
+  const PAGE_SIZE = 12;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // Reset pagination when category or search changes
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [selectedCategory, searchQuery]);
 
   // Synchronize color mode with site preference
   useEffect(() => {
@@ -181,6 +188,11 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
     });
   }, [allProjects, selectedCategory, searchQuery]);
 
+  // Paginated/windowed projects slice for maximum performance
+  const displayedProjects = useMemo(() => {
+    return filteredProjects.slice(0, visibleCount);
+  }, [filteredProjects, visibleCount]);
+
   const heroImage =
     content.home.profileImage || content.home.heroImage || "/images/usman-hero.png";
 
@@ -277,12 +289,12 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
             </div>
           </div>
 
-          {/* Filter & Search Toolbar — sticky but sized correctly to avoid nav overlap */}
+          {/* Filter & Search Toolbar — clean static positioning, never behaves like broken fixed/sticky element */}
           <div
-            className={`sticky top-[68px] z-20 mb-6 rounded-xl border p-3 backdrop-blur-xl transition ${
+            className={`relative mb-6 rounded-xl border p-3 backdrop-blur-md transition ${
               darkMode
-                ? "border-white/10 bg-black/85 shadow-xl shadow-black/50"
-                : "border-gray-200 bg-white/92 shadow-md shadow-black/5"
+                ? "border-white/10 bg-black/60 shadow-lg shadow-black/40"
+                : "border-gray-200 bg-white/80 shadow-sm shadow-black/5"
             }`}
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -348,7 +360,8 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
             {/* Status counter */}
             <div className="mt-2 flex items-center justify-between text-[11px] text-gray-500 border-t pt-2 dark:border-white/8 border-gray-100">
               <span>
-                Showing <strong className="text-[var(--primary)]">{filteredProjects.length}</strong> of {allProjects.length}
+                Showing <strong className="text-[var(--primary)]">{displayedProjects.length}</strong> of {filteredProjects.length} projects
+                {filteredProjects.length !== allProjects.length && ` (filtered from ${allProjects.length})`}
                 {selectedCategory !== "All" && ` · ${selectedCategory.replace(" Projects", "")}`}
                 {searchQuery && ` · "${searchQuery}"`}
               </span>
@@ -369,12 +382,12 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
 
           {/* Projects Responsive Grid */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredProjects.map((project, index) => (
+            {displayedProjects.map((project, index) => (
               <motion.article
                 key={project.id}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: Math.min(index * 0.03, 0.3) }}
+                transition={{ duration: 0.25, delay: Math.min(index * 0.02, 0.2) }}
                 className={`group flex h-full flex-col justify-between rounded-2xl border p-3.5 transition-all duration-300 ${
                   darkMode
                     ? "border-white/10 bg-[#141416] hover:border-white/20 hover:shadow-xl hover:shadow-cyan-950/20"
@@ -388,10 +401,10 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
                       src={project.image || "/images/projects/salesforce-automation.jpg"}
                       alt={project.title}
                       fill
-                      loading={index < 6 ? "eager" : "lazy"}
+                      priority={index < 3}
+                      loading={index < 3 ? "eager" : "lazy"}
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      placeholder="empty"
                     />
                     {project.category ? (
                       <span className="absolute top-2 left-2 rounded-full bg-black/70 px-2.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-md">
@@ -481,6 +494,28 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
               </motion.article>
             ))}
           </div>
+
+          {/* Pagination / Load More Controls */}
+          {visibleCount < filteredProjects.length && (
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredProjects.length))}
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--primary)]/40 bg-[var(--primary)]/10 px-6 py-2.5 text-xs sm:text-sm font-bold text-[var(--primary)] transition hover:bg-[var(--primary)] hover:text-black shadow-sm active:scale-95"
+              >
+                Load More Projects ({filteredProjects.length - visibleCount} remaining)
+              </button>
+              <button
+                type="button"
+                onClick={() => setVisibleCount(filteredProjects.length)}
+                className={`text-xs font-semibold underline underline-offset-4 transition ${
+                  darkMode ? "text-white/60 hover:text-white" : "text-black/60 hover:text-black"
+                }`}
+              >
+                Show all {filteredProjects.length}
+              </button>
+            </div>
+          )}
 
           {/* Empty Search State */}
           {filteredProjects.length === 0 && (
