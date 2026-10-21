@@ -22,6 +22,54 @@ type AllProjectsClientProps = {
   content: SiteContent;
 };
 
+function ProjectThumbnail({
+  src,
+  alt,
+  priority = false,
+  className = "",
+  sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+}: {
+  src: string;
+  alt: string;
+  priority?: boolean;
+  className?: string;
+  sizes?: string;
+}) {
+  const fallback = "/images/projects/salesforce-automation.jpg";
+  const [imgSrc, setImgSrc] = useState(src || fallback);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setImgSrc(src || fallback);
+    setHasError(false);
+  }, [src]);
+
+  const isUnoptimized = Boolean(
+    imgSrc?.startsWith("/api/blob") ||
+    imgSrc?.includes("/api/blob") ||
+    imgSrc?.includes("blob.vercel-storage.com")
+  );
+
+  return (
+    <Image
+      src={imgSrc}
+      alt={alt}
+      fill
+      priority={priority}
+      loading={priority ? "eager" : "lazy"}
+      unoptimized={isUnoptimized}
+      sizes={sizes}
+      className={className}
+      onError={() => {
+        if (!hasError) {
+          setHasError(true);
+          setImgSrc(fallback);
+        }
+      }}
+    />
+  );
+}
+
 export default function AllProjectsClient({ content }: AllProjectsClientProps) {
   const [darkMode, setDarkMode] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -397,12 +445,10 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
                 <div>
                   {/* Thumbnail Image Container */}
                   <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-gray-100 dark:bg-zinc-800">
-                    <Image
+                    <ProjectThumbnail
                       src={project.image || "/images/projects/salesforce-automation.jpg"}
                       alt={project.title}
-                      fill
                       priority={index < 3}
-                      loading={index < 3 ? "eager" : "lazy"}
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
@@ -589,14 +635,12 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
               {/* Scrollable Modal Content */}
               <div className="overflow-y-auto">
                 <div className="relative aspect-[16/9] w-full bg-gray-100 dark:bg-zinc-800">
-                  <Image
+                  <ProjectThumbnail
                     src={selectedProject.image || "/images/projects/salesforce-automation.jpg"}
                     alt={selectedProject.title}
-                    fill
-                    loading="eager"
+                    priority={true}
                     sizes="(max-width: 768px) 100vw, 560px"
                     className="object-cover"
-                    placeholder="empty"
                   />
                   {selectedProject.category && (
                     <span className="absolute bottom-3 left-3 rounded-full bg-black/70 px-3 py-0.5 text-[11px] font-semibold text-white backdrop-blur-md">

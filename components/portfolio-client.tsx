@@ -862,7 +862,7 @@ function ProjectSlider({
                     src={project.image || "/images/projects/salesforce-automation.jpg"}
                     alt={project.title}
                     fill
-                    unoptimized={Boolean(project.image?.startsWith("/api/blob"))}
+                    unoptimized={Boolean(project.image?.startsWith("/api/blob") || project.image?.includes("/api/blob") || project.image?.includes("blob.vercel-storage.com"))}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
@@ -958,7 +958,7 @@ function ProjectSlider({
                     src={selectedProject.image || "/images/projects/salesforce-automation.jpg"}
                     alt={selectedProject.title}
                     fill
-                    unoptimized={Boolean(selectedProject.image?.startsWith("/api/blob"))}
+                    unoptimized={Boolean(selectedProject.image?.startsWith("/api/blob") || selectedProject.image?.includes("/api/blob") || selectedProject.image?.includes("blob.vercel-storage.com"))}
                     sizes="(max-width: 768px) 100vw, 680px"
                     className="object-cover"
                   />

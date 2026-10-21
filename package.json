@@ -10,8 +10,8 @@
     "typecheck": "tsc --noEmit --incremental false",
     "check": "npm run typecheck && npm run build",
     "db:migrate": "node scripts/migrate-database.mjs",
-    "build:worker": "opennextjs-cloudflare build",
-    "deploy": "opennextjs-cloudflare deploy"
+    "build:worker": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion",
+    "deploy": "npm run build:worker && opennextjs-cloudflare deploy"
   },
   "engines": {
     "node": ">=20.0.0 <23.0.0"
