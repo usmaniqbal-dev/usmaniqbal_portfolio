@@ -255,20 +255,20 @@ export default function PortfolioClient({ content: initialContent, initialSectio
           onNavigate={handleNavClick}
         />
 
-      <section ref={heroSectionRef} id="home" className={`hero-showcase relative min-h-[100svh] px-5 pb-8 pt-28 sm:px-8 lg:h-[100svh] lg:min-h-0 lg:overflow-hidden lg:px-12 lg:pb-4 lg:pt-28 ${darkMode ? "bg-black" : "bg-white"}`} style={homeStyle}>
+      <section ref={heroSectionRef} id="home" className={`hero-showcase relative min-h-[100svh] px-5 pb-6 pt-16 sm:px-8 sm:pt-20 lg:h-[100svh] lg:min-h-0 lg:overflow-hidden lg:px-12 lg:pb-4 lg:pt-20 ${darkMode ? "bg-black" : "bg-white"}`} style={homeStyle}>
         {heroBackgroundType === "image" && heroBackgroundUrl ? <div className="absolute inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroBackgroundUrl})` }} /> : null}
         {heroBackgroundType === "video" && heroBackgroundUrl ? <video src={heroBackgroundUrl} autoPlay muted loop playsInline className="absolute inset-0 z-0 h-full w-full object-cover" /> : null}
         {heroBackgroundType === "image" || heroBackgroundType === "video" ? <div className={`absolute inset-0 z-[1] ${darkMode ? "bg-black/55" : "bg-white/55"}`} /> : null}
-        <div className="relative z-10 mx-auto grid min-h-[calc(100svh-9rem)] w-full max-w-7xl min-w-0 items-center gap-8 lg:h-[calc(100svh-8rem)] lg:min-h-0 lg:items-center lg:grid-cols-[0.92fr_0.78fr]">
+        <div className="relative z-10 mx-auto grid w-full max-w-7xl min-w-0 items-start pt-2 sm:pt-4 lg:pt-6 gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <motion.div initial={false} className="relative z-10 w-full min-w-0 max-w-[calc(100vw-4rem)] sm:max-w-3xl lg:overflow-hidden">
-            <motion.div {...heroIn(shouldAnimate, loading, 0.2)} className={`mb-8 inline-flex max-w-full items-center gap-3 rounded-full border px-4 py-3 text-sm font-semibold lg:py-2 lg:text-xs ${darkMode ? "border-white/10 bg-white/[0.04] text-white/70" : "border-black/10 bg-black/[0.03] text-black/70"}`}>
+            <motion.div {...heroIn(shouldAnimate, loading, 0.2)} className={`mb-3 sm:mb-4 inline-flex max-w-full items-center gap-3 rounded-full border px-4 py-2.5 text-sm font-semibold lg:py-1.5 lg:text-xs ${darkMode ? "border-white/10 bg-white/[0.04] text-white/70" : "border-black/10 bg-black/[0.03] text-black/70"}`}>
               <span className="h-2.5 w-2.5 rounded-full bg-[var(--primary)]" />
               <span className="truncate">Available for New CRM & Automation Projects</span>
             </motion.div>
 
-            <motion.p {...heroIn(shouldAnimate, loading, 0.3)} className="mb-4 text-sm font-bold uppercase text-[var(--primary)]">NURAXTECH</motion.p>
+            <motion.p {...heroIn(shouldAnimate, loading, 0.3)} className="mb-2 text-sm font-bold uppercase text-[var(--primary)]">NURAXTECH</motion.p>
             {/* Interactive Hero Heading with individual character pop-up animation */}
-            <div className="relative inline-block cursor-default select-none pt-1">
+            <div className="relative inline-block cursor-default select-none pt-0.5">
               <motion.h1
                 {...heroIn(shouldAnimate, loading, 0.36, true)}
                 initial="rest"
@@ -319,18 +319,18 @@ export default function PortfolioClient({ content: initialContent, initialSectio
               </motion.h1>
               <motion.h2
                 {...heroIn(shouldAnimate, loading, 0.46)}
-                className="mt-3 max-w-[380px] text-balance text-2xl font-black leading-tight sm:max-w-none sm:text-3xl lg:text-3xl transition-all duration-300 text-transparent bg-clip-text bg-gradient-to-r from-[#00DCA0] via-[#16f2a4] to-[#22d3ee] drop-shadow-sm hover:brightness-110"
+                className="mt-2.5 max-w-[380px] text-balance text-2xl font-black leading-tight sm:max-w-none sm:text-3xl lg:text-3xl transition-all duration-300 text-transparent bg-clip-text bg-gradient-to-r from-[#00DCA0] via-[#16f2a4] to-[#22d3ee] drop-shadow-sm hover:brightness-110"
               >
                 {content.home.subtitle}
               </motion.h2>
               {/* Subtle accent indicator that elongates on hover */}
-              <span className="block h-1 w-16 rounded-full bg-gradient-to-r from-[#16f2a4] to-[#00A3C4] transition-all duration-500 ease-out hover:w-32 mt-2.5 opacity-80" />
+              <span className="block h-1 w-16 rounded-full bg-gradient-to-r from-[#16f2a4] to-[#00A3C4] transition-all duration-500 ease-out hover:w-32 mt-2 opacity-80" />
             </div>
-            <motion.p {...heroIn(shouldAnimate, loading, 0.52)} className={`mt-5 max-w-[310px] text-base leading-7 sm:max-w-2xl lg:line-clamp-3 ${darkMode ? "text-white/65" : "text-black/65"}`}>
+            <motion.p {...heroIn(shouldAnimate, loading, 0.52)} className={`mt-3.5 max-w-[310px] text-base leading-7 sm:max-w-2xl lg:line-clamp-3 ${darkMode ? "text-white/65" : "text-black/65"}`}>
               {content.home.description}
             </motion.p>
 
-            <motion.div {...heroIn(shouldAnimate, loading, 0.64, false, "spring")} className="mt-5 flex w-full flex-col gap-2.5 sm:flex-row">
+            <motion.div {...heroIn(shouldAnimate, loading, 0.64, false, "spring")} className="mt-4 flex w-full flex-col gap-2.5 sm:flex-row">
               <Link
                 href="/projects"
                 className="group inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-black text-black transition duration-300 hover:-translate-y-0.5 hover:bg-[#00b885] sm:w-auto sm:max-w-none"
@@ -359,12 +359,13 @@ export default function PortfolioClient({ content: initialContent, initialSectio
               </a>
             </motion.div>
 
-            <motion.div {...heroIn(shouldAnimate, loading, 0.72, false, "spring")}>
+            <motion.div {...heroIn(shouldAnimate, loading, 0.72, false, "spring")} className="mt-4 sm:mt-5">
               <SocialLinks socials={content.socials} compact darkMode={darkMode} />
             </motion.div>
           </motion.div>
 
-          <div className="h-full flex flex-col justify-end items-center pb-2 sm:pb-4 lg:pb-6">
+          {/* On Mobile/Tablet: Card displayed below left column content */}
+          <div className="block lg:hidden w-full max-w-[250px] mx-auto mt-4 pb-4">
             <HangingIdCard
               imageSrc={heroImageSrc}
               shouldAnimate={shouldAnimate && !loading}
@@ -372,6 +373,8 @@ export default function PortfolioClient({ content: initialContent, initialSectio
               darkMode={darkMode}
             />
           </div>
+          {/* On Desktop: Space reserved for card hanging directly from the theme button above */}
+          <div className="hidden lg:block h-full" />
         </div>
       </section>
 
