@@ -136,21 +136,33 @@ function TikTokIcon({ size = 20, className = "" }: { size?: number; className?: 
   );
 }
 
-// 9. Fiverr: Authentic official Fiverr brand logo on recognizable Fiverr green
-function FiverrIcon({ size = 20, className = "" }: { size?: number; className?: string }) {
+// 9. Fiverr: Exact 3D user-provided icon with high-depth drop shadow
+function FiverrIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M23.003 12c0 6.075-4.925 11-11 11s-11-4.925-11-11 4.925-11 11-11 11 4.925 11 11zm-5.748-1.573a.854.854 0 1 0 0-1.708.854.854 0 0 0 0 1.708zm.139 5.864v-4.83h-1.638v4.83h1.638zm-3.08 0v-2.909c0-.792-.472-1.282-1.25-1.282-.821 0-1.378.583-1.378 1.41v2.781H10.04V8.672h1.639v1.397c.451-.951 1.41-1.536 2.45-1.536 1.624 0 2.656 1.056 2.656 2.724v5.034h-1.67v-.001zm-7.666 0v-4.83H5v-1.488h1.648v-.875c0-1.722 1.057-2.682 2.628-2.682.764 0 1.348.153 1.639.292l-.39 1.43c-.221-.097-.541-.18-.944-.18-.722 0-1.293.458-1.293 1.39v.625h2.155v1.488H8.281v4.83H6.648z" />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/images/social/fiverr.png"
+      alt="Fiverr"
+      width={size}
+      height={size}
+      className={`rounded-full object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] transition-transform duration-300 ${className}`}
+      style={{ width: `${size}px`, height: `${size}px` }}
+    />
   );
 }
 
-// 10. Threads: Authentic official Meta Threads loop mark
-function ThreadsIcon({ size = 20, className = "" }: { size?: number; className?: string }) {
+// 10. Threads: Exact 3D user-provided icon with high-depth drop shadow
+function ThreadsIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M12.186 24C5.466 24 0 18.535 0 11.815 0 5.096 5.466 0 12.186 0c6.643 0 11.99 5.253 12.062 11.895v.068c-.017 3.39-1.42 6.55-3.953 8.898-2.527 2.342-5.918 3.324-9.548 2.766-3.414-.524-6.304-2.73-7.728-5.901-1.334-2.97-1.196-6.388.378-9.141C4.945 5.8 7.747 3.993 11.026 3.652c3.551-.37 7.02.946 9.278 3.52 1.353 1.543 2.063 3.498 2.054 5.654 0 .324-.263.587-.587.587-.325 0-.588-.263-.588-.587.008-1.896-.615-3.614-1.805-4.97-1.988-2.266-5.043-3.424-8.172-3.097-2.887.3-5.353 1.89-6.766 4.364-1.385 2.424-1.506 5.433-.33 8.049 1.253 2.792 3.799 4.733 6.808 5.195 3.197.492 6.184-.373 8.411-2.434 2.23-2.068 3.468-4.851 3.483-7.838-.063-5.99-4.887-10.72-10.627-10.72C6.115 1.174 1.174 6.115 1.174 12.186c0 6.071 4.941 11.012 11.012 11.012 2.38 0 4.68-.767 6.65-2.218.26-.192.628-.139.82.122.192.261.139.628-.122.82C17.29 23.208 14.773 24 12.186 24zm-.055-6.52c-2.476 0-4.489-2.013-4.489-4.489 0-2.476 2.013-4.489 4.489-4.489 2.476 0 4.489 2.013 4.489 4.489 0 2.476-2.013 4.489-4.489 4.489zm0-7.804c-1.828 0-3.315 1.487-3.315 3.315s1.487 3.315 3.315 3.315 3.315-1.487 3.315-3.315-1.487-3.315-3.315-3.315z" />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/images/social/threads.png"
+      alt="Threads"
+      width={size}
+      height={size}
+      className={`rounded-full object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] transition-transform duration-300 ${className}`}
+      style={{ width: `${size}px`, height: `${size}px` }}
+    />
   );
 }
 
@@ -398,8 +410,9 @@ export function resolveSocialPlatform(platformOrUrl?: string): SocialPlatformCon
 }
 
 /**
- * Renders an official, full-color social icon badge.
- * Provides authentic brand colors, responsive sizing, and polished subtle hover animations.
+ * Renders an official 3D social icon badge.
+ * Provides authentic brand colors, responsive sizing, radial gloss depth,
+ * multi-level shadow elevation, and smooth spring hover pop.
  */
 export function SocialBrandBadge({
   platform,
@@ -425,7 +438,7 @@ export function SocialBrandBadge({
 
   const content = (
     <span
-      className={`group relative grid ${sizeClasses} shrink-0 place-items-center rounded-full shadow-md transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-white/20 active:scale-95 ${className}`}
+      className={`group relative grid ${sizeClasses} shrink-0 place-items-center rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.4),inset_0_-2px_4px_rgba(0,0,0,0.3)] transition-all duration-300 hover:-translate-y-1.5 hover:scale-110 hover:shadow-[0_8px_20px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.6)] focus:outline-none focus:ring-2 focus:ring-[#16f2a4]/40 active:translate-y-0 active:scale-95 ${className}`}
       style={{
         background: config.badgeBg,
         color: config.badgeText
@@ -433,7 +446,9 @@ export function SocialBrandBadge({
       title={label || config.name}
       aria-label={label || config.name}
     >
-      <span className="transition-transform duration-300 group-hover:scale-110 flex items-center justify-center">
+      {/* 3D ambient radial top-light gloss */}
+      <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/30 via-transparent to-black/25 opacity-90 transition-opacity group-hover:opacity-100" />
+      <span className="relative z-10 transition-transform duration-300 group-hover:scale-110 flex items-center justify-center drop-shadow-md">
         {config.renderIcon({ size: iconSizes })}
       </span>
     </span>
