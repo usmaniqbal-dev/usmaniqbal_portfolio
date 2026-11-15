@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { User } from "lucide-react";
 
 interface HangingIdCardProps {
   imageSrc: string;
@@ -19,23 +20,23 @@ export default function HangingIdCard({
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Mouse tilt motion values for magnetic 3D feel
+  // Mouse tilt motion values for magnetic 3D parallax
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
-  // Drag displacement values for ribbon tethering
+  // Drag displacement values
   const dragX = useMotionValue(0);
   const dragY = useMotionValue(0);
 
   // Spring physics for smooth tilt and return
-  const springConfig = { damping: 22, stiffness: 380 };
-  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [14, -14]), springConfig);
-  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-16, 16]), springConfig);
-  const glareOpacity = useSpring(useTransform(mouseY, [-0.5, 0.5], [0.4, 0.05]), springConfig);
+  const springConfig = { damping: 24, stiffness: 360 };
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [12, -12]), springConfig);
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-14, 14]), springConfig);
+  const glareOpacity = useSpring(useTransform(mouseY, [-0.5, 0.5], [0.35, 0.05]), springConfig);
   const glareX = useSpring(useTransform(mouseX, [-0.5, 0.5], ["10%", "90%"]), springConfig);
 
   // Dynamic tilt angle during dragging
-  const dragRotate = useSpring(useTransform(dragX, [-140, 140], [-16, 16]), { damping: 25, stiffness: 400 });
+  const dragRotate = useSpring(useTransform(dragX, [-140, 140], [-14, 14]), { damping: 25, stiffness: 400 });
 
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
     if (!cardRef.current || isDragging) return;
@@ -56,61 +57,94 @@ export default function HangingIdCard({
 
   return (
     <div
-      className="relative flex flex-col items-center justify-start w-[240px] sm:w-[260px] select-none mx-auto"
-      style={{ perspective: 1200 }}
+      className="relative flex flex-col items-center justify-center w-full max-w-[360px] sm:max-w-[400px] lg:max-w-[430px] select-none mx-auto pt-6"
+      style={{ perspective: 1400 }}
     >
       {/* =========================================================================
-          LANYARD RIBBON (Attached directly to Theme Toggle Button above)
+          BLUE SATIN RIBBON (Weaving across top and swaying in a light breeze)
           ========================================================================= */}
-      <div className="relative flex flex-col items-center pointer-events-none z-10">
-        {/* Metal Attachment Ring / Clip directly touching the Theme Button */}
-        <div className="h-2 w-5 rounded-b-full bg-gradient-to-b from-slate-400 to-slate-600 shadow-sm border-t border-slate-300" />
+      <div className="absolute -top-10 sm:-top-12 inset-x-[-40px] sm:inset-x-[-80px] h-32 pointer-events-none z-10 overflow-visible">
+        {/* Animated Breeze Sway Container for the Ribbon */}
+        <motion.div
+          animate={{
+            rotate: [-1.4, 1.4, -1.4],
+            skewX: [-1, 1, -1],
+            y: [0, -3.5, 0]
+          }}
+          transition={{
+            duration: 4.8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="relative w-full h-full"
+        >
+          {/* Left Ribbon Wing: Sweeps from behind top navbar down to the medallion */}
+          <svg
+            viewBox="0 0 320 120"
+            fill="none"
+            className="absolute top-0 left-[-20px] sm:left-[-40px] w-[58%] h-28 drop-shadow-md overflow-visible"
+          >
+            <defs>
+              <linearGradient id="blueRibbonGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#172554" />
+                <stop offset="35%" stopColor="#2563eb" />
+                <stop offset="65%" stopColor="#3b82f6" />
+                <stop offset="100%" stopColor="#1d4ed8" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M 10 10 C 90 20, 140 70, 240 85 L 245 105 C 150 90, 80 40, 5 30 Z"
+              fill="url(#blueRibbonGradLeft)"
+            />
+            {/* Satin Sheen Stripe */}
+            <path
+              d="M 12 18 C 90 26, 140 74, 242 93"
+              stroke="rgba(255,255,255,0.45)"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              className="opacity-70"
+            />
+          </svg>
 
-        {/* Woven Blue Fabric Ribbon Strap with realistic satin texture */}
-        <div className="relative w-6 sm:w-7 h-24 sm:h-32 overflow-hidden flex justify-center shadow-md">
-          {/* Main Blue Fabric Gradient */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#172554] via-[#2563eb] to-[#1e40af]" />
-
-          {/* Woven Fabric Texture Pattern */}
-          <div
-            className="absolute inset-0 opacity-25 mix-blend-overlay"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.7) 2px, rgba(255,255,255,0.7) 4px)"
-            }}
-          />
-
-          {/* Satin Highlight Sheen */}
-          <div className="absolute inset-y-0 w-2 bg-gradient-to-r from-transparent via-white/45 to-transparent blur-[0.5px]" />
-
-          {/* Side Stitch Lines */}
-          <div className="absolute inset-y-0 left-[2px] w-[1px] bg-blue-300/60" />
-          <div className="absolute inset-y-0 right-[2px] w-[1px] bg-blue-300/60" />
-        </div>
-
-        {/* White Plastic Breakaway Connector Buckle */}
-        <div className="relative -mt-1 h-4 w-7 rounded-[4px] bg-gradient-to-b from-slate-100 to-slate-300 shadow border border-slate-300 flex items-center justify-center">
-          <div className="h-1.5 w-3.5 rounded-full bg-slate-400/80 shadow-inner" />
-        </div>
-
-        {/* Clear Vinyl Strap with Silver Metallic Snap Button */}
-        <div className="relative -mt-0.5 h-5 w-3 rounded-[3px] bg-white/45 backdrop-blur-[2px] border border-white/70 shadow-xs flex items-center justify-center">
-          <div className="h-2 w-2 rounded-full bg-gradient-to-br from-white via-slate-300 to-slate-500 shadow border border-slate-400" />
-        </div>
-
-        {/* Chrome Metal Swivel Hook */}
-        <div className="relative -mt-0.5 h-3.5 w-3.5 rounded-b-full border-2 border-slate-400 bg-gradient-to-b from-slate-200 to-slate-400 shadow-sm" />
+          {/* Right Ribbon Wing: Sweeps from medallion up towards the top right */}
+          <svg
+            viewBox="0 0 320 120"
+            fill="none"
+            className="absolute top-0 right-[-30px] sm:right-[-60px] w-[62%] h-28 drop-shadow-md overflow-visible"
+          >
+            <defs>
+              <linearGradient id="blueRibbonGradRight" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#1d4ed8" />
+                <stop offset="30%" stopColor="#3b82f6" />
+                <stop offset="70%" stopColor="#2563eb" />
+                <stop offset="100%" stopColor="#1e3a8a" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M 70 85 C 160 65, 230 20, 315 5 L 318 24 C 235 40, 160 85, 75 105 Z"
+              fill="url(#blueRibbonGradRight)"
+            />
+            {/* Satin Sheen Stripe */}
+            <path
+              d="M 72 93 C 160 73, 232 28, 316 12"
+              stroke="rgba(255,255,255,0.45)"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              className="opacity-70"
+            />
+          </svg>
+        </motion.div>
       </div>
 
       {/* =========================================================================
-          DRAGGABLE & SWINGING 3D ID CARD (STRICTLY PHOTO ONLY - NO TEXT)
+          DRAGGABLE & BREEZE-SWAYING 3D ID CARD HOLDER
           ========================================================================= */}
       <motion.div
         drag
-        dragConstraints={dragConstraints || { top: -60, bottom: 180, left: -140, right: 140 }}
+        dragConstraints={dragConstraints || { top: -80, bottom: 120, left: -140, right: 140 }}
         dragElastic={0.16}
         dragSnapToOrigin
-        dragTransition={{ bounceStiffness: 420, bounceDamping: 18 }}
+        dragTransition={{ bounceStiffness: 420, bounceDamping: 20 }}
         onDragStart={() => setIsDragging(true)}
         onDrag={(_, info) => {
           dragX.set(info.offset.x);
@@ -124,15 +158,15 @@ export default function HangingIdCard({
         animate={
           !isDragging && !isHovered
             ? {
-                rotate: [-1.8, 1.8, -1.8],
-                y: [0, -4, 0]
+                rotate: [-1.2, 1.2, -1.2],
+                y: [0, -5, 0]
               }
             : undefined
         }
         transition={
           !isDragging && !isHovered
             ? {
-                duration: 4,
+                duration: 4.8,
                 repeat: Infinity,
                 ease: "easeInOut"
               }
@@ -148,58 +182,80 @@ export default function HangingIdCard({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={handleMouseLeave}
         ref={cardRef}
-        className="relative z-20 cursor-grab active:cursor-grabbing touch-none"
+        className="relative z-20 cursor-grab active:cursor-grabbing touch-none w-full flex flex-col items-center"
       >
         {/* =======================================================================
-            TRANSPARENT ACRYLIC BADGE HOLDER (Sleeve with Slot)
+            CIRCULAR METALLIC MEDALLION (Pin holding the card at top center)
             ======================================================================= */}
         <div
-          className={`relative rounded-[22px] p-2.5 transition-shadow duration-300 ${
+          className="relative -mb-6 sm:-mb-7 z-30 h-14 w-14 sm:h-16 sm:w-16 rounded-full p-[3px] shadow-[0_8px_24px_rgba(2,132,199,0.45),0_0_16px_rgba(0,220,160,0.35)]"
+          style={{
+            background:
+              "linear-gradient(135deg, #ffffff 0%, #cbd5e1 35%, #64748b 70%, #f8fafc 100%)",
+            transform: "translateZ(35px)"
+          }}
+        >
+          {/* Inner Radiant Cyan/Blue Core with Glowing Avatar Icon */}
+          <div className="relative h-full w-full rounded-full bg-gradient-to-tr from-[#0284c7] via-[#00DCA0] to-[#2563eb] flex items-center justify-center shadow-inner overflow-hidden">
+            {/* Ambient Radial Core Light */}
+            <div className="absolute inset-0 bg-radial from-white/40 via-transparent to-black/20" />
+            <User size={26} strokeWidth={2.6} className="text-white drop-shadow relative z-10" />
+          </div>
+        </div>
+
+        {/* =======================================================================
+            FROSTED ACRYLIC GLASS HOLDER WITH LUMINOUS NEON CYAN GLOW
+            ======================================================================= */}
+        <div
+          className={`relative w-full rounded-[30px] sm:rounded-[36px] p-2.5 sm:p-3 transition-shadow duration-300 ${
             darkMode
-              ? "bg-white/[0.08] border border-white/25 shadow-[0_22px_50px_rgba(0,0,0,0.85),0_0_25px_rgba(37,99,235,0.25)]"
-              : "bg-white/45 border border-white/85 shadow-[0_22px_45px_rgba(15,23,42,0.22),0_4px_12px_rgba(0,0,0,0.08)]"
-          } backdrop-blur-md`}
+              ? "bg-white/[0.08] border-2 border-white/25 shadow-[0_0_35px_rgba(0,220,160,0.35),inset_0_0_20px_rgba(0,220,160,0.25),0_30px_70px_rgba(0,0,0,0.9)]"
+              : "bg-white/45 border-2 border-white/80 shadow-[0_0_32px_rgba(0,220,160,0.38),inset_0_0_18px_rgba(0,220,160,0.22),0_25px_60px_rgba(15,23,42,0.18)]"
+          } backdrop-blur-xl`}
           style={{
             transformStyle: "preserve-3d"
           }}
         >
-          {/* Top Slot Hole for Lanyard Clip */}
-          <div className="mx-auto mb-2 h-2 w-10 rounded-full bg-slate-900/30 border border-white/50 shadow-inner" />
+          {/* Glass Bevel Highlight Rim */}
+          <div className="absolute inset-0 rounded-[30px] sm:rounded-[36px] pointer-events-none border border-cyan-400/30 dark:border-cyan-300/25" />
 
           {/* =====================================================================
-              CARD INTERIOR: 100% PHOTO ONLY (NO TEXT, NO BARCODES, NO HEADERS)
+              CARD INTERIOR: ACTUAL USMAN IQBAL PORTRAIT PHOTO ONLY (NO TEXT)
               ===================================================================== */}
           <div
-            className={`relative w-[210px] sm:w-[225px] h-[270px] sm:h-[290px] rounded-[15px] overflow-hidden ${
-              darkMode ? "bg-slate-900 border border-white/10" : "bg-white border border-slate-200/80 shadow-inner"
+            className={`relative w-full aspect-[3.8/4.6] sm:aspect-[3.9/4.8] rounded-[22px] sm:rounded-[28px] overflow-hidden ${
+              darkMode ? "bg-slate-950 border border-white/10" : "bg-slate-100 border border-white/60 shadow-inner"
             }`}
           >
-            {/* Usman Iqbal's Portrait Photo Filling the Card */}
+            {/* High-Resolution Portrait Photo of Usman Iqbal */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={resolvedPhoto}
               alt="Usman Iqbal"
               draggable={false}
-              className="w-full h-full object-cover object-top select-none pointer-events-none rounded-[15px]"
+              className="w-full h-full object-cover object-top select-none pointer-events-none rounded-[22px] sm:rounded-[28px]"
             />
 
-            {/* Specular Diagonal Reflection Glare on the Card Surface */}
+            {/* Subtle bottom fade vignette matching reference screenshot */}
+            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-cyan-950/20 via-transparent to-transparent pointer-events-none" />
+
+            {/* Specular Diagonal Reflection Glare across Glass Surface */}
             <motion.div
               style={{
                 opacity: glareOpacity,
                 left: glareX
               }}
-              className="absolute inset-y-0 w-28 -skew-x-12 bg-gradient-to-r from-transparent via-white/55 to-transparent pointer-events-none blur-[2px]"
+              className="absolute inset-y-0 w-36 -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none blur-[3px]"
             />
           </div>
         </div>
 
         {/* 3D Acrylic Glass Glaze Top Surface Layer */}
         <div
-          className="absolute inset-0 rounded-[22px] pointer-events-none overflow-hidden"
-          style={{ transform: "translateZ(20px)" }}
+          className="absolute inset-0 rounded-[30px] sm:rounded-[36px] pointer-events-none overflow-hidden"
+          style={{ transform: "translateZ(24px)" }}
         >
-          <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-white/30 opacity-70" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-white/35 opacity-70" />
         </div>
       </motion.div>
     </div>

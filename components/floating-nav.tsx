@@ -17,7 +17,6 @@ import {
   X
 } from "lucide-react";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
-import HangingIdCard from "@/components/hanging-id-card";
 
 export type NavItem = {
   label: string;
@@ -65,7 +64,6 @@ export default function FloatingNav({
   const [imgError, setImgError] = useState(false);
   const navLogoUrl = logoUrl || heroImageSrc || "/images/usman-hero.png";
   const brandName = siteName || "Usman Iqbal";
-  const isHeroActive = currentPath === "/" || currentPath === "" || currentPath === "#home" || currentPath === "/#home";
 
   function isItemActive(href: string) {
     const rawCurrent = (currentPath || "/").trim();
@@ -176,37 +174,21 @@ export default function FloatingNav({
 
         {/* Action Controls: Neumorphic Theme Toggle & Mobile Menu Trigger */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="relative flex items-center justify-center">
-            <button
-              type="button"
-              aria-label={darkMode ? "Switch to light theme" : "Switch to dark theme"}
-              title={darkMode ? "Switch to light theme" : "Switch to dark theme"}
-              onClick={toggleColorMode}
-              className={`grid h-9 w-9 sm:h-10 sm:w-10 rounded-full place-items-center cursor-pointer ${
-                darkMode ? "neu-btn-dark" : "neu-btn-light"
-              }`}
-            >
-              {darkMode ? (
-                <Sun size={17} className="text-amber-400 transition-transform duration-300 hover:rotate-45" />
-              ) : (
-                <Moon size={16} className="text-[#333d4d] transition-transform duration-300 hover:-rotate-12" />
-              )}
-            </button>
-
-            {/* 3D Hanging ID Card attached directly to Theme Toggle button */}
-            <div
-              className={`absolute top-[calc(100%+2px)] left-1/2 -translate-x-1/2 pointer-events-auto hidden lg:block z-40 transition-all duration-300 ${
-                scrolled || !isHeroActive
-                  ? "opacity-0 pointer-events-none -translate-y-4 scale-95"
-                  : "opacity-100"
-              }`}
-            >
-              <HangingIdCard
-                imageSrc={heroImageSrc || navLogoUrl}
-                darkMode={darkMode}
-              />
-            </div>
-          </div>
+          <button
+            type="button"
+            aria-label={darkMode ? "Switch to light theme" : "Switch to dark theme"}
+            title={darkMode ? "Switch to light theme" : "Switch to dark theme"}
+            onClick={toggleColorMode}
+            className={`grid h-9 w-9 sm:h-10 sm:w-10 rounded-full place-items-center cursor-pointer ${
+              darkMode ? "neu-btn-dark" : "neu-btn-light"
+            }`}
+          >
+            {darkMode ? (
+              <Sun size={17} className="text-amber-400 transition-transform duration-300 hover:rotate-45" />
+            ) : (
+              <Moon size={16} className="text-[#333d4d] transition-transform duration-300 hover:-rotate-12" />
+            )}
+          </button>
 
           <button
             type="button"

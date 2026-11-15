@@ -256,10 +256,14 @@ export default function PortfolioClient({ content: initialContent, initialSectio
         />
 
       <section ref={heroSectionRef} id="home" className={`hero-showcase relative min-h-[100svh] px-5 pb-6 pt-16 sm:px-8 sm:pt-20 lg:h-[100svh] lg:min-h-0 lg:overflow-hidden lg:px-12 lg:pb-4 lg:pt-20 ${darkMode ? "bg-black" : "bg-white"}`} style={homeStyle}>
+        {/* Ambient mint/cyan glowing orbs matching reference design */}
+        <div className="absolute top-12 -left-20 w-80 h-80 rounded-full bg-[#00DCA0]/10 blur-3xl pointer-events-none" />
+        <div className="absolute top-16 -right-16 w-96 h-96 rounded-full bg-[#00DCA0]/12 blur-3xl pointer-events-none" />
+
         {heroBackgroundType === "image" && heroBackgroundUrl ? <div className="absolute inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroBackgroundUrl})` }} /> : null}
         {heroBackgroundType === "video" && heroBackgroundUrl ? <video src={heroBackgroundUrl} autoPlay muted loop playsInline className="absolute inset-0 z-0 h-full w-full object-cover" /> : null}
         {heroBackgroundType === "image" || heroBackgroundType === "video" ? <div className={`absolute inset-0 z-[1] ${darkMode ? "bg-black/55" : "bg-white/55"}`} /> : null}
-        <div className="relative z-10 mx-auto grid w-full max-w-7xl min-w-0 items-start pt-2 sm:pt-4 lg:pt-6 gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="relative z-10 mx-auto grid w-full max-w-7xl min-w-0 items-center gap-8 lg:grid-cols-[1.08fr_0.92fr]">
           <motion.div initial={false} className="relative z-10 w-full min-w-0 max-w-[calc(100vw-4rem)] sm:max-w-3xl lg:overflow-hidden">
             <motion.div {...heroIn(shouldAnimate, loading, 0.2)} className={`mb-3 sm:mb-4 inline-flex max-w-full items-center gap-3 rounded-full border px-4 py-2.5 text-sm font-semibold lg:py-1.5 lg:text-xs ${darkMode ? "border-white/10 bg-white/[0.04] text-white/70" : "border-black/10 bg-black/[0.03] text-black/70"}`}>
               <span className="h-2.5 w-2.5 rounded-full bg-[var(--primary)]" />
@@ -364,8 +368,8 @@ export default function PortfolioClient({ content: initialContent, initialSectio
             </motion.div>
           </motion.div>
 
-          {/* On Mobile/Tablet: Card displayed below left column content */}
-          <div className="block lg:hidden w-full max-w-[250px] mx-auto mt-4 pb-4">
+          {/* Right Column: 3D Hanging ID Card matching reference mockup */}
+          <div className="relative flex items-center justify-center w-full h-full min-h-[460px] lg:min-h-0">
             <HangingIdCard
               imageSrc={heroImageSrc}
               shouldAnimate={shouldAnimate && !loading}
@@ -373,8 +377,6 @@ export default function PortfolioClient({ content: initialContent, initialSectio
               darkMode={darkMode}
             />
           </div>
-          {/* On Desktop: Space reserved for card hanging directly from the theme button above */}
-          <div className="hidden lg:block h-full" />
         </div>
       </section>
 
