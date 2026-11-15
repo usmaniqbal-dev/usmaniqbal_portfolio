@@ -29,14 +29,14 @@ export default function HangingIdCard({
   const dragY = useMotionValue(0);
 
   // Spring physics for smooth tilt and return
-  const springConfig = { damping: 24, stiffness: 360 };
-  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [12, -12]), springConfig);
-  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-14, 14]), springConfig);
+  const springConfig = { damping: 25, stiffness: 380 };
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [10, -10]), springConfig);
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-12, 12]), springConfig);
   const glareOpacity = useSpring(useTransform(mouseY, [-0.5, 0.5], [0.35, 0.05]), springConfig);
-  const glareX = useSpring(useTransform(mouseX, [-0.5, 0.5], ["10%", "90%"]), springConfig);
+  const glareX = useSpring(useTransform(mouseX, [-0.5, 0.5], ["15%", "85%"]), springConfig);
 
   // Dynamic tilt angle during dragging
-  const dragRotate = useSpring(useTransform(dragX, [-140, 140], [-14, 14]), { damping: 25, stiffness: 400 });
+  const dragRotate = useSpring(useTransform(dragX, [-150, 150], [-14, 14]), { damping: 25, stiffness: 400 });
 
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
     if (!cardRef.current || isDragging) return;
@@ -57,80 +57,94 @@ export default function HangingIdCard({
 
   return (
     <div
-      className="relative flex flex-col items-center justify-center w-full max-w-[360px] sm:max-w-[400px] lg:max-w-[430px] select-none mx-auto pt-6"
+      className="relative flex flex-col items-center justify-center w-full max-w-[370px] sm:max-w-[410px] lg:max-w-[440px] xl:max-w-[460px] select-none mx-auto pt-8 sm:pt-10"
       style={{ perspective: 1400 }}
     >
       {/* =========================================================================
-          BLUE SATIN RIBBON (Weaving across top and swaying in a light breeze)
+          BLUE SATIN V-LANYARD RIBBON (Exact V-Shape Passing Behind Top Navbar)
           ========================================================================= */}
-      <div className="absolute -top-10 sm:-top-12 inset-x-[-40px] sm:inset-x-[-80px] h-32 pointer-events-none z-10 overflow-visible">
-        {/* Animated Breeze Sway Container for the Ribbon */}
+      <div className="absolute -top-12 sm:-top-16 inset-x-[-30px] sm:inset-x-[-60px] h-36 pointer-events-none z-10 overflow-visible">
+        {/* Continuous Gentle Breeze Sway Animation */}
         <motion.div
           animate={{
-            rotate: [-1.4, 1.4, -1.4],
-            skewX: [-1, 1, -1],
-            y: [0, -3.5, 0]
+            rotate: [-1.2, 1.2, -1.2],
+            skewX: [-0.8, 0.8, -0.8],
+            y: [0, -3, 0]
           }}
           transition={{
-            duration: 4.8,
+            duration: 4.6,
             repeat: Infinity,
             ease: "easeInOut"
           }}
           className="relative w-full h-full"
         >
-          {/* Left Ribbon Wing: Sweeps from behind top navbar down to the medallion */}
           <svg
-            viewBox="0 0 320 120"
+            viewBox="0 0 460 140"
             fill="none"
-            className="absolute top-0 left-[-20px] sm:left-[-40px] w-[58%] h-28 drop-shadow-md overflow-visible"
+            className="w-full h-full drop-shadow-[0_6px_12px_rgba(29,78,216,0.35)] overflow-visible"
+            preserveAspectRatio="none"
           >
             <defs>
-              <linearGradient id="blueRibbonGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+              {/* Left Strap Gradient */}
+              <linearGradient id="vRibbonLeft" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#172554" />
-                <stop offset="35%" stopColor="#2563eb" />
-                <stop offset="65%" stopColor="#3b82f6" />
-                <stop offset="100%" stopColor="#1d4ed8" />
+                <stop offset="35%" stopColor="#1d4ed8" />
+                <stop offset="65%" stopColor="#2563eb" />
+                <stop offset="100%" stopColor="#1e40af" />
               </linearGradient>
-            </defs>
-            <path
-              d="M 10 10 C 90 20, 140 70, 240 85 L 245 105 C 150 90, 80 40, 5 30 Z"
-              fill="url(#blueRibbonGradLeft)"
-            />
-            {/* Satin Sheen Stripe */}
-            <path
-              d="M 12 18 C 90 26, 140 74, 242 93"
-              stroke="rgba(255,255,255,0.45)"
-              strokeWidth="3.5"
-              strokeLinecap="round"
-              className="opacity-70"
-            />
-          </svg>
 
-          {/* Right Ribbon Wing: Sweeps from medallion up towards the top right */}
-          <svg
-            viewBox="0 0 320 120"
-            fill="none"
-            className="absolute top-0 right-[-30px] sm:right-[-60px] w-[62%] h-28 drop-shadow-md overflow-visible"
-          >
-            <defs>
-              <linearGradient id="blueRibbonGradRight" x1="0%" y1="100%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#1d4ed8" />
-                <stop offset="30%" stopColor="#3b82f6" />
-                <stop offset="70%" stopColor="#2563eb" />
-                <stop offset="100%" stopColor="#1e3a8a" />
+              {/* Right Strap Gradient */}
+              <linearGradient id="vRibbonRight" x1="100%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#172554" />
+                <stop offset="35%" stopColor="#1d4ed8" />
+                <stop offset="65%" stopColor="#2563eb" />
+                <stop offset="100%" stopColor="#1e40af" />
+              </linearGradient>
+
+              {/* Sheen Gradient */}
+              <linearGradient id="ribbonSheen" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="transparent" />
+                <stop offset="50%" stopColor="rgba(255,255,255,0.45)" />
+                <stop offset="100%" stopColor="transparent" />
               </linearGradient>
             </defs>
+
+            {/* Left Strap: Goes from behind top navbar down to the central medallion */}
             <path
-              d="M 70 85 C 160 65, 230 20, 315 5 L 318 24 C 235 40, 160 85, 75 105 Z"
-              fill="url(#blueRibbonGradRight)"
+              d="M 120 0 L 155 0 L 235 125 L 210 130 Z"
+              fill="url(#vRibbonLeft)"
             />
-            {/* Satin Sheen Stripe */}
+            {/* Left Strap Satin Center Highlight */}
             <path
-              d="M 72 93 C 160 73, 232 28, 316 12"
-              stroke="rgba(255,255,255,0.45)"
-              strokeWidth="3.5"
+              d="M 137 0 L 222 127"
+              stroke="rgba(255,255,255,0.42)"
+              strokeWidth="4"
               strokeLinecap="round"
-              className="opacity-70"
+            />
+            {/* Left Strap Outer Edge Shadow */}
+            <path
+              d="M 120 0 L 210 130"
+              stroke="rgba(15,23,42,0.3)"
+              strokeWidth="2"
+            />
+
+            {/* Right Strap: Goes from medallion up to the top-right screen edge */}
+            <path
+              d="M 225 125 L 305 0 L 340 0 L 250 130 Z"
+              fill="url(#vRibbonRight)"
+            />
+            {/* Right Strap Satin Center Highlight */}
+            <path
+              d="M 322 0 L 238 127"
+              stroke="rgba(255,255,255,0.42)"
+              strokeWidth="4"
+              strokeLinecap="round"
+            />
+            {/* Right Strap Outer Edge Shadow */}
+            <path
+              d="M 340 0 L 250 130"
+              stroke="rgba(15,23,42,0.3)"
+              strokeWidth="2"
             />
           </svg>
         </motion.div>
@@ -141,10 +155,10 @@ export default function HangingIdCard({
           ========================================================================= */}
       <motion.div
         drag
-        dragConstraints={dragConstraints || { top: -80, bottom: 120, left: -140, right: 140 }}
+        dragConstraints={dragConstraints || { top: -70, bottom: 100, left: -120, right: 120 }}
         dragElastic={0.16}
         dragSnapToOrigin
-        dragTransition={{ bounceStiffness: 420, bounceDamping: 20 }}
+        dragTransition={{ bounceStiffness: 420, bounceDamping: 22 }}
         onDragStart={() => setIsDragging(true)}
         onDrag={(_, info) => {
           dragX.set(info.offset.x);
@@ -158,15 +172,15 @@ export default function HangingIdCard({
         animate={
           !isDragging && !isHovered
             ? {
-                rotate: [-1.2, 1.2, -1.2],
-                y: [0, -5, 0]
+                rotate: [-1, 1, -1],
+                y: [0, -4, 0]
               }
             : undefined
         }
         transition={
           !isDragging && !isHovered
             ? {
-                duration: 4.8,
+                duration: 4.6,
                 repeat: Infinity,
                 ease: "easeInOut"
               }
@@ -188,17 +202,17 @@ export default function HangingIdCard({
             CIRCULAR METALLIC MEDALLION (Pin holding the card at top center)
             ======================================================================= */}
         <div
-          className="relative -mb-6 sm:-mb-7 z-30 h-14 w-14 sm:h-16 sm:w-16 rounded-full p-[3px] shadow-[0_8px_24px_rgba(2,132,199,0.45),0_0_16px_rgba(0,220,160,0.35)]"
+          className="relative -mb-7 sm:-mb-8 z-30 h-14 w-14 sm:h-16 sm:w-16 rounded-full p-[3px] shadow-[0_8px_24px_rgba(2,132,199,0.5),0_0_20px_rgba(0,220,160,0.4)]"
           style={{
             background:
-              "linear-gradient(135deg, #ffffff 0%, #cbd5e1 35%, #64748b 70%, #f8fafc 100%)",
+              "linear-gradient(135deg, #ffffff 0%, #cbd5e1 35%, #64748b 70%, #ffffff 100%)",
             transform: "translateZ(35px)"
           }}
         >
           {/* Inner Radiant Cyan/Blue Core with Glowing Avatar Icon */}
           <div className="relative h-full w-full rounded-full bg-gradient-to-tr from-[#0284c7] via-[#00DCA0] to-[#2563eb] flex items-center justify-center shadow-inner overflow-hidden">
             {/* Ambient Radial Core Light */}
-            <div className="absolute inset-0 bg-radial from-white/40 via-transparent to-black/20" />
+            <div className="absolute inset-0 bg-radial from-white/45 via-transparent to-black/20" />
             <User size={26} strokeWidth={2.6} className="text-white drop-shadow relative z-10" />
           </div>
         </div>
@@ -207,23 +221,23 @@ export default function HangingIdCard({
             FROSTED ACRYLIC GLASS HOLDER WITH LUMINOUS NEON CYAN GLOW
             ======================================================================= */}
         <div
-          className={`relative w-full rounded-[30px] sm:rounded-[36px] p-2.5 sm:p-3 transition-shadow duration-300 ${
+          className={`relative w-full rounded-[32px] sm:rounded-[36px] p-2.5 sm:p-3 transition-shadow duration-300 ${
             darkMode
-              ? "bg-white/[0.08] border-2 border-white/25 shadow-[0_0_35px_rgba(0,220,160,0.35),inset_0_0_20px_rgba(0,220,160,0.25),0_30px_70px_rgba(0,0,0,0.9)]"
-              : "bg-white/45 border-2 border-white/80 shadow-[0_0_32px_rgba(0,220,160,0.38),inset_0_0_18px_rgba(0,220,160,0.22),0_25px_60px_rgba(15,23,42,0.18)]"
+              ? "bg-white/[0.08] border-2 border-white/25 shadow-[0_0_38px_rgba(0,220,160,0.4),inset_0_0_22px_rgba(0,220,160,0.28),0_30px_70px_rgba(0,0,0,0.9)]"
+              : "bg-white/50 border-2 border-white/85 shadow-[0_0_36px_rgba(0,220,160,0.42),inset_0_0_20px_rgba(0,220,160,0.24),0_25px_60px_rgba(15,23,42,0.18)]"
           } backdrop-blur-xl`}
           style={{
             transformStyle: "preserve-3d"
           }}
         >
           {/* Glass Bevel Highlight Rim */}
-          <div className="absolute inset-0 rounded-[30px] sm:rounded-[36px] pointer-events-none border border-cyan-400/30 dark:border-cyan-300/25" />
+          <div className="absolute inset-0 rounded-[32px] sm:rounded-[36px] pointer-events-none border border-cyan-400/35 dark:border-cyan-300/25" />
 
           {/* =====================================================================
               CARD INTERIOR: ACTUAL USMAN IQBAL PORTRAIT PHOTO ONLY (NO TEXT)
               ===================================================================== */}
           <div
-            className={`relative w-full aspect-[3.8/4.6] sm:aspect-[3.9/4.8] rounded-[22px] sm:rounded-[28px] overflow-hidden ${
+            className={`relative w-full aspect-[3.8/4.7] sm:aspect-[3.9/4.8] rounded-[24px] sm:rounded-[28px] overflow-hidden ${
               darkMode ? "bg-slate-950 border border-white/10" : "bg-slate-100 border border-white/60 shadow-inner"
             }`}
           >
@@ -233,7 +247,7 @@ export default function HangingIdCard({
               src={resolvedPhoto}
               alt="Usman Iqbal"
               draggable={false}
-              className="w-full h-full object-cover object-top select-none pointer-events-none rounded-[22px] sm:rounded-[28px]"
+              className="w-full h-full object-cover object-top select-none pointer-events-none rounded-[24px] sm:rounded-[28px]"
             />
 
             {/* Subtle bottom fade vignette matching reference screenshot */}
@@ -252,7 +266,7 @@ export default function HangingIdCard({
 
         {/* 3D Acrylic Glass Glaze Top Surface Layer */}
         <div
-          className="absolute inset-0 rounded-[30px] sm:rounded-[36px] pointer-events-none overflow-hidden"
+          className="absolute inset-0 rounded-[32px] sm:rounded-[36px] pointer-events-none overflow-hidden"
           style={{ transform: "translateZ(24px)" }}
         >
           <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-white/35 opacity-70" />

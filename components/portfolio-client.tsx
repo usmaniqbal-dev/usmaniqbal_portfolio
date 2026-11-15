@@ -257,8 +257,9 @@ export default function PortfolioClient({ content: initialContent, initialSectio
 
       <section ref={heroSectionRef} id="home" className={`hero-showcase relative min-h-[100svh] px-5 pb-6 pt-16 sm:px-8 sm:pt-20 lg:h-[100svh] lg:min-h-0 lg:overflow-hidden lg:px-12 lg:pb-4 lg:pt-20 ${darkMode ? "bg-black" : "bg-white"}`} style={homeStyle}>
         {/* Ambient mint/cyan glowing orbs matching reference design */}
-        <div className="absolute top-12 -left-20 w-80 h-80 rounded-full bg-[#00DCA0]/10 blur-3xl pointer-events-none" />
-        <div className="absolute top-16 -right-16 w-96 h-96 rounded-full bg-[#00DCA0]/12 blur-3xl pointer-events-none" />
+        <div className="absolute top-8 -left-28 w-96 h-96 rounded-full bg-[#00DCA0]/16 blur-3xl pointer-events-none" />
+        <div className="absolute top-24 -left-10 w-72 h-72 rounded-full bg-[#0284c7]/12 blur-3xl pointer-events-none" />
+        <div className="absolute top-12 -right-20 w-[500px] h-[500px] rounded-full bg-[#00DCA0]/18 blur-3xl pointer-events-none" />
 
         {heroBackgroundType === "image" && heroBackgroundUrl ? <div className="absolute inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroBackgroundUrl})` }} /> : null}
         {heroBackgroundType === "video" && heroBackgroundUrl ? <video src={heroBackgroundUrl} autoPlay muted loop playsInline className="absolute inset-0 z-0 h-full w-full object-cover" /> : null}
@@ -347,7 +348,7 @@ export default function PortfolioClient({ content: initialContent, initialSectio
               <Link
                 href="/contact"
                 onClick={(e) => handleNavClick(e, "/contact")}
-                className={`inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-sm font-black transition duration-300 hover:-translate-y-0.5 hover:border-[var(--primary)] hover:text-[var(--primary)] sm:w-auto sm:max-w-none ${darkMode ? "border-white/15 bg-white/[0.04] text-white" : "border-black/10 bg-black/[0.03] text-[#111111]"}`}
+                className={`inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-sm font-black transition duration-300 hover:-translate-y-0.5 hover:border-[var(--primary)] hover:text-[var(--primary)] sm:w-auto sm:max-w-none ${darkMode ? "border-white/15 bg-white/[0.04] text-white" : "border-black/15 bg-white text-[#111111] shadow-xs"}`}
               >
                 <MessageCircle size={17} />
                 <span className="truncate">{content.home.secondaryButton.label}</span>
@@ -356,7 +357,7 @@ export default function PortfolioClient({ content: initialContent, initialSectio
                 href={content.cv?.url || "/cv"}
                 target="_blank"
                 rel="noreferrer"
-                className={`inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition duration-300 hover:-translate-y-0.5 hover:border-[var(--primary)] hover:text-[var(--primary)] sm:w-auto sm:max-w-none ${darkMode ? "border-[var(--primary)]/30 bg-[var(--primary)]/10 text-white" : "border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[#111111]"}`}
+                className="group inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-black text-black transition duration-300 hover:-translate-y-0.5 hover:bg-[#00b885] sm:w-auto sm:max-w-none shadow-sm"
               >
                 <Eye size={16} />
                 View Usman Iqbal CV
