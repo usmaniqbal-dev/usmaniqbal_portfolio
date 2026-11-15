@@ -16,7 +16,6 @@ import {
   UserRound,
   X
 } from "lucide-react";
-import { useScrollDirection } from "@/hooks/useScrollDirection";
 
 export type NavItem = {
   label: string;
@@ -58,45 +57,67 @@ export default function FloatingNav({
   activePath,
   onNavigate
 }: FloatingNavProps) {
-  const { scrolled } = useScrollDirection();
   const pathname = usePathname();
   const currentPath = activePath || pathname || "/";
   const [imgError, setImgError] = useState(false);
-  const [hoveredNav, setHoveredNav] = useState<string | null>(null);
   const navLogoUrl = logoUrl || heroImageSrc || "/images/usman-hero.png";
   const brandName = siteName || "Usman Iqbal";
 
   function isItemActive(href: string) {
-    if (href === "/") {
-      return currentPath === "/" || currentPath === "";
+    const rawCurrent = (currentPath || "/").trim();
+    const cleanCurrent = rawCurrent.replace(/#.*$/, "").replace(/\/$/, "") || "/";
+    const cleanHref = href.replace(/#.*$/, "").replace(/\/$/, "") || "/";
+
+    if (cleanHref === "/") {
+      return (
+        cleanCurrent === "/" ||
+        rawCurrent === "/" ||
+        rawCurrent === "/#home" ||
+        rawCurrent === "#home" ||
+        rawCurrent === ""
+      );
     }
-    if (href === "/about" && (currentPath === "/skills" || currentPath.startsWith("/skills/"))) {
-      return true;
+
+    if (cleanHref === "/about") {
+      if (
+        cleanCurrent === "/about" ||
+        rawCurrent === "/about" ||
+        rawCurrent === "#about" ||
+        rawCurrent === "/#about" ||
+        cleanCurrent === "/skills" ||
+        cleanCurrent.startsWith("/skills/")
+      ) {
+        return true;
+      }
     }
-    return currentPath === href || currentPath.startsWith(href + "/");
+
+    return (
+      cleanCurrent === cleanHref ||
+      rawCurrent === href ||
+      rawCurrent === `/${href.replace(/^\//, "")}` ||
+      rawCurrent === `#${href.replace(/^\//, "")}` ||
+      cleanCurrent.startsWith(cleanHref + "/")
+    );
   }
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 px-4 py-3 sm:px-6 transition-all duration-300">
+    <header className="fixed left-0 right-0 top-0 z-50 px-3.5 py-4 sm:px-6 transition-all duration-300">
       <nav
-        className={`mx-auto flex max-w-[calc(100vw-2rem)] items-center justify-between rounded-full border px-3.5 py-2 transition-all duration-300 md:max-w-5xl ${
-          darkMode
-            ? scrolled
-              ? "border-white/15 bg-black/90 text-white backdrop-blur-2xl shadow-xl shadow-black/50"
-              : "border-white/10 bg-black/75 text-white backdrop-blur-xl"
-            : scrolled
-              ? "border-black/10 bg-white/95 text-[#111111] backdrop-blur-2xl shadow-xl shadow-black/10"
-              : "border-black/8 bg-white/85 text-[#111111] backdrop-blur-xl"
+        className={`mx-auto flex w-full max-w-[1500px] min-h-[85px] sm:min-h-[95px] items-center justify-between gap-3.5 px-4 sm:px-6 py-3.5 transition-all duration-300 ${
+          darkMode ? "neu-navbar-dark text-white" : "neu-navbar-light text-[#333d4d]"
         }`}
       >
-        {/* Brand Logo & Name */}
+        {/* Brand Avatar & Name */}
         <Link
           href={logoLink || "/"}
-          className={`group flex min-w-0 items-center gap-2.5 font-black transition-transform duration-200 hover:scale-[1.02] ${
-            darkMode ? "text-white" : "text-[#111111]"
-          }`}
+          className="brand group flex items-center gap-3 font-bold text-lg sm:text-[20px] transition-transform duration-200 hover:scale-[1.02] shrink-0"
+          style={{ color: darkMode ? "#f1f5f9" : "#333d4d" }}
         >
-          <span className="relative grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full ring-2 ring-[var(--primary)]/30 transition-all duration-300 group-hover:ring-[var(--primary)] group-hover:scale-105 shadow-sm bg-[var(--primary)] text-black">
+          <div
+            className={`avatar relative grid h-[52px] w-[52px] sm:h-[58px] sm:w-[58px] shrink-0 place-items-center overflow-hidden rounded-full font-black text-white text-base sm:text-lg transition-transform duration-300 group-hover:scale-105 ${
+              darkMode ? "neu-avatar-dark" : "neu-avatar-light"
+            }`}
+          >
             {!imgError && navLogoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -106,17 +127,16 @@ export default function FloatingNav({
                 className="h-full w-full rounded-full object-cover object-top"
               />
             ) : (
-              <span className="text-xs font-black tracking-wider">UI</span>
+              <span>UI</span>
             )}
+          </div>
+          <span className="truncate tracking-tight hidden sm:inline-block max-w-[180px] md:max-w-none">
+            {brandName}
           </span>
-          <span className="hidden max-w-[170px] truncate text-sm font-black tracking-tight sm:block">{brandName}</span>
         </Link>
 
-        {/* Desktop Modern Nav Links with sliding indicator */}
-        <div
-          className="hidden items-center gap-1 md:flex"
-          onMouseLeave={() => setHoveredNav(null)}
-        >
+        {/* Desktop Neumorphic Navigation Links */}
+        <div className="links hidden items-center gap-2.5 lg:flex xl:gap-3.5">
           {defaultNavItems.map((item) => {
             const Icon = item.icon;
             const active = isItemActive(item.href);
@@ -125,97 +145,76 @@ export default function FloatingNav({
               <Link
                 key={item.href}
                 href={item.href}
-                onMouseEnter={() => setHoveredNav(item.href)}
                 onClick={(e) => {
                   if (onNavigate) {
                     onNavigate(e, item.href);
                   }
                 }}
-                className={`group relative flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all duration-200 ${
-                  active
-                    ? "text-[#16f2a4] font-black"
-                    : darkMode
-                    ? "text-white/70 hover:text-white"
-                    : "text-black/70 hover:text-black"
-                }`}
+                className={`relative flex items-center gap-2 px-3.5 xl:px-4 py-3 text-sm xl:text-[15px] font-semibold tracking-wide whitespace-nowrap cursor-pointer ${
+                  darkMode ? "neu-link-dark" : "neu-link-light"
+                } ${active ? "neu-active" : ""}`}
               >
-                {/* Active or Hover Background Pill */}
-                {active && (
-                  <motion.span
-                    layoutId="activeNavIndicator"
-                    className="absolute inset-0 rounded-full bg-[#16f2a4]/15 border border-[#16f2a4]/25"
-                    transition={{ type: "spring", stiffness: 450, damping: 30 }}
-                  />
-                )}
-                {!active && hoveredNav === item.href && (
-                  <motion.span
-                    layoutId="hoverNavIndicator"
-                    className={`absolute inset-0 rounded-full ${
-                      darkMode ? "bg-white/[0.08]" : "bg-black/[0.05]"
-                    }`}
-                    transition={{ type: "spring", stiffness: 450, damping: 30 }}
-                  />
-                )}
-
                 <Icon
-                  size={15}
-                  className={`relative z-10 transition-transform duration-200 group-hover:scale-110 ${
-                    active ? "text-[#16f2a4]" : "text-current group-hover:text-[#16f2a4]"
+                  size={17}
+                  className={`transition-colors duration-200 ${
+                    active
+                      ? darkMode
+                        ? "text-[#16f2a4]"
+                        : "text-[#00aa83]"
+                      : "opacity-80 group-hover:opacity-100"
                   }`}
                 />
-                <span className="relative z-10">{item.label}</span>
+                <span>{item.label}</span>
               </Link>
             );
           })}
         </div>
 
-        {/* Action Controls (Theme Toggle & Mobile Trigger) */}
-        <div className="flex items-center gap-2">
+        {/* Action Controls: Neumorphic Theme Toggle & Mobile Menu Trigger */}
+        <div className="flex items-center gap-3 shrink-0">
           <button
             type="button"
             aria-label={darkMode ? "Switch to light theme" : "Switch to dark theme"}
             title={darkMode ? "Switch to light theme" : "Switch to dark theme"}
             onClick={toggleColorMode}
-            className={`group grid h-9 w-9 place-items-center rounded-full border transition-all duration-300 hover:scale-105 active:scale-95 ${
-              darkMode
-                ? "border-white/10 bg-white/[0.05] text-amber-300 hover:border-amber-300/40 hover:bg-amber-300/10"
-                : "border-black/10 bg-black/[0.04] text-indigo-600 hover:border-indigo-600/40 hover:bg-indigo-600/10"
+            className={`grid h-[50px] w-[50px] sm:h-[55px] sm:w-[55px] place-items-center cursor-pointer ${
+              darkMode ? "neu-btn-dark" : "neu-btn-light"
             }`}
           >
             {darkMode ? (
-              <Sun size={17} className="transition-transform duration-300 group-hover:rotate-45" />
+              <Sun size={22} className="text-amber-400 transition-transform duration-300 hover:rotate-45" />
             ) : (
-              <Moon size={17} className="transition-transform duration-300 group-hover:-rotate-12" />
+              <Moon size={21} className="text-[#333d4d] transition-transform duration-300 hover:-rotate-12" />
             )}
           </button>
 
           <button
             type="button"
             aria-label="Open navigation menu"
-            className={`grid h-9 w-9 place-items-center rounded-full border md:hidden transition-all active:scale-95 ${
-              darkMode
-                ? "border-white/10 bg-white/[0.05] text-white hover:bg-white/10"
-                : "border-black/10 bg-black/[0.04] text-black hover:bg-black/10"
-            }`}
+            className={`grid h-[50px] w-[50px] sm:h-[55px] sm:w-[55px] place-items-center cursor-pointer lg:hidden ${
+              darkMode ? "neu-btn-dark" : "neu-btn-light"
+            } ${menuOpen ? "neu-pressed" : ""}`}
             onClick={() => setMenuOpen(!menuOpen)}
           >
-            {menuOpen ? <X size={18} /> : <Menu size={18} />}
+            {menuOpen ? (
+              <X size={21} className={darkMode ? "text-[#16f2a4]" : "text-[#00aa83]"} />
+            ) : (
+              <Menu size={21} />
+            )}
           </button>
         </div>
       </nav>
 
-      {/* Mobile Drawer with Glass Polish */}
+      {/* Mobile / Tablet Neumorphic Dropdown Menu */}
       <AnimatePresence>
         {menuOpen ? (
           <motion.div
-            initial={{ opacity: 0, y: -12, scale: 0.98 }}
+            initial={{ opacity: 0, y: -15, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -12, scale: 0.98 }}
-            transition={{ duration: 0.2 }}
-            className={`mx-auto mt-3 grid max-w-sm gap-1.5 rounded-2xl border p-3 backdrop-blur-2xl md:hidden shadow-2xl ${
-              darkMode
-                ? "border-white/15 bg-black/95 text-white"
-                : "border-black/10 bg-white/95 text-[#111111]"
+            exit={{ opacity: 0, y: -15, scale: 0.98 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className={`mx-auto mt-3.5 grid max-w-sm gap-2.5 p-4 lg:hidden ${
+              darkMode ? "neu-navbar-dark text-white" : "neu-navbar-light text-[#333d4d]"
             }`}
           >
             {defaultNavItems.map((item) => {
@@ -232,16 +231,21 @@ export default function FloatingNav({
                       onNavigate(e, item.href);
                     }
                   }}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-bold transition-all ${
-                    active
-                      ? "bg-[#16f2a4]/15 text-[#16f2a4]"
-                      : darkMode
-                      ? "text-white/80 hover:bg-white/[0.08] hover:text-white"
-                      : "text-black/80 hover:bg-black/[0.05] hover:text-black"
-                  }`}
+                  className={`flex items-center gap-3 px-4 py-3 text-sm font-semibold tracking-wide ${
+                    darkMode ? "neu-link-dark" : "neu-link-light"
+                  } ${active ? "neu-active" : ""}`}
                 >
-                  <Icon size={18} className={active ? "text-[#16f2a4]" : "opacity-60"} />
-                  {item.label}
+                  <Icon
+                    size={18}
+                    className={
+                      active
+                        ? darkMode
+                          ? "text-[#16f2a4]"
+                          : "text-[#00aa83]"
+                        : "opacity-75"
+                    }
+                  />
+                  <span>{item.label}</span>
                 </Link>
               );
             })}

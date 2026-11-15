@@ -837,3 +837,112 @@ button[class*="bg-[var(--primary)]"]:hover {
     animation: none !important;
   }
 }
+
+/* ==========================================================================
+   NEUMORPHISM NAVBAR STYLES (Light & Dark Themes)
+   ========================================================================== */
+
+.neu-navbar-light {
+  background: #e5e9f0;
+  border-radius: 30px;
+  box-shadow: 12px 12px 25px #bec3cc, -12px -12px 25px #ffffff;
+}
+
+.neu-navbar-dark {
+  background: #181b22;
+  border-radius: 30px;
+  box-shadow: 12px 12px 25px #0c0e12, -12px -12px 25px #252a35;
+}
+
+.neu-avatar-light {
+  background: linear-gradient(145deg, #04dba5, #087bc5);
+  border: 3px solid #e5e9f0;
+  box-shadow: 5px 5px 10px #bfc5cf, -5px -5px 10px #ffffff;
+}
+
+.neu-avatar-dark {
+  background: linear-gradient(145deg, #04dba5, #087bc5);
+  border: 3px solid #181b22;
+  box-shadow: 5px 5px 10px #0b0d11, -5px -5px 10px #252933;
+}
+
+.neu-link-light {
+  background: #e5e9f0;
+  color: #555e6d;
+  border-radius: 16px;
+  box-shadow: 5px 5px 10px #c1c6cf, -5px -5px 10px #ffffff;
+  transition: all 0.25s ease;
+}
+
+.neu-link-light:hover {
+  color: #00a981;
+  transform: translateY(-4px);
+  box-shadow: 7px 7px 12px #b9bec7, -7px -7px 12px #ffffff;
+}
+
+.neu-link-light.neu-active,
+.neu-link-light:active {
+  color: #00aa83 !important;
+  background: #e5e9f0 !important;
+  transform: translateY(0) !important;
+  box-shadow: inset 5px 5px 9px #c1c6cf, inset -5px -5px 9px #ffffff !important;
+}
+
+.neu-link-dark {
+  background: #181b22;
+  color: #94a3b8;
+  border-radius: 16px;
+  box-shadow: 5px 5px 10px #0e1014, -5px -5px 10px #222630;
+  transition: all 0.25s ease;
+}
+
+.neu-link-dark:hover {
+  color: #16f2a4;
+  transform: translateY(-4px);
+  box-shadow: 7px 7px 14px #0a0b0e, -7px -7px 14px #282d38;
+}
+
+.neu-link-dark.neu-active,
+.neu-link-dark:active {
+  color: #16f2a4 !important;
+  background: #181b22 !important;
+  transform: translateY(0) !important;
+  box-shadow: inset 5px 5px 9px #0a0b0e, inset -5px -5px 9px #262a36 !important;
+}
+
+.neu-btn-light {
+  background: #e5e9f0;
+  color: #333d4d;
+  border-radius: 50%;
+  border: none;
+  box-shadow: 6px 6px 12px #bfc4cd, -6px -6px 12px #ffffff;
+  transition: all 0.2s ease;
+}
+
+.neu-btn-light:hover {
+  transform: scale(1.05);
+}
+
+.neu-btn-light:active,
+.neu-btn-light.neu-pressed {
+  box-shadow: inset 5px 5px 10px #bfc4cd, inset -5px -5px 10px #ffffff;
+}
+
+.neu-btn-dark {
+  background: #181b22;
+  color: #f59e0b;
+  border-radius: 50%;
+  border: none;
+  box-shadow: 6px 6px 12px #0e1014, -6px -6px 12px #222630;
+  transition: all 0.2s ease;
+}
+
+.neu-btn-dark:hover {
+  transform: scale(1.05);
+}
+
+.neu-btn-dark:active,
+.neu-btn-dark.neu-pressed {
+  box-shadow: inset 5px 5px 10px #0a0b0e, inset -5px -5px 10px #262a36;
+}
+
