@@ -844,40 +844,40 @@ button[class*="bg-[var(--primary)]"]:hover {
 
 .neu-navbar-light {
   background: #e5e9f0;
-  border-radius: 30px;
-  box-shadow: 12px 12px 25px #bec3cc, -12px -12px 25px #ffffff;
+  border-radius: 9999px;
+  box-shadow: 8px 8px 18px #bec3cc, -8px -8px 18px #ffffff;
 }
 
 .neu-navbar-dark {
   background: #181b22;
-  border-radius: 30px;
-  box-shadow: 12px 12px 25px #0c0e12, -12px -12px 25px #252a35;
+  border-radius: 9999px;
+  box-shadow: 8px 8px 18px #0c0e12, -8px -8px 18px #252a35;
 }
 
 .neu-avatar-light {
   background: linear-gradient(145deg, #04dba5, #087bc5);
-  border: 3px solid #e5e9f0;
-  box-shadow: 5px 5px 10px #bfc5cf, -5px -5px 10px #ffffff;
+  border: 2px solid #e5e9f0;
+  box-shadow: 3px 3px 7px #bfc5cf, -3px -3px 7px #ffffff;
 }
 
 .neu-avatar-dark {
   background: linear-gradient(145deg, #04dba5, #087bc5);
-  border: 3px solid #181b22;
-  box-shadow: 5px 5px 10px #0b0d11, -5px -5px 10px #252933;
+  border: 2px solid #181b22;
+  box-shadow: 3px 3px 7px #0b0d11, -3px -3px 7px #252933;
 }
 
 .neu-link-light {
   background: #e5e9f0;
   color: #555e6d;
-  border-radius: 16px;
-  box-shadow: 5px 5px 10px #c1c6cf, -5px -5px 10px #ffffff;
-  transition: all 0.25s ease;
+  border-radius: 9999px;
+  box-shadow: 3px 3px 7px #c1c6cf, -3px -3px 7px #ffffff;
+  transition: all 0.22s ease;
 }
 
 .neu-link-light:hover {
   color: #00a981;
-  transform: translateY(-4px);
-  box-shadow: 7px 7px 12px #b9bec7, -7px -7px 12px #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 5px 5px 10px #b9bec7, -5px -5px 10px #ffffff;
 }
 
 .neu-link-light.neu-active,
@@ -885,21 +885,21 @@ button[class*="bg-[var(--primary)]"]:hover {
   color: #00aa83 !important;
   background: #e5e9f0 !important;
   transform: translateY(0) !important;
-  box-shadow: inset 5px 5px 9px #c1c6cf, inset -5px -5px 9px #ffffff !important;
+  box-shadow: inset 3px 3px 6px #c1c6cf, inset -3px -3px 6px #ffffff !important;
 }
 
 .neu-link-dark {
   background: #181b22;
   color: #94a3b8;
-  border-radius: 16px;
-  box-shadow: 5px 5px 10px #0e1014, -5px -5px 10px #222630;
-  transition: all 0.25s ease;
+  border-radius: 9999px;
+  box-shadow: 3px 3px 7px #0e1014, -3px -3px 7px #222630;
+  transition: all 0.22s ease;
 }
 
 .neu-link-dark:hover {
   color: #16f2a4;
-  transform: translateY(-4px);
-  box-shadow: 7px 7px 14px #0a0b0e, -7px -7px 14px #282d38;
+  transform: translateY(-2px);
+  box-shadow: 5px 5px 10px #0a0b0e, -5px -5px 10px #282d38;
 }
 
 .neu-link-dark.neu-active,
@@ -907,7 +907,7 @@ button[class*="bg-[var(--primary)]"]:hover {
   color: #16f2a4 !important;
   background: #181b22 !important;
   transform: translateY(0) !important;
-  box-shadow: inset 5px 5px 9px #0a0b0e, inset -5px -5px 9px #262a36 !important;
+  box-shadow: inset 3px 3px 6px #0a0b0e, inset -3px -3px 6px #262a36 !important;
 }
 
 .neu-btn-light {
@@ -915,17 +915,17 @@ button[class*="bg-[var(--primary)]"]:hover {
   color: #333d4d;
   border-radius: 50%;
   border: none;
-  box-shadow: 6px 6px 12px #bfc4cd, -6px -6px 12px #ffffff;
+  box-shadow: 4px 4px 8px #bfc4cd, -4px -4px 8px #ffffff;
   transition: all 0.2s ease;
 }
 
 .neu-btn-light:hover {
-  transform: scale(1.05);
+  transform: scale(1.06);
 }
 
 .neu-btn-light:active,
 .neu-btn-light.neu-pressed {
-  box-shadow: inset 5px 5px 10px #bfc4cd, inset -5px -5px 10px #ffffff;
+  box-shadow: inset 3px 3px 6px #bfc4cd, inset -3px -3px 6px #ffffff;
 }
 
 .neu-btn-dark {
@@ -933,16 +933,16 @@ button[class*="bg-[var(--primary)]"]:hover {
   color: #f59e0b;
   border-radius: 50%;
   border: none;
-  box-shadow: 6px 6px 12px #0e1014, -6px -6px 12px #222630;
+  box-shadow: 4px 4px 8px #0e1014, -4px -4px 8px #222630;
   transition: all 0.2s ease;
 }
 
 .neu-btn-dark:hover {
-  transform: scale(1.05);
+  transform: scale(1.06);
 }
 
 .neu-btn-dark:active,
 .neu-btn-dark.neu-pressed {
-  box-shadow: inset 5px 5px 10px #0a0b0e, inset -5px -5px 10px #262a36;
+  box-shadow: inset 3px 3px 6px #0a0b0e, inset -3px -3px 6px #262a36;
 }
 

@@ -101,20 +101,20 @@ export default function FloatingNav({
   }
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 px-3.5 py-4 sm:px-6 transition-all duration-300">
+    <header className="fixed left-0 right-0 top-0 z-50 px-4 py-3 sm:px-6 transition-all duration-300">
       <nav
-        className={`mx-auto flex w-full max-w-[1500px] min-h-[85px] sm:min-h-[95px] items-center justify-between gap-3.5 px-4 sm:px-6 py-3.5 transition-all duration-300 ${
+        className={`mx-auto flex max-w-[calc(100vw-2rem)] md:max-w-5xl items-center justify-between rounded-full px-3.5 py-1.5 sm:py-2 transition-all duration-300 ${
           darkMode ? "neu-navbar-dark text-white" : "neu-navbar-light text-[#333d4d]"
         }`}
       >
         {/* Brand Avatar & Name */}
         <Link
           href={logoLink || "/"}
-          className="brand group flex items-center gap-3 font-bold text-lg sm:text-[20px] transition-transform duration-200 hover:scale-[1.02] shrink-0"
+          className="brand group flex items-center gap-2.5 font-black text-sm transition-transform duration-200 hover:scale-[1.02] shrink-0"
           style={{ color: darkMode ? "#f1f5f9" : "#333d4d" }}
         >
           <div
-            className={`avatar relative grid h-[52px] w-[52px] sm:h-[58px] sm:w-[58px] shrink-0 place-items-center overflow-hidden rounded-full font-black text-white text-base sm:text-lg transition-transform duration-300 group-hover:scale-105 ${
+            className={`avatar relative grid h-9 w-9 sm:h-10 sm:w-10 shrink-0 place-items-center overflow-hidden rounded-full font-black text-white text-xs transition-transform duration-300 group-hover:scale-105 ${
               darkMode ? "neu-avatar-dark" : "neu-avatar-light"
             }`}
           >
@@ -130,13 +130,13 @@ export default function FloatingNav({
               <span>UI</span>
             )}
           </div>
-          <span className="truncate tracking-tight hidden sm:inline-block max-w-[180px] md:max-w-none">
+          <span className="truncate tracking-tight hidden sm:inline-block max-w-[170px] font-black">
             {brandName}
           </span>
         </Link>
 
         {/* Desktop Neumorphic Navigation Links */}
-        <div className="links hidden items-center gap-2.5 lg:flex xl:gap-3.5">
+        <div className="links hidden items-center gap-1.5 md:flex">
           {defaultNavItems.map((item) => {
             const Icon = item.icon;
             const active = isItemActive(item.href);
@@ -150,12 +150,12 @@ export default function FloatingNav({
                     onNavigate(e, item.href);
                   }
                 }}
-                className={`relative flex items-center gap-2 px-3.5 xl:px-4 py-3 text-sm xl:text-[15px] font-semibold tracking-wide whitespace-nowrap cursor-pointer ${
+                className={`relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold tracking-tight whitespace-nowrap cursor-pointer rounded-full ${
                   darkMode ? "neu-link-dark" : "neu-link-light"
                 } ${active ? "neu-active" : ""}`}
               >
                 <Icon
-                  size={17}
+                  size={14}
                   className={`transition-colors duration-200 ${
                     active
                       ? darkMode
@@ -171,35 +171,35 @@ export default function FloatingNav({
         </div>
 
         {/* Action Controls: Neumorphic Theme Toggle & Mobile Menu Trigger */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             aria-label={darkMode ? "Switch to light theme" : "Switch to dark theme"}
             title={darkMode ? "Switch to light theme" : "Switch to dark theme"}
             onClick={toggleColorMode}
-            className={`grid h-[50px] w-[50px] sm:h-[55px] sm:w-[55px] place-items-center cursor-pointer ${
+            className={`grid h-9 w-9 sm:h-10 sm:w-10 rounded-full place-items-center cursor-pointer ${
               darkMode ? "neu-btn-dark" : "neu-btn-light"
             }`}
           >
             {darkMode ? (
-              <Sun size={22} className="text-amber-400 transition-transform duration-300 hover:rotate-45" />
+              <Sun size={17} className="text-amber-400 transition-transform duration-300 hover:rotate-45" />
             ) : (
-              <Moon size={21} className="text-[#333d4d] transition-transform duration-300 hover:-rotate-12" />
+              <Moon size={16} className="text-[#333d4d] transition-transform duration-300 hover:-rotate-12" />
             )}
           </button>
 
           <button
             type="button"
             aria-label="Open navigation menu"
-            className={`grid h-[50px] w-[50px] sm:h-[55px] sm:w-[55px] place-items-center cursor-pointer lg:hidden ${
+            className={`grid h-9 w-9 sm:h-10 sm:w-10 rounded-full place-items-center cursor-pointer md:hidden ${
               darkMode ? "neu-btn-dark" : "neu-btn-light"
             } ${menuOpen ? "neu-pressed" : ""}`}
             onClick={() => setMenuOpen(!menuOpen)}
           >
             {menuOpen ? (
-              <X size={21} className={darkMode ? "text-[#16f2a4]" : "text-[#00aa83]"} />
+              <X size={17} className={darkMode ? "text-[#16f2a4]" : "text-[#00aa83]"} />
             ) : (
-              <Menu size={21} />
+              <Menu size={17} />
             )}
           </button>
         </div>

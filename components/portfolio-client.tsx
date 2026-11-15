@@ -33,6 +33,7 @@ import {
 import type { ProjectContent, ServiceContent, SiteContent, SkillContent, SocialContent } from "@/types/site-content";
 import { useCursorParallax } from "@/hooks/useCursorParallax";
 import FloatingNav from "@/components/floating-nav";
+import HangingIdCard from "@/components/hanging-id-card";
 import { SocialBrandBadge } from "@/lib/social-platforms";
 
 type PortfolioClientProps = {
@@ -363,7 +364,14 @@ export default function PortfolioClient({ content: initialContent, initialSectio
             </motion.div>
           </motion.div>
 
-          <div className="h-full"><HeroVisual imageSrc={heroImageSrc} shouldAnimate={shouldAnimate && !loading} dragConstraints={heroSectionRef} /></div>
+          <div className="h-full flex flex-col justify-end items-center pb-2 sm:pb-4 lg:pb-6">
+            <HangingIdCard
+              imageSrc={heroImageSrc}
+              shouldAnimate={shouldAnimate && !loading}
+              dragConstraints={heroSectionRef}
+              darkMode={darkMode}
+            />
+          </div>
         </div>
       </section>
 
