@@ -29,7 +29,7 @@ export default function HangingIdCard({
   const dragY = useMotionValue(0);
 
   // Spring physics for smooth tilt and return
-  const springConfig = { damping: 25, stiffness: 380 };
+  const springConfig = { damping: 26, stiffness: 380 };
   const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [10, -10]), springConfig);
   const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-12, 12]), springConfig);
   const glareOpacity = useSpring(useTransform(mouseY, [-0.5, 0.5], [0.35, 0.05]), springConfig);
@@ -57,7 +57,7 @@ export default function HangingIdCard({
 
   return (
     <div
-      className="relative flex flex-col items-center justify-center w-full max-w-[370px] sm:max-w-[410px] lg:max-w-[440px] xl:max-w-[460px] select-none mx-auto pt-8 sm:pt-10"
+      className="relative flex flex-col items-center justify-center w-full max-w-[380px] sm:max-w-[420px] lg:max-w-[460px] xl:max-w-[485px] select-none mx-auto pt-8 sm:pt-10"
       style={{ perspective: 1400 }}
     >
       {/* =========================================================================
@@ -72,7 +72,7 @@ export default function HangingIdCard({
             y: [0, -3, 0]
           }}
           transition={{
-            duration: 4.6,
+            duration: 4.8,
             repeat: Infinity,
             ease: "easeInOut"
           }}
@@ -81,7 +81,7 @@ export default function HangingIdCard({
           <svg
             viewBox="0 0 460 140"
             fill="none"
-            className="w-full h-full drop-shadow-[0_6px_12px_rgba(29,78,216,0.35)] overflow-visible"
+            className="w-full h-full drop-shadow-[0_6px_14px_rgba(29,78,216,0.38)] overflow-visible"
             preserveAspectRatio="none"
           >
             <defs>
@@ -100,49 +100,42 @@ export default function HangingIdCard({
                 <stop offset="65%" stopColor="#2563eb" />
                 <stop offset="100%" stopColor="#1e40af" />
               </linearGradient>
-
-              {/* Sheen Gradient */}
-              <linearGradient id="ribbonSheen" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="transparent" />
-                <stop offset="50%" stopColor="rgba(255,255,255,0.45)" />
-                <stop offset="100%" stopColor="transparent" />
-              </linearGradient>
             </defs>
 
             {/* Left Strap: Goes from behind top navbar down to the central medallion */}
             <path
-              d="M 120 0 L 155 0 L 235 125 L 210 130 Z"
+              d="M 120 0 L 158 0 L 235 125 L 208 130 Z"
               fill="url(#vRibbonLeft)"
             />
             {/* Left Strap Satin Center Highlight */}
             <path
-              d="M 137 0 L 222 127"
-              stroke="rgba(255,255,255,0.42)"
+              d="M 139 0 L 222 127"
+              stroke="rgba(255,255,255,0.45)"
               strokeWidth="4"
               strokeLinecap="round"
             />
             {/* Left Strap Outer Edge Shadow */}
             <path
-              d="M 120 0 L 210 130"
+              d="M 120 0 L 208 130"
               stroke="rgba(15,23,42,0.3)"
               strokeWidth="2"
             />
 
             {/* Right Strap: Goes from medallion up to the top-right screen edge */}
             <path
-              d="M 225 125 L 305 0 L 340 0 L 250 130 Z"
+              d="M 225 125 L 302 0 L 340 0 L 252 130 Z"
               fill="url(#vRibbonRight)"
             />
             {/* Right Strap Satin Center Highlight */}
             <path
-              d="M 322 0 L 238 127"
-              stroke="rgba(255,255,255,0.42)"
+              d="M 321 0 L 238 127"
+              stroke="rgba(255,255,255,0.45)"
               strokeWidth="4"
               strokeLinecap="round"
             />
             {/* Right Strap Outer Edge Shadow */}
             <path
-              d="M 340 0 L 250 130"
+              d="M 340 0 L 252 130"
               stroke="rgba(15,23,42,0.3)"
               strokeWidth="2"
             />
@@ -180,7 +173,7 @@ export default function HangingIdCard({
         transition={
           !isDragging && !isHovered
             ? {
-                duration: 4.6,
+                duration: 4.8,
                 repeat: Infinity,
                 ease: "easeInOut"
               }
@@ -221,37 +214,40 @@ export default function HangingIdCard({
             FROSTED ACRYLIC GLASS HOLDER WITH LUMINOUS NEON CYAN GLOW
             ======================================================================= */}
         <div
-          className={`relative w-full rounded-[32px] sm:rounded-[36px] p-2.5 sm:p-3 transition-shadow duration-300 ${
+          className={`relative w-full rounded-[34px] sm:rounded-[38px] p-2.5 sm:p-3.5 transition-shadow duration-300 ${
             darkMode
-              ? "bg-white/[0.08] border-2 border-white/25 shadow-[0_0_38px_rgba(0,220,160,0.4),inset_0_0_22px_rgba(0,220,160,0.28),0_30px_70px_rgba(0,0,0,0.9)]"
-              : "bg-white/50 border-2 border-white/85 shadow-[0_0_36px_rgba(0,220,160,0.42),inset_0_0_20px_rgba(0,220,160,0.24),0_25px_60px_rgba(15,23,42,0.18)]"
+              ? "bg-white/[0.08] border-2 border-white/25 shadow-[0_0_42px_rgba(0,220,160,0.48),inset_0_0_22px_rgba(0,220,160,0.3),0_30px_70px_rgba(0,0,0,0.9)]"
+              : "bg-white/55 border-2 border-white/85 shadow-[0_0_40px_rgba(0,220,160,0.46),inset_0_0_22px_rgba(0,220,160,0.26),0_25px_60px_rgba(15,23,42,0.16)]"
           } backdrop-blur-xl`}
           style={{
             transformStyle: "preserve-3d"
           }}
         >
           {/* Glass Bevel Highlight Rim */}
-          <div className="absolute inset-0 rounded-[32px] sm:rounded-[36px] pointer-events-none border border-cyan-400/35 dark:border-cyan-300/25" />
+          <div className="absolute inset-0 rounded-[34px] sm:rounded-[38px] pointer-events-none border border-cyan-400/40 dark:border-cyan-300/30" />
 
           {/* =====================================================================
-              CARD INTERIOR: ACTUAL USMAN IQBAL PORTRAIT PHOTO ONLY (NO TEXT)
+              CARD INTERIOR: ACTUAL USMAN IQBAL PORTRAIT WITH STUDIO BACKDROP
               ===================================================================== */}
           <div
-            className={`relative w-full aspect-[3.8/4.7] sm:aspect-[3.9/4.8] rounded-[24px] sm:rounded-[28px] overflow-hidden ${
-              darkMode ? "bg-slate-950 border border-white/10" : "bg-slate-100 border border-white/60 shadow-inner"
-            }`}
+            className="relative w-full aspect-[3.8/4.7] sm:aspect-[3.9/4.8] rounded-[24px] sm:rounded-[28px] overflow-hidden flex items-end justify-center shadow-inner"
+            style={{
+              background: darkMode
+                ? "radial-gradient(circle at 50% 32%, #1e293b 0%, #0f172a 45%, #020617 100%)"
+                : "radial-gradient(circle at 50% 32%, #f0f9ff 0%, #e0f2fe 35%, #e2e8f0 75%, #cbd5e1 100%)"
+            }}
           >
-            {/* High-Resolution Portrait Photo of Usman Iqbal */}
+            {/* High-Resolution Portrait Photo of Usman Iqbal - Centered with balanced shoulders */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={resolvedPhoto}
               alt="Usman Iqbal"
               draggable={false}
-              className="w-full h-full object-cover object-top select-none pointer-events-none rounded-[24px] sm:rounded-[28px]"
+              className="w-[96%] h-[96%] object-contain object-bottom select-none pointer-events-none rounded-b-[24px] sm:rounded-b-[28px] drop-shadow-sm"
             />
 
             {/* Subtle bottom fade vignette matching reference screenshot */}
-            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-cyan-950/20 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#00DCA0]/25 via-transparent to-transparent pointer-events-none" />
 
             {/* Specular Diagonal Reflection Glare across Glass Surface */}
             <motion.div
@@ -266,7 +262,7 @@ export default function HangingIdCard({
 
         {/* 3D Acrylic Glass Glaze Top Surface Layer */}
         <div
-          className="absolute inset-0 rounded-[32px] sm:rounded-[36px] pointer-events-none overflow-hidden"
+          className="absolute inset-0 rounded-[34px] sm:rounded-[38px] pointer-events-none overflow-hidden"
           style={{ transform: "translateZ(24px)" }}
         >
           <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-white/35 opacity-70" />

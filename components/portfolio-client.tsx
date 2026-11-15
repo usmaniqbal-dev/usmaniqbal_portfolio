@@ -255,7 +255,7 @@ export default function PortfolioClient({ content: initialContent, initialSectio
           onNavigate={handleNavClick}
         />
 
-      <section ref={heroSectionRef} id="home" className={`hero-showcase relative min-h-[100svh] px-5 pb-6 pt-16 sm:px-8 sm:pt-20 lg:h-[100svh] lg:min-h-0 lg:overflow-hidden lg:px-12 lg:pb-4 lg:pt-20 ${darkMode ? "bg-black" : "bg-white"}`} style={homeStyle}>
+      <section ref={heroSectionRef} id="home" className={`hero-showcase relative min-h-[100svh] px-5 pb-6 pt-14 sm:px-8 sm:pt-16 lg:h-[100svh] lg:min-h-0 lg:overflow-hidden lg:px-12 lg:pb-4 lg:pt-14 ${darkMode ? "bg-black" : "bg-white"}`} style={homeStyle}>
         {/* Ambient mint/cyan glowing orbs matching reference design */}
         <div className="absolute top-8 -left-28 w-96 h-96 rounded-full bg-[#00DCA0]/16 blur-3xl pointer-events-none" />
         <div className="absolute top-24 -left-10 w-72 h-72 rounded-full bg-[#0284c7]/12 blur-3xl pointer-events-none" />
@@ -264,21 +264,21 @@ export default function PortfolioClient({ content: initialContent, initialSectio
         {heroBackgroundType === "image" && heroBackgroundUrl ? <div className="absolute inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroBackgroundUrl})` }} /> : null}
         {heroBackgroundType === "video" && heroBackgroundUrl ? <video src={heroBackgroundUrl} autoPlay muted loop playsInline className="absolute inset-0 z-0 h-full w-full object-cover" /> : null}
         {heroBackgroundType === "image" || heroBackgroundType === "video" ? <div className={`absolute inset-0 z-[1] ${darkMode ? "bg-black/55" : "bg-white/55"}`} /> : null}
-        <div className="relative z-10 mx-auto grid w-full max-w-7xl min-w-0 items-center gap-8 lg:grid-cols-[1.08fr_0.92fr]">
+        <div className="relative z-10 mx-auto grid w-full max-w-7xl min-w-0 items-center gap-8 lg:grid-cols-[1.12fr_0.88fr]">
           <motion.div initial={false} className="relative z-10 w-full min-w-0 max-w-[calc(100vw-4rem)] sm:max-w-3xl lg:overflow-hidden">
-            <motion.div {...heroIn(shouldAnimate, loading, 0.2)} className={`mb-3 sm:mb-4 inline-flex max-w-full items-center gap-3 rounded-full border px-4 py-2.5 text-sm font-semibold lg:py-1.5 lg:text-xs ${darkMode ? "border-white/10 bg-white/[0.04] text-white/70" : "border-black/10 bg-black/[0.03] text-black/70"}`}>
-              <span className="h-2.5 w-2.5 rounded-full bg-[var(--primary)]" />
+            <motion.div {...heroIn(shouldAnimate, loading, 0.2)} className={`mb-3.5 sm:mb-4 inline-flex max-w-full items-center gap-2.5 rounded-full border px-4 py-1.5 text-xs font-semibold ${darkMode ? "border-white/10 bg-white/[0.04] text-white/70" : "border-black/10 bg-black/[0.03] text-black/70"}`}>
+              <span className="h-2 w-2 rounded-full bg-[var(--primary)]" />
               <span className="truncate">Available for New CRM & Automation Projects</span>
             </motion.div>
 
-            <motion.p {...heroIn(shouldAnimate, loading, 0.3)} className="mb-2 text-sm font-bold uppercase text-[var(--primary)]">NURAXTECH</motion.p>
+            <motion.p {...heroIn(shouldAnimate, loading, 0.3)} className="mb-2 text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--primary)]">NURAXTECH</motion.p>
             {/* Interactive Hero Heading with individual character pop-up animation */}
             <div className="relative inline-block cursor-default select-none pt-0.5">
               <motion.h1
                 {...heroIn(shouldAnimate, loading, 0.36, true)}
                 initial="rest"
                 whileHover="hover"
-                className="relative inline-flex flex-wrap items-baseline gap-x-[0.02em] text-balance break-words text-4xl font-black leading-[1.02] sm:text-5xl lg:text-6xl tracking-tight"
+                className="relative inline-flex flex-wrap items-baseline gap-x-[0.02em] text-balance break-words text-5xl font-black leading-[1.0] sm:text-6xl lg:text-[4.25rem] xl:text-[4.75rem] tracking-tight"
               >
                 {Array.from("Usman Iqbal").map((char, index) => {
                   if (char === " ") {
@@ -324,47 +324,51 @@ export default function PortfolioClient({ content: initialContent, initialSectio
               </motion.h1>
               <motion.h2
                 {...heroIn(shouldAnimate, loading, 0.46)}
-                className="mt-2.5 max-w-[380px] text-balance text-2xl font-black leading-tight sm:max-w-none sm:text-3xl lg:text-3xl transition-all duration-300 text-transparent bg-clip-text bg-gradient-to-r from-[#00DCA0] via-[#16f2a4] to-[#22d3ee] drop-shadow-sm hover:brightness-110"
+                className={`mt-2 max-w-[420px] text-balance text-2xl font-black leading-tight sm:max-w-none sm:text-3xl lg:text-[2.1rem] transition-all duration-300 ${
+                  darkMode ? "text-white" : "text-[#111111]"
+                }`}
               >
                 {content.home.subtitle}
               </motion.h2>
-              {/* Subtle accent indicator that elongates on hover */}
-              <span className="block h-1 w-16 rounded-full bg-gradient-to-r from-[#16f2a4] to-[#00A3C4] transition-all duration-500 ease-out hover:w-32 mt-2 opacity-80" />
+              {/* Mint underline indicator matching reference */}
+              <span className="block h-[3.5px] w-20 rounded-full bg-[#00DCA0] transition-all duration-500 ease-out hover:w-32 mt-2.5 mb-4" />
             </div>
-            <motion.p {...heroIn(shouldAnimate, loading, 0.52)} className={`mt-3.5 max-w-[310px] text-base leading-7 sm:max-w-2xl lg:line-clamp-3 ${darkMode ? "text-white/65" : "text-black/65"}`}>
+            <motion.p {...heroIn(shouldAnimate, loading, 0.52)} className={`text-base sm:text-lg lg:text-[1.12rem] leading-[1.65] max-w-2xl lg:line-clamp-3 mb-6 ${darkMode ? "text-white/75" : "text-black/75"}`}>
               {content.home.description}
             </motion.p>
 
-            <motion.div {...heroIn(shouldAnimate, loading, 0.64, false, "spring")} className="mt-4 flex w-full flex-col gap-2.5 sm:flex-row">
+            <motion.div {...heroIn(shouldAnimate, loading, 0.64, false, "spring")} className="flex w-full flex-wrap items-center gap-3 mb-6">
               <Link
                 href="/projects"
-                className="group inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-black text-black transition duration-300 hover:-translate-y-0.5 hover:bg-[#00b885] sm:w-auto sm:max-w-none"
+                className="group inline-flex items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-6 py-3 text-sm font-black text-black transition duration-300 hover:-translate-y-0.5 hover:bg-[#00b885] shadow-xs"
               >
-                <span className="truncate">{content.home.primaryButton.label}</span>
-                <span className="grid h-7 w-7 place-items-center rounded-full bg-black/10 transition group-hover:translate-x-0.5">
-                  <ArrowRight size={17} />
+                <span>{content.home.primaryButton.label}</span>
+                <span className="grid h-6 w-6 place-items-center rounded-full bg-black/10 transition group-hover:translate-x-0.5">
+                  <ArrowRight size={15} />
                 </span>
               </Link>
               <Link
                 href="/contact"
                 onClick={(e) => handleNavClick(e, "/contact")}
-                className={`inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-sm font-black transition duration-300 hover:-translate-y-0.5 hover:border-[var(--primary)] hover:text-[var(--primary)] sm:w-auto sm:max-w-none ${darkMode ? "border-white/15 bg-white/[0.04] text-white" : "border-black/15 bg-white text-[#111111] shadow-xs"}`}
+                className={`inline-flex items-center justify-center gap-2 rounded-full border px-6 py-3 text-sm font-black transition duration-300 hover:-translate-y-0.5 hover:border-[var(--primary)] hover:text-[var(--primary)] ${
+                  darkMode ? "border-white/15 bg-white/[0.04] text-white" : "border-black/12 bg-white text-[#111111] shadow-xs"
+                }`}
               >
-                <MessageCircle size={17} />
-                <span className="truncate">{content.home.secondaryButton.label}</span>
+                <MessageCircle size={16} />
+                <span>{content.home.secondaryButton.label}</span>
               </Link>
               <a
                 href={content.cv?.url || "/cv"}
                 target="_blank"
                 rel="noreferrer"
-                className="group inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-black text-black transition duration-300 hover:-translate-y-0.5 hover:bg-[#00b885] sm:w-auto sm:max-w-none shadow-sm"
+                className="group inline-flex items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-6 py-3 text-sm font-black text-black transition duration-300 hover:-translate-y-0.5 hover:bg-[#00b885] shadow-xs"
               >
                 <Eye size={16} />
-                View Usman Iqbal CV
+                <span>View Usman Iqbal CV</span>
               </a>
             </motion.div>
 
-            <motion.div {...heroIn(shouldAnimate, loading, 0.72, false, "spring")} className="mt-4 sm:mt-5">
+            <motion.div {...heroIn(shouldAnimate, loading, 0.72, false, "spring")} className="mt-1">
               <SocialLinks socials={content.socials} compact darkMode={darkMode} />
             </motion.div>
           </motion.div>
