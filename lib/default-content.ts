@@ -622,6 +622,12 @@ export const defaultContent: SiteContent = {
     { id: "fiverr", platform: "Fiverr", label: "Fiverr", url: "https://www.fiverr.com/" },
     { id: "instagram", platform: "Instagram", label: "Instagram", url: "https://www.instagram.com/" }
   ],
+  certifications: [],
+  cv: {
+    url: "/cv",
+    fileName: "Usman_Iqbal_CV.pdf",
+    uploadedAt: ""
+  },
   theme: {
     primary: "#00DCA0",
     secondary: "#00DCA0",

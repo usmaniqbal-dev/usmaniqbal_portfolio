@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  Award,
   BriefcaseBusiness,
   Home,
   Mail,
@@ -28,6 +29,7 @@ export const defaultNavItems: NavItem[] = [
   { label: "About", href: "/about", icon: UserRound },
   { label: "Services", href: "/services", icon: Sparkles },
   { label: "Projects", href: "/projects", icon: BriefcaseBusiness },
+  { label: "Certifications", href: "/certifications", icon: Award },
   { label: "Contact", href: "/contact", icon: Mail }
 ];
 

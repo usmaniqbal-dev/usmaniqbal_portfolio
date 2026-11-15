@@ -33,6 +33,7 @@ import {
 import type { ProjectContent, ServiceContent, SiteContent, SkillContent, SocialContent } from "@/types/site-content";
 import { useCursorParallax } from "@/hooks/useCursorParallax";
 import FloatingNav from "@/components/floating-nav";
+import { SocialBrandBadge } from "@/lib/social-platforms";
 
 type PortfolioClientProps = {
   content: SiteContent;
@@ -294,7 +295,7 @@ export default function PortfolioClient({ content: initialContent, initialSectio
                 <span className="truncate">{content.home.secondaryButton.label}</span>
               </Link>
               <a
-                href="/cv"
+                href={content.cv?.url || "/cv"}
                 target="_blank"
                 rel="noreferrer"
                 className={`inline-flex w-full max-w-[260px] items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition duration-300 hover:-translate-y-0.5 hover:border-[var(--primary)] hover:text-[var(--primary)] sm:w-auto sm:max-w-none ${darkMode ? "border-[var(--primary)]/30 bg-[var(--primary)]/10 text-white" : "border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[#111111]"}`}
@@ -746,7 +747,11 @@ function ServiceCard({ service, index, shouldAnimate, darkMode }: { service: Ser
       }`}
     >
       <div className="relative z-10">
-        {service.image ? <img src={service.image} alt={`${service.title} by Usman Iqbal`} width={1280} height={560} loading="lazy" decoding="async" className={`mb-4 aspect-[16/7] w-full rounded-[8px] border object-cover ${darkMode ? "border-white/10" : "border-black/8"}`} /> : null}
+        {service.image ? (
+          <div className={`mb-4 flex aspect-[16/8] w-full items-center justify-center overflow-hidden rounded-[8px] border bg-neutral-900/40 p-2 ${darkMode ? "border-white/10" : "border-black/8"}`}>
+            <img src={service.image} alt={`${service.title} by Usman Iqbal`} width={1280} height={560} loading="lazy" decoding="async" className="max-h-full max-w-full object-contain object-center" />
+          </div>
+        ) : null}
         <div className="mb-3 grid h-10 w-10 place-items-center overflow-hidden rounded-[8px] bg-[var(--primary)]/12 text-[var(--primary)] transition group-hover:bg-[var(--primary)] group-hover:text-black">
           {service.icon ? <img src={service.icon} alt="" className="h-6 w-6 object-contain" /> : <Icon size={21} />}
         </div>
@@ -857,17 +862,17 @@ function ProjectSlider({
             >
               <div>
                 {/* Image container with rounded corners and clean padding frame */}
-                <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[16px] bg-gray-100 dark:bg-zinc-800">
+                <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[16px] bg-neutral-900/40 dark:bg-zinc-900/80 flex items-center justify-center p-2">
                   <Image
                     src={project.image || "/images/projects/salesforce-automation.jpg"}
                     alt={project.title}
                     fill
                     unoptimized={Boolean(project.image?.startsWith("/api/blob") || project.image?.includes("/api/blob") || project.image?.includes("blob.vercel-storage.com"))}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="object-contain object-center transition-transform duration-500 group-hover:scale-105"
                   />
                   {project.category ? (
-                    <span className="absolute top-3 left-3 rounded-full bg-black/65 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
+                    <span className="absolute top-3 left-3 rounded-full bg-black/75 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
                       {project.category.replace(" Projects", "")}
                     </span>
                   ) : null}
@@ -953,17 +958,17 @@ function ProjectSlider({
               {/* Scrollable Modal Content */}
               <div className="overflow-y-auto">
                 {/* Hero Project Image */}
-                <div className="relative aspect-[16/9] w-full bg-gray-100 dark:bg-zinc-800">
+                <div className="relative aspect-[16/10] w-full bg-neutral-900/90 dark:bg-black/95 flex items-center justify-center p-3">
                   <Image
                     src={selectedProject.image || "/images/projects/salesforce-automation.jpg"}
                     alt={selectedProject.title}
                     fill
                     unoptimized={Boolean(selectedProject.image?.startsWith("/api/blob") || selectedProject.image?.includes("/api/blob") || selectedProject.image?.includes("blob.vercel-storage.com"))}
                     sizes="(max-width: 768px) 100vw, 680px"
-                    className="object-cover"
+                    className="object-contain object-center"
                   />
                   {selectedProject.category && (
-                    <span className="absolute bottom-4 left-4 rounded-full bg-black/70 px-3.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
+                    <span className="absolute bottom-4 left-4 rounded-full bg-black/75 px-3.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
                       {selectedProject.category}
                     </span>
                   )}
@@ -1323,72 +1328,23 @@ function useTiltMotion(enabled: boolean) {
 }
 
 function SocialLinks({ socials, compact = false, darkMode }: { socials: SocialContent[]; compact?: boolean; darkMode?: boolean }) {
-  const visibleSocials = socials.filter((social) => social.url.trim());
+  const visibleSocials = socials.filter((social) => social.url && social.url.trim());
 
   if (!visibleSocials.length) {
     return null;
   }
 
   return (
-    <div className={`flex flex-wrap gap-3 ${compact ? "mt-5 lg:flex-nowrap lg:overflow-x-auto" : "mt-10"}`}>
+    <div className={`flex flex-wrap items-center gap-3 ${compact ? "mt-5" : "mt-10"}`}>
       {visibleSocials.map((social) => (
-        <a
+        <SocialBrandBadge
           key={social.id}
-          href={social.url}
-          target="_blank"
-          rel="noreferrer"
-          aria-label={social.label}
-          className={`group grid h-11 w-11 shrink-0 place-items-center rounded-full border transition hover:-translate-y-0.5 hover:border-[var(--primary)] hover:text-[var(--primary)] ${
-            darkMode
-              ? "border-white/10 bg-white/[0.04] text-white/70"
-              : "border-black/10 bg-black/[0.03] text-black/70"
-          }`}
-        >
-          <SocialIcon social={social} />
-        </a>
+          platform={social.platform}
+          url={social.url}
+          label={social.label || social.platform}
+          size="md"
+        />
       ))}
     </div>
   );
-}
-
-function SocialIcon({ social }: { social: SocialContent }) {
-  const platform = social.platform.toLowerCase();
-
-  if (platform.includes("linkedin")) {
-    return <Linkedin size={22} />;
-  }
-
-  if (platform.includes("github")) {
-    return <Github size={22} />;
-  }
-
-  if (platform.includes("instagram")) {
-    return <Instagram size={22} />;
-  }
-
-  if (platform.includes("youtube")) {
-    return <span className="text-sm font-black">YT</span>;
-  }
-
-  if (platform.includes("facebook")) {
-    return <span className="text-lg font-black">f</span>;
-  }
-
-  if (platform.includes("twitter") || platform === "x") {
-    return <span className="text-lg font-black">X</span>;
-  }
-
-  if (platform.includes("whatsapp")) {
-    return <MessageCircle size={22} />;
-  }
-
-  if (platform.includes("email")) {
-    return <Mail size={22} />;
-  }
-
-  if (platform.includes("fiverr")) {
-    return <span className="text-lg font-black">fi</span>;
-  }
-
-  return <ExternalLink size={21} />;
 }

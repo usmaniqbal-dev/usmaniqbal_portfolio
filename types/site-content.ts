@@ -72,6 +72,29 @@ export type SocialContent = {
   url: string;
 };
 
+export type CertificationContent = {
+  id: string;
+  name: string;
+  issuingOrganization: string;
+  issueDate: string;
+  expirationDate?: string;
+  credentialId?: string;
+  credentialUrl?: string;
+  skills?: string[];
+  mediaUrl?: string;
+  mediaType?: "image" | "pdf";
+  description?: string;
+  isPublished?: boolean;
+  order?: number;
+};
+
+export type CvContent = {
+  url: string;
+  fileName?: string;
+  uploadedAt?: string;
+  fileSize?: number;
+};
+
 export type ContactContent = {
   email: string;
   phone: string;
@@ -278,6 +301,8 @@ export type SiteContent = {
   projects: ProjectContent[];
   contact: ContactContent;
   socials: SocialContent[];
+  certifications?: CertificationContent[];
+  cv?: CvContent;
   theme: ThemeContent;
   sliders: SliderContent;
   builder: BuilderState;

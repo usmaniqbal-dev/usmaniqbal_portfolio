@@ -274,6 +274,8 @@ function normalizeContent(content: Partial<SiteContent>): SiteContent {
     })(),
     contact: { ...defaultContent.contact, ...content.contact },
     socials: Array.isArray(content.socials) ? content.socials : defaultContent.socials,
+    certifications: Array.isArray(content.certifications) ? content.certifications : (defaultContent.certifications || []),
+    cv: content.cv ? { ...defaultContent.cv, ...content.cv } : defaultContent.cv,
     theme: { ...defaultContent.theme, ...content.theme },
     sliders: { ...defaultContent.sliders, ...content.sliders },
     builder: {

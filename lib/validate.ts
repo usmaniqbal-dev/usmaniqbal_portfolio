@@ -99,6 +99,32 @@ export function validateSiteContent(content: SiteContent): SiteContent {
       label: sanitizeText(social.label),
       url: sanitizeUrl(social.url)
     })),
+    certifications: Array.isArray(content.certifications)
+      ? content.certifications.map((cert) => ({
+          ...cert,
+          id: sanitizeText(cert.id),
+          name: sanitizeText(cert.name),
+          issuingOrganization: sanitizeText(cert.issuingOrganization),
+          issueDate: sanitizeText(cert.issueDate),
+          expirationDate: cert.expirationDate ? sanitizeText(cert.expirationDate) : undefined,
+          credentialId: cert.credentialId ? sanitizeText(cert.credentialId) : undefined,
+          credentialUrl: cert.credentialUrl ? sanitizeUrl(cert.credentialUrl) : undefined,
+          skills: Array.isArray(cert.skills) ? cert.skills.map(sanitizeText).filter(Boolean) : [],
+          mediaUrl: cert.mediaUrl ? sanitizeUrl(cert.mediaUrl) : undefined,
+          mediaType: cert.mediaType === "pdf" ? ("pdf" as const) : ("image" as const),
+          description: cert.description ? sanitizeText(cert.description) : undefined,
+          isPublished: cert.isPublished !== false,
+          order: typeof cert.order === "number" ? cert.order : 0
+        }))
+      : [],
+    cv: content.cv
+      ? {
+          url: sanitizeUrl(content.cv.url || "/cv"),
+          fileName: content.cv.fileName ? sanitizeText(content.cv.fileName) : "Usman_Iqbal_CV.pdf",
+          uploadedAt: content.cv.uploadedAt ? sanitizeText(content.cv.uploadedAt) : "",
+          fileSize: typeof content.cv.fileSize === "number" ? content.cv.fileSize : undefined
+        }
+      : undefined,
     builder: {
       ...content.builder,
       settings: {

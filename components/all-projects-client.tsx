@@ -444,16 +444,16 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
               >
                 <div>
                   {/* Thumbnail Image Container */}
-                  <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-gray-100 dark:bg-zinc-800">
+                  <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-neutral-900/40 dark:bg-zinc-900/80 flex items-center justify-center p-2">
                     <ProjectThumbnail
                       src={project.image || "/images/projects/salesforce-automation.jpg"}
                       alt={project.title}
                       priority={index < 3}
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="object-contain object-center transition-transform duration-500 group-hover:scale-105"
                     />
                     {project.category ? (
-                      <span className="absolute top-2 left-2 rounded-full bg-black/70 px-2.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-md">
+                      <span className="absolute top-2 left-2 rounded-full bg-black/75 px-2.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-md">
                         {project.category.replace(" Projects", "")}
                       </span>
                     ) : null}
@@ -634,16 +634,16 @@ export default function AllProjectsClient({ content }: AllProjectsClientProps) {
 
               {/* Scrollable Modal Content */}
               <div className="overflow-y-auto">
-                <div className="relative aspect-[16/9] w-full bg-gray-100 dark:bg-zinc-800">
+                <div className="relative aspect-[16/10] w-full bg-neutral-900/90 dark:bg-black/95 flex items-center justify-center p-3">
                   <ProjectThumbnail
                     src={selectedProject.image || "/images/projects/salesforce-automation.jpg"}
                     alt={selectedProject.title}
                     priority={true}
                     sizes="(max-width: 768px) 100vw, 560px"
-                    className="object-cover"
+                    className="object-contain object-center"
                   />
                   {selectedProject.category && (
-                    <span className="absolute bottom-3 left-3 rounded-full bg-black/70 px-3 py-0.5 text-[11px] font-semibold text-white backdrop-blur-md">
+                    <span className="absolute bottom-3 left-3 rounded-full bg-black/75 px-3 py-0.5 text-[11px] font-semibold text-white backdrop-blur-md">
                       {selectedProject.category}
                     </span>
                   )}
