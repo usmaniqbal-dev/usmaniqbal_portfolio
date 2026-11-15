@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -9,6 +9,8 @@ import {
   BriefcaseBusiness,
   Check,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   CircleUserRound,
   Cloud,
   ContactRound,
@@ -31,7 +33,7 @@ import {
   X
 } from "lucide-react";
 import { prepareFileForUpload } from "@/lib/client-compress";
-import { SOCIAL_PLATFORMS, SocialBrandBadge, resolveSocialPlatform } from "@/lib/social-platforms";
+import { SOCIAL_PLATFORMS, SocialBrandBadge, resolveSocialPlatform, type SocialPlatformConfig } from "@/lib/social-platforms";
 import type {
   CertificationContent,
   CvContent,
@@ -66,10 +68,10 @@ type IdentifiedItem = { id: string };
 
 const heroTemplates: { id: HeroTemplate; name: string; description: string; previewClass: string }[] = [
   { id: "circle", name: "Circle Image", description: "A focused circular portrait treatment.", previewClass: "rounded-full" },
-  { id: "rounded", name: "Rounded Rectangle", description: "A clean, framed professional photo.", previewClass: "rounded-[8px]" },
-  { id: "glass", name: "Glass Card", description: "A portrait inside a soft glass treatment.", previewClass: "rounded-[8px] border-white/60 bg-white/20" },
-  { id: "floating", name: "Floating Image", description: "A raised image with depth and space.", previewClass: "rounded-[8px] -rotate-3 shadow-xl" },
-  { id: "layered", name: "Modern Layered Design", description: "The current NURAXTECH hero composition.", previewClass: "rounded-[8px] shadow-lg" }
+  { id: "rounded", name: "Rounded Rectangle", description: "A clean, framed professional photo.", previewClass: "rounded-xl" },
+  { id: "glass", name: "Glass Card", description: "A portrait inside a soft glass treatment.", previewClass: "rounded-xl border-white/60 bg-white/20" },
+  { id: "floating", name: "Floating Image", description: "A raised image with depth and space.", previewClass: "rounded-xl -rotate-3 shadow-xl" },
+  { id: "layered", name: "Modern Layered Design", description: "The current NURAXTECH hero composition.", previewClass: "rounded-xl shadow-lg" }
 ];
 
 const uploadTimeoutMs = 60_000;
@@ -80,21 +82,22 @@ function uploadFailureMessage(error: unknown) {
     : "Media upload failed. Please try again.";
 }
 
-const tabs: { id: EditWebsiteTab; label: string; icon: typeof Sparkles }[] = [
-  { id: "hero", label: "Hero Section", icon: Sparkles },
-  { id: "projects", label: "Projects", icon: BriefcaseBusiness },
-  { id: "certifications", label: "Certifications", icon: Award },
-  { id: "cv", label: "Change CV", icon: FileText },
-  { id: "skills", label: "Technical Skills", icon: Wrench },
-  { id: "about", label: "About Section", icon: CircleUserRound },
-  { id: "services", label: "Services", icon: Layers3 },
-  { id: "contact", label: "Contact Page", icon: ContactRound },
-  { id: "social", label: "Social Media", icon: Share2 }
+const tabs: { id: EditWebsiteTab; label: string; icon: typeof Sparkles; group?: string }[] = [
+  { id: "hero", label: "Hero Section", icon: Sparkles, group: "Core Portfolio" },
+  { id: "projects", label: "Projects", icon: BriefcaseBusiness, group: "Core Portfolio" },
+  { id: "certifications", label: "Certifications", icon: Award, group: "Credentials & Media" },
+  { id: "cv", label: "Change CV", icon: FileText, group: "Credentials & Media" },
+  { id: "skills", label: "Technical Skills", icon: Wrench, group: "Core Portfolio" },
+  { id: "about", label: "About Section", icon: CircleUserRound, group: "Core Portfolio" },
+  { id: "services", label: "Services", icon: Layers3, group: "Core Portfolio" },
+  { id: "contact", label: "Contact Page", icon: ContactRound, group: "Communication" },
+  { id: "social", label: "Social Media", icon: Share2, group: "Communication" }
 ];
 
-// Provides the focused admin module for the editable public portfolio sections.
+// Provides the redesigned, clean admin module for the editable public portfolio sections.
 export default function EditWebsiteManager({ content, setContent, saveContent, secureHeaders }: EditWebsiteManagerProps) {
   const [activeTab, setActiveTab] = useState<EditWebsiteTab>("hero");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Stores an edited content document locally, then persists it through the protected API.
   async function commit(nextContent: SiteContent) {
@@ -103,10 +106,24 @@ export default function EditWebsiteManager({ content, setContent, saveContent, s
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[230px_minmax(0,1fr)]">
-      <aside className="h-fit rounded-[8px] border border-white/10 bg-white/[0.04] p-3">
-        <p className="px-3 py-2 text-sm font-black uppercase text-white/42">Content Manager</p>
-        <div className="grid gap-1">
+    <div className="grid gap-6 xl:grid-cols-[250px_minmax(0,1fr)]">
+      {/* Redesigned Sidebar Navigation with Group Headers */}
+      <aside className="h-fit rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-xl">
+        <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-wider text-[#16f2a4]">Content Editor</p>
+            <p className="text-[11px] text-white/50">Website sections & media</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+            className="xl:hidden rounded-lg border border-white/10 p-1.5 text-white/70 hover:text-white"
+          >
+            {mobileSidebarOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+        </div>
+
+        <div className={`grid gap-1.5 ${mobileSidebarOpen ? "block" : "hidden xl:grid"}`}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
@@ -115,19 +132,25 @@ export default function EditWebsiteManager({ content, setContent, saveContent, s
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-3 rounded-[8px] px-3 py-3 text-left font-bold transition ${
-                  active ? "bg-[#16f2a4] text-black" : "text-white/65 hover:bg-white/[0.06] hover:text-white"
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setMobileSidebarOpen(false);
+                }}
+                className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-bold transition-all duration-200 ${
+                  active
+                    ? "bg-[#16f2a4] text-black shadow-lg shadow-[#16f2a4]/20 font-black"
+                    : "text-white/70 hover:bg-white/[0.06] hover:text-white"
                 }`}
               >
-                <Icon size={18} />
-                {tab.label}
+                <Icon size={17} className={active ? "text-black" : "text-white/60"} />
+                <span>{tab.label}</span>
               </button>
             );
           })}
         </div>
       </aside>
 
+      {/* Main Content Pane */}
       <section className="min-w-0">
         {activeTab === "hero" ? <HeroEditor content={content} setContent={setContent} commit={commit} secureHeaders={secureHeaders} /> : null}
         {activeTab === "projects" ? <ProjectsEditor content={content} setContent={setContent} commit={commit} secureHeaders={secureHeaders} /> : null}
@@ -162,83 +185,133 @@ function HeroEditor({ content, setContent, commit, secureHeaders }: EditorProps 
   }
 
   return (
-    <EditorPanel title="Hero Section" description="Update the first impression of your portfolio and choose how your image is presented.">
+    <EditorPanel
+      title="Hero Section"
+      description="Update the headline, introductory copy, calls to action, and visual presentation of your homepage hero."
+    >
       <div className="grid gap-5 lg:grid-cols-2">
         <Field label="Heading" value={content.home.title} onChange={(value) => update({ ...content.home, title: value })} />
         <Field label="Sub Heading" value={content.home.subtitle} onChange={(value) => update({ ...content.home, subtitle: value })} />
       </div>
       <TextArea label="Description" value={content.home.description} onChange={(value) => update({ ...content.home, description: value })} />
+      
       <div className="grid gap-5 lg:grid-cols-2">
-        <div className="grid gap-4 rounded-[8px] border border-white/10 bg-black/25 p-4">
-          <p className="font-black">Primary Call To Action</p>
+        <div className="grid gap-4 rounded-xl border border-white/10 bg-black/30 p-4">
+          <p className="font-black text-sm text-[#16f2a4]">Primary Call To Action</p>
           <Field label="Button Label" value={content.home.primaryButton.label} onChange={(value) => update({ ...content.home, primaryButton: { ...content.home.primaryButton, label: value } })} />
           <Field label="Button URL" value={content.home.primaryButton.href} onChange={(value) => update({ ...content.home, primaryButton: { ...content.home.primaryButton, href: value } })} />
         </div>
-        <div className="grid gap-4 rounded-[8px] border border-white/10 bg-black/25 p-4">
-          <p className="font-black">Secondary Call To Action</p>
+        <div className="grid gap-4 rounded-xl border border-white/10 bg-black/30 p-4">
+          <p className="font-black text-sm text-[#16f2a4]">Secondary Call To Action</p>
           <Field label="Button Label" value={content.home.secondaryButton.label} onChange={(value) => update({ ...content.home, secondaryButton: { ...content.home.secondaryButton, label: value } })} />
           <Field label="Button URL" value={content.home.secondaryButton.href} onChange={(value) => update({ ...content.home, secondaryButton: { ...content.home.secondaryButton, href: value } })} />
         </div>
       </div>
-      <ImageField label="Hero Portrait / Graphic" value={content.home.profileImage || content.home.heroImage} onChange={(value) => update({ ...content.home, profileImage: value, heroImage: value })} onUploaded={saveHeroImage} secureHeaders={secureHeaders} />
-      <div className="grid gap-4 rounded-[8px] border border-white/10 bg-black/25 p-4">
+
+      <ImageField
+        label="Hero Portrait / Graphic (Uncropped Display)"
+        value={content.home.profileImage || content.home.heroImage}
+        onChange={(value) => update({ ...content.home, profileImage: value, heroImage: value })}
+        onUploaded={saveHeroImage}
+        secureHeaders={secureHeaders}
+      />
+
+      <div className="grid gap-4 rounded-xl border border-white/10 bg-black/30 p-4">
         <div>
-          <p className="font-black">Hero Background</p>
-          <p className="mt-1 text-sm text-white/48">Use a color, a background image, or a muted looping video. The default background remains unchanged until you select an option.</p>
+          <p className="font-black text-sm text-white">Hero Background</p>
+          <p className="mt-1 text-xs text-white/50">Choose between solid dark tone, background image, or smooth video loop.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {["none", "color", "image", "video"].map((type) => (
-            <button key={type} type="button" onClick={() => update({ ...content.home, heroBackgroundType: type === "none" ? undefined : type as "color" | "image" | "video", heroBackgroundUrl: type === "none" ? "" : content.home.heroBackgroundUrl })} className={`rounded-full border px-4 py-2 text-sm font-black transition ${backgroundType === type ? "border-[#16f2a4] bg-[#16f2a4] text-black" : "border-white/10 text-white/65 hover:border-[#16f2a4]"}`}>{type === "none" ? "Default" : `${type[0].toUpperCase()}${type.slice(1)}`}</button>
+            <button
+              key={type}
+              type="button"
+              onClick={() => update({ ...content.home, heroBackgroundType: type === "none" ? undefined : type as "color" | "image" | "video", heroBackgroundUrl: type === "none" ? "" : content.home.heroBackgroundUrl })}
+              className={`rounded-full border px-4 py-1.5 text-xs font-bold transition ${
+                backgroundType === type ? "border-[#16f2a4] bg-[#16f2a4] text-black" : "border-white/10 text-white/70 hover:border-[#16f2a4]"
+              }`}
+            >
+              {type === "none" ? "Default Clean" : `${type[0].toUpperCase()}${type.slice(1)}`}
+            </button>
           ))}
         </div>
         {backgroundType === "color" ? <ColorField label="Background Color" value={content.home.heroBackgroundColor || "#020403"} onChange={(value) => update({ ...content.home, heroBackgroundColor: value })} /> : null}
         {backgroundType === "image" || backgroundType === "video" ? <ImageField label={backgroundType === "video" ? "Background Video" : "Background Image"} value={content.home.heroBackgroundUrl || ""} onChange={(value) => update({ ...content.home, heroBackgroundUrl: value })} onUploaded={saveHeroBackground} secureHeaders={secureHeaders} allowVideo={backgroundType === "video"} /> : null}
       </div>
+
       <div>
         <div className="mb-3">
-          <p className="font-black">Hero Template</p>
-          <p className="mt-1 text-sm text-white/48">Select a template, then save to apply it to the public portfolio.</p>
+          <p className="font-black text-sm text-white">Hero Presentation Layout</p>
+          <p className="mt-1 text-xs text-white/50">Select how your hero photo is framed on the public homepage.</p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {heroTemplates.map((template) => (
             <button
               key={template.id}
               type="button"
               onClick={() => update({ ...content.home, heroTemplate: template.id })}
-              className={`rounded-[8px] border p-3 text-left transition ${
-                heroTemplate === template.id ? "border-[#16f2a4] bg-[#16f2a4]/10" : "border-white/10 bg-black/25 hover:border-white/30"
+              className={`rounded-xl border p-3 text-left transition ${
+                heroTemplate === template.id ? "border-[#16f2a4] bg-[#16f2a4]/10 shadow-md" : "border-white/10 bg-black/20 hover:border-white/30"
               }`}
             >
-              <span className={`mb-3 block aspect-[4/3] border border-white/15 bg-gradient-to-br from-[#16f2a4]/70 via-[#22d3ee]/45 to-black ${template.previewClass}`} />
-              <span className="block font-black">{template.name}</span>
-              <span className="mt-1 block text-xs leading-5 text-white/48">{template.description}</span>
+              <span className={`mb-2.5 block aspect-[4/3] border border-white/15 bg-gradient-to-br from-[#16f2a4]/60 via-[#22d3ee]/40 to-black ${template.previewClass}`} />
+              <span className="block font-black text-sm text-white">{template.name}</span>
+              <span className="mt-1 block text-[11px] leading-4 text-white/50">{template.description}</span>
             </button>
           ))}
         </div>
       </div>
-      <SaveButton label="Save Hero Changes" onClick={() => commit(content)} />
+
+      <div className="pt-2">
+        <SaveButton label="Save Hero Changes" onClick={() => commit(content)} />
+      </div>
     </EditorPanel>
   );
 }
 
-// Manages project CRUD, media uploads, technology tags, and drag ordering.
+// Manages project CRUD, media uploads, technology tags, and collapsible ordering.
 function ProjectsEditor({ content, setContent, commit, secureHeaders }: EditorProps & UploadProps) {
+  const [collapsedMap, setCollapsedMap] = useState<Record<string, boolean>>({});
+  const allCollapsed = content.projects.length > 0 && content.projects.every((p) => collapsedMap[p.id]);
+
+  const toggleAll = () => {
+    const nextState = !allCollapsed;
+    const nextMap: Record<string, boolean> = {};
+    content.projects.forEach((p) => {
+      nextMap[p.id] = nextState;
+    });
+    setCollapsedMap(nextMap);
+  };
+
   const updateProject = (id: string, patch: Partial<ProjectContent>) => {
     setContent({ ...content, projects: content.projects.map((project) => (project.id === id ? { ...project, ...patch } : project)) });
   };
 
   return (
-    <EditorPanel title="Projects" description="Add, edit, remove, upload, and drag projects into the order you want visitors to see.">
+    <EditorPanel
+      title="Projects"
+      description="Add, edit, remove, upload, and drag projects into the order you want visitors to see."
+      badge={`${content.projects.length} Total`}
+      onToggleCollapse={toggleAll}
+      allCollapsed={allCollapsed}
+    >
       <ReorderableList
         items={content.projects}
         onReorder={(projects) => setContent({ ...content, projects })}
         renderItem={(project) => (
-          <ProjectCard project={project} onChange={(patch) => updateProject(project.id, patch)} onDelete={() => removeItem("this project", () => setContent({ ...content, projects: content.projects.filter((item) => item.id !== project.id) }))} secureHeaders={secureHeaders} />
+          <ProjectCard
+            project={project}
+            isCollapsed={Boolean(collapsedMap[project.id])}
+            onToggleCollapse={() => setCollapsedMap((prev) => ({ ...prev, [project.id]: !prev[project.id] }))}
+            onChange={(patch) => updateProject(project.id, patch)}
+            onDelete={() => removeItem("this project", () => setContent({ ...content, projects: content.projects.filter((item) => item.id !== project.id) }))}
+            secureHeaders={secureHeaders}
+          />
         )}
       />
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 pt-3">
         <AddButton
-          label="Add Project"
+          label="Add New Project"
           onClick={() =>
             setContent({
               ...content,
@@ -252,29 +325,88 @@ function ProjectsEditor({ content, setContent, commit, secureHeaders }: EditorPr
   );
 }
 
-// Renders the editable fields for a single project record.
-function ProjectCard({ project, onChange, onDelete, secureHeaders }: { project: ProjectContent; onChange: (patch: Partial<ProjectContent>) => void; onDelete: () => void } & UploadProps) {
+// Renders an individual project card with collapsible body.
+function ProjectCard({
+  project,
+  isCollapsed,
+  onToggleCollapse,
+  onChange,
+  onDelete,
+  secureHeaders
+}: {
+  project: ProjectContent;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
+  onChange: (patch: Partial<ProjectContent>) => void;
+  onDelete: () => void;
+} & UploadProps) {
   return (
-    <div className="grid gap-4 rounded-[8px] border border-white/10 bg-black/25 p-4 xl:grid-cols-[1fr_1fr_300px]">
-      <div className="grid gap-4">
-        <Field label="Project Title" value={project.title} onChange={(value) => onChange({ title: value })} />
-        <Field label="Category" value={project.category || ""} onChange={(value) => onChange({ category: value })} />
-        <Field label="Live Link" value={project.url} onChange={(value) => onChange({ url: value })} />
-        <Field label="GitHub Link" value={project.githubUrl || ""} onChange={(value) => onChange({ githubUrl: value })} />
+    <div className="rounded-2xl border border-white/10 bg-black/30 overflow-hidden transition-all duration-200">
+      {/* Collapsible Card Header */}
+      <div className="flex items-center justify-between p-4 bg-white/[0.02] border-b border-white/5">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="font-mono text-xs font-bold text-white/40">#{project.id.slice(0, 8)}</span>
+          <p className="font-black text-sm text-white truncate">{project.title || "Untitled Project"}</p>
+          {project.category && (
+            <span className="hidden sm:inline-block rounded-full bg-white/5 px-2.5 py-0.5 text-[10px] font-semibold text-[#16f2a4]">
+              {project.category}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1 text-xs font-bold text-white/70 hover:bg-white/5 hover:text-white"
+          >
+            {isCollapsed ? (
+              <>
+                <ChevronDown size={14} /> Expand
+              </>
+            ) : (
+              <>
+                <ChevronUp size={14} /> Collapse
+              </>
+            )}
+          </button>
+          <DeleteButton label="Delete Project" onClick={onDelete} />
+        </div>
       </div>
-      <div className="grid gap-4">
-        <TextArea label="Description" value={project.description} onChange={(value) => onChange({ description: value })} compact />
-        <Field label="Technologies" hint="Comma separated" value={project.tags.join(", ")} onChange={(value) => onChange({ tags: splitCommaList(value) })} />
-        <DeleteButton label="Delete Project" onClick={onDelete} />
-      </div>
-      <ImageField label="Project Image" value={project.image} onChange={(value) => onChange({ image: value })} secureHeaders={secureHeaders} />
+
+      {/* Expanded Form Fields */}
+      {!isCollapsed && (
+        <div className="grid gap-4 p-5 xl:grid-cols-[1fr_1fr_300px]">
+          <div className="grid gap-4">
+            <Field label="Project Title" value={project.title} onChange={(value) => onChange({ title: value })} />
+            <Field label="Category" value={project.category || ""} onChange={(value) => onChange({ category: value })} />
+            <Field label="Live Link" value={project.url} onChange={(value) => onChange({ url: value })} />
+            <Field label="GitHub Link" value={project.githubUrl || ""} onChange={(value) => onChange({ githubUrl: value })} />
+          </div>
+          <div className="grid gap-4">
+            <TextArea label="Description" value={project.description} onChange={(value) => onChange({ description: value })} compact />
+            <Field label="Technologies" hint="Comma separated" value={project.tags.join(", ")} onChange={(value) => onChange({ tags: splitCommaList(value) })} />
+          </div>
+          <ImageField label="Project Image (Uncropped Display)" value={project.image} onChange={(value) => onChange({ image: value })} secureHeaders={secureHeaders} />
+        </div>
+      )}
     </div>
   );
 }
 
-// Manages LinkedIn-style Licenses & Certifications.
+// Manages LinkedIn-style Licenses & Certifications with collapsible entries.
 function CertificationsEditor({ content, setContent, commit, secureHeaders }: EditorProps & UploadProps) {
   const certifications = content.certifications || [];
+  const [collapsedMap, setCollapsedMap] = useState<Record<string, boolean>>({});
+  const allCollapsed = certifications.length > 0 && certifications.every((c) => collapsedMap[c.id]);
+
+  const toggleAll = () => {
+    const nextState = !allCollapsed;
+    const nextMap: Record<string, boolean> = {};
+    certifications.forEach((c) => {
+      nextMap[c.id] = nextState;
+    });
+    setCollapsedMap(nextMap);
+  };
 
   const updateCertification = (id: string, patch: Partial<CertificationContent>) => {
     const updated = certifications.map((c) => (c.id === id ? { ...c, ...patch } : c));
@@ -304,12 +436,15 @@ function CertificationsEditor({ content, setContent, commit, secureHeaders }: Ed
     <EditorPanel
       title="Licenses & Certifications"
       description="Manage your professional credentials in LinkedIn style. Display credential IDs, issuing bodies, verification links, and certificate media."
+      badge={`${certifications.length} Credentials`}
+      onToggleCollapse={toggleAll}
+      allCollapsed={allCollapsed}
     >
       {certifications.length === 0 ? (
-        <div className="rounded-[8px] border border-dashed border-white/15 p-8 text-center text-white/50">
-          <Award className="mx-auto mb-3 opacity-40" size={40} />
+        <div className="rounded-2xl border border-dashed border-white/15 p-8 text-center text-white/50">
+          <Award className="mx-auto mb-3 opacity-40 text-[#16f2a4]" size={40} />
           <p className="text-base font-bold text-white/80">No certifications added yet</p>
-          <p className="mt-1 text-sm text-white/50">Click &ldquo;Add Certification&rdquo; below to showcase your professional credentials.</p>
+          <p className="mt-1 text-xs text-white/50">Click &ldquo;Add Certification&rdquo; below to showcase your professional credentials.</p>
         </div>
       ) : (
         <ReorderableList
@@ -319,6 +454,8 @@ function CertificationsEditor({ content, setContent, commit, secureHeaders }: Ed
             <CertificationCard
               key={cert.id}
               cert={cert}
+              isCollapsed={Boolean(collapsedMap[cert.id])}
+              onToggleCollapse={() => setCollapsedMap((prev) => ({ ...prev, [cert.id]: !prev[cert.id] }))}
               onChange={(patch) => updateCertification(cert.id, patch)}
               onDelete={() =>
                 removeItem("this certification", () =>
@@ -334,7 +471,7 @@ function CertificationsEditor({ content, setContent, commit, secureHeaders }: Ed
         />
       )}
 
-      <div className="flex flex-wrap gap-3 pt-2">
+      <div className="flex flex-wrap gap-3 pt-3">
         <AddButton label="Add Certification" onClick={addCertification} />
         <SaveButton label="Save Certifications" onClick={() => commit(content)} />
       </div>
@@ -345,68 +482,105 @@ function CertificationsEditor({ content, setContent, commit, secureHeaders }: Ed
 // Editable card for an individual Certification entry.
 function CertificationCard({
   cert,
+  isCollapsed,
+  onToggleCollapse,
   onChange,
   onDelete,
   secureHeaders
 }: {
   cert: CertificationContent;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
   onChange: (patch: Partial<CertificationContent>) => void;
   onDelete: () => void;
 } & UploadProps) {
   return (
-    <div className="grid gap-4 rounded-[8px] border border-white/10 bg-black/25 p-4 xl:grid-cols-[1fr_1fr_300px]">
-      <div className="grid gap-4">
-        <Field label="Certification Name" value={cert.name} onChange={(value) => onChange({ name: value })} hint="e.g. Salesforce Certified Administrator" />
-        <Field label="Issuing Organization" value={cert.issuingOrganization} onChange={(value) => onChange({ issuingOrganization: value })} hint="e.g. Salesforce, Google, Coursera" />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Issue Date" value={cert.issueDate} onChange={(value) => onChange({ issueDate: value })} hint="e.g. May 2024 or 2024" />
-          <Field label="Expiration Date" value={cert.expirationDate || ""} onChange={(value) => onChange({ expirationDate: value })} hint="or 'Does not expire'" />
+    <div className="rounded-2xl border border-white/10 bg-black/30 overflow-hidden transition-all duration-200">
+      <div className="flex items-center justify-between p-4 bg-white/[0.02] border-b border-white/5">
+        <div className="flex items-center gap-3 min-w-0">
+          <Award size={18} className="text-[#16f2a4] shrink-0" />
+          <div className="min-w-0">
+            <p className="font-black text-sm text-white truncate">{cert.name}</p>
+            <p className="text-xs text-white/50 truncate">{cert.issuingOrganization} · {cert.issueDate}</p>
+          </div>
+          {cert.isPublished !== false ? (
+            <span className="hidden sm:inline-block rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+              Published
+            </span>
+          ) : (
+            <span className="hidden sm:inline-block rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-400">
+              Hidden
+            </span>
+          )}
         </div>
-        <Field label="Credential ID" value={cert.credentialId || ""} onChange={(value) => onChange({ credentialId: value })} hint="Optional ID" />
-      </div>
-
-      <div className="grid gap-4">
-        <Field label="Credential URL" value={cert.credentialUrl || ""} onChange={(value) => onChange({ credentialUrl: value })} hint="Verification link" />
-        <Field
-          label="Associated Skills"
-          hint="Comma separated"
-          value={(cert.skills || []).join(", ")}
-          onChange={(value) => onChange({ skills: splitCommaList(value) })}
-        />
-        <TextArea label="Description / Key Learnings" value={cert.description || ""} onChange={(value) => onChange({ description: value })} compact />
-
-        <div className="flex items-center justify-between pt-2">
-          <label className="flex cursor-pointer items-center gap-2 text-sm font-bold text-white/80">
-            <input
-              type="checkbox"
-              checked={cert.isPublished !== false}
-              onChange={(e) => onChange({ isPublished: e.target.checked })}
-              className="h-4 w-4 rounded accent-[#16f2a4]"
-            />
-            <span>Show on public Certifications page</span>
-          </label>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1 text-xs font-bold text-white/70 hover:bg-white/5 hover:text-white"
+          >
+            {isCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+            <span>{isCollapsed ? "Expand" : "Collapse"}</span>
+          </button>
           <DeleteButton label="Delete Certification" onClick={onDelete} />
         </div>
       </div>
 
-      <div className="grid gap-2">
-        <ImageField
-          label="Certificate Image or PDF Preview"
-          value={cert.mediaUrl || ""}
-          onChange={(value) => onChange({ mediaUrl: value })}
-          secureHeaders={secureHeaders}
-        />
-        {cert.credentialUrl && (
-          <a
-            href={cert.credentialUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-[#16f2a4] hover:underline"
-          >
-            <ExternalLink size={12} /> Test Verification Link
-          </a>
-        )}
-      </div>
+      {!isCollapsed && (
+        <div className="grid gap-4 p-5 xl:grid-cols-[1fr_1fr_300px]">
+          <div className="grid gap-4">
+            <Field label="Certification Name" value={cert.name} onChange={(value) => onChange({ name: value })} hint="e.g. Salesforce Certified Administrator" />
+            <Field label="Issuing Organization" value={cert.issuingOrganization} onChange={(value) => onChange({ issuingOrganization: value })} hint="e.g. Salesforce, Google, Coursera" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Issue Date" value={cert.issueDate} onChange={(value) => onChange({ issueDate: value })} hint="e.g. May 2024" />
+              <Field label="Expiration Date" value={cert.expirationDate || ""} onChange={(value) => onChange({ expirationDate: value })} hint="or 'Does not expire'" />
+            </div>
+            <Field label="Credential ID" value={cert.credentialId || ""} onChange={(value) => onChange({ credentialId: value })} hint="Optional ID" />
+          </div>
+
+          <div className="grid gap-4">
+            <Field label="Credential URL" value={cert.credentialUrl || ""} onChange={(value) => onChange({ credentialUrl: value })} hint="Verification link" />
+            <Field
+              label="Associated Skills"
+              hint="Comma separated"
+              value={(cert.skills || []).join(", ")}
+              onChange={(value) => onChange({ skills: splitCommaList(value) })}
+            />
+            <TextArea label="Description / Summary" value={cert.description || ""} onChange={(value) => onChange({ description: value })} compact />
+
+            <div className="flex items-center justify-between pt-2">
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-bold text-white/80">
+                <input
+                  type="checkbox"
+                  checked={cert.isPublished !== false}
+                  onChange={(e) => onChange({ isPublished: e.target.checked })}
+                  className="h-4 w-4 rounded accent-[#16f2a4]"
+                />
+                <span>Show on public Certifications page</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <ImageField
+              label="Certificate Media (Uncropped Display)"
+              value={cert.mediaUrl || ""}
+              onChange={(value) => onChange({ mediaUrl: value })}
+              secureHeaders={secureHeaders}
+            />
+            {cert.credentialUrl && (
+              <a
+                href={cert.credentialUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-[#16f2a4] hover:underline"
+              >
+                <ExternalLink size={12} /> Test Verification Link
+              </a>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -486,23 +660,23 @@ function CvEditor({ content, setContent, commit, secureHeaders }: EditorProps & 
       description="Upload and manage your active CV (PDF). The 'View Usman Iqbal CV' buttons across the site and `/cv` link directly to this file."
     >
       {/* Current Active CV Status Card */}
-      <div className="rounded-[8px] border border-white/10 bg-black/25 p-5">
+      <div className="rounded-2xl border border-white/10 bg-black/30 p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-[#16f2a4]/15 text-[#16f2a4]">
+            <div className="grid h-12 w-12 place-items-center rounded-xl bg-[#16f2a4]/15 text-[#16f2a4]">
               <FileText size={24} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <p className="text-lg font-black text-white">{activeCv.fileName || "Usman_Iqbal_CV.pdf"}</p>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-bold text-emerald-400">
+                <p className="text-base font-black text-white">{activeCv.fileName || "Usman_Iqbal_CV.pdf"}</p>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-bold text-emerald-400">
                   <CheckCircle2 size={12} /> Live Active
                 </span>
               </div>
               <p className="mt-1 text-xs text-white/50">
                 {activeCv.uploadedAt
                   ? `Uploaded on ${new Date(activeCv.uploadedAt).toLocaleString()}`
-                  : "Using standard portfolio CV template"}
+                  : "Standard portfolio CV template"}
                 {activeCv.fileSize ? ` · ${(activeCv.fileSize / 1024 / 1024).toFixed(2)} MB` : ""}
               </p>
             </div>
@@ -513,9 +687,9 @@ function CvEditor({ content, setContent, commit, secureHeaders }: EditorProps & 
               href={activeCv.url || "/cv"}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-white transition hover:border-[#16f2a4] hover:text-[#16f2a4]"
+              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:border-[#16f2a4] hover:text-[#16f2a4]"
             >
-              <Eye size={16} /> Preview Active CV
+              <Eye size={14} /> Preview Active CV
             </a>
             {activeCv.url && activeCv.url !== "/cv" && (
               <button
@@ -531,7 +705,7 @@ function CvEditor({ content, setContent, commit, secureHeaders }: EditorProps & 
       </div>
 
       {/* Upload Box */}
-      <div className="grid gap-3 rounded-[8px] border border-dashed border-white/20 bg-white/[0.02] p-6 text-center">
+      <div className="grid gap-3 rounded-2xl border border-dashed border-white/20 bg-white/[0.02] p-6 text-center">
         <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#16f2a4]/10 text-[#16f2a4]">
           {uploading ? <Loader2 className="animate-spin" size={26} /> : <Upload size={26} />}
         </div>
@@ -541,7 +715,7 @@ function CvEditor({ content, setContent, commit, secureHeaders }: EditorProps & 
         </div>
 
         <div className="mt-2 flex justify-center">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[#16f2a4] px-6 py-3 font-black text-black transition hover:bg-white">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[#16f2a4] px-6 py-3 font-black text-black transition hover:bg-white active:scale-95 shadow-md">
             {uploading ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
             {uploading ? "Uploading & Activating..." : "Select New PDF"}
             <input
@@ -567,31 +741,35 @@ function CvEditor({ content, setContent, commit, secureHeaders }: EditorProps & 
   );
 }
 
-// Manages skills with icon upload, percentage controls, and drag ordering.
+// Manages skills with percentage controls and collapsible cards.
 function SkillsEditor({ content, setContent, commit, secureHeaders }: EditorProps & UploadProps) {
   const updateSkill = (id: string, patch: Partial<SkillContent>) => {
     setContent({ ...content, skills: content.skills.map((skill) => (skill.id === id ? { ...skill, ...patch } : skill)) });
   };
 
   return (
-    <EditorPanel title="Technical Skills" description="Manage your skills, categories, icons, percentages, colors, and display order.">
+    <EditorPanel
+      title="Technical Skills"
+      description="Manage your skills, categories, icons, percentages, colors, and display order."
+      badge={`${content.skills.length} Skills`}
+    >
       <ReorderableList
         items={content.skills}
         onReorder={(skills) => setContent({ ...content, skills })}
         renderItem={(skill) => (
-          <div className="grid gap-4 rounded-[8px] border border-white/10 bg-black/25 p-4 xl:grid-cols-[1fr_1fr_160px_220px]">
+          <div className="grid gap-4 rounded-xl border border-white/10 bg-black/30 p-4 xl:grid-cols-[1fr_1fr_160px_220px] items-center">
             <Field label="Skill Name" value={skill.name} onChange={(value) => updateSkill(skill.id, { name: value })} />
             <Field label="Skill Category" value={skill.category} onChange={(value) => updateSkill(skill.id, { category: value })} />
-            <NumberField label="Skill Percentage" value={skill.level} min={0} max={100} onChange={(value) => updateSkill(skill.id, { level: value })} />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <ColorField label="Accent Color" value={skill.accent} onChange={(value) => updateSkill(skill.id, { accent: value })} />
-              <ImageField label="Skill Icon" value={skill.icon || ""} onChange={(value) => updateSkill(skill.id, { icon: value })} secureHeaders={secureHeaders} compact />
+            <NumberField label="Proficiency (%)" value={skill.level} min={0} max={100} onChange={(value) => updateSkill(skill.id, { level: value })} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <ColorField label="Accent" value={skill.accent} onChange={(value) => updateSkill(skill.id, { accent: value })} />
+              <ImageField label="Icon" value={skill.icon || ""} onChange={(value) => updateSkill(skill.id, { icon: value })} secureHeaders={secureHeaders} compact />
             </div>
             <DeleteButton label="Delete Skill" onClick={() => removeItem("this skill", () => setContent({ ...content, skills: content.skills.filter((item) => item.id !== skill.id) }))} />
           </div>
         )}
       />
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 pt-3">
         <AddButton label="Add Skill" onClick={() => setContent({ ...content, skills: [...content.skills, { id: createId("skill"), name: "New Skill", category: "Category", level: 80, accent: "#16f2a4", icon: "" }] })} />
         <SaveButton label="Save Skills" onClick={() => commit(content)} />
       </div>
@@ -599,7 +777,7 @@ function SkillsEditor({ content, setContent, commit, secureHeaders }: EditorProp
   );
 }
 
-// Manages about bio, highlights, stats, and custom experience text.
+// Manages about bio, highlights, stats, and impact numbers.
 function AboutEditor({ content, setContent, commit, secureHeaders }: EditorProps & UploadProps) {
   const update = (patch: Partial<SiteContent["about"]>) => setContent({ ...content, about: { ...content.about, ...patch } });
   const stats = content.about.statistics || [];
@@ -609,22 +787,26 @@ function AboutEditor({ content, setContent, commit, secureHeaders }: EditorProps
   };
 
   return (
-    <EditorPanel title="About Section" description="Update your professional story, career highlights, and impact statistics.">
+    <EditorPanel title="About Section" description="Update your professional background, career highlights, and impact statistics.">
       <div className="grid gap-5 lg:grid-cols-2">
         <Field label="Eyebrow" value={content.about.eyebrow} onChange={(value) => update({ eyebrow: value })} />
         <Field label="Headline" value={content.about.title} onChange={(value) => update({ title: value })} />
       </div>
-      <TextArea label="Bio" value={content.about.description} onChange={(value) => update({ description: value })} />
+      <TextArea label="Bio Description" value={content.about.description} onChange={(value) => update({ description: value })} />
       <TextArea label="Highlights" hint="One item per line" value={content.about.highlights.join("\n")} onChange={(value) => update({ highlights: splitLines(value) })} />
-      <ImageField label="About Image" value={content.about.image || ""} onChange={(value) => update({ image: value })} secureHeaders={secureHeaders} />
-      <div className="grid gap-4 rounded-[8px] border border-white/10 bg-black/25 p-4">
+      <ImageField label="About Image (Uncropped Display)" value={content.about.image || ""} onChange={(value) => update({ image: value })} secureHeaders={secureHeaders} />
+      
+      <div className="grid gap-4 rounded-xl border border-white/10 bg-black/30 p-4">
         <div className="flex items-center justify-between">
-          <p className="font-black">Impact Statistics</p>
+          <div>
+            <p className="font-black text-sm text-white">Impact Statistics</p>
+            <p className="text-xs text-white/50">Metrics displayed on your about card</p>
+          </div>
           <AddButton label="Add Stat" onClick={() => update({ statistics: [...stats, { id: createId("stat"), value: "10+", label: "New Metric" }] })} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {stats.map((stat) => (
-            <div key={stat.id} className="grid gap-3 rounded-[8px] border border-white/10 bg-black/35 p-3">
+            <div key={stat.id} className="grid gap-3 rounded-xl border border-white/10 bg-black/40 p-3">
               <Field label="Value" value={stat.value} onChange={(value) => updateStat(stat.id, { value })} />
               <Field label="Label" value={stat.label} onChange={(value) => updateStat(stat.id, { label: value })} />
               <DeleteButton label="Delete Stat" onClick={() => removeItem("this statistic", () => update({ statistics: stats.filter((item) => item.id !== stat.id) }))} />
@@ -632,7 +814,10 @@ function AboutEditor({ content, setContent, commit, secureHeaders }: EditorProps
           ))}
         </div>
       </div>
-      <SaveButton label="Save About Changes" onClick={() => commit(content)} />
+      
+      <div className="pt-2">
+        <SaveButton label="Save About Changes" onClick={() => commit(content)} />
+      </div>
     </EditorPanel>
   );
 }
@@ -644,12 +829,16 @@ function ServicesEditor({ content, setContent, commit, secureHeaders }: EditorPr
   };
 
   return (
-    <EditorPanel title="Services" description="Detail your consulting and development offerings.">
+    <EditorPanel
+      title="Services"
+      description="Detail your consulting and development offerings with scope and deliverables."
+      badge={`${content.services.length} Services`}
+    >
       <ReorderableList
         items={content.services}
         onReorder={(services) => setContent({ ...content, services })}
         renderItem={(service) => (
-          <div className="grid gap-4 rounded-[8px] border border-white/10 bg-black/25 p-4 xl:grid-cols-[1fr_1.5fr_220px]">
+          <div className="grid gap-4 rounded-xl border border-white/10 bg-black/30 p-4 xl:grid-cols-[1fr_1.5fr_220px]">
             <Field label="Service Title" value={service.title} onChange={(value) => updateService(service.id, { title: value })} />
             <TextArea label="Description" value={service.description} onChange={(value) => updateService(service.id, { description: value })} compact />
             <div className="grid gap-3">
@@ -659,7 +848,7 @@ function ServicesEditor({ content, setContent, commit, secureHeaders }: EditorPr
           </div>
         )}
       />
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 pt-3">
         <AddButton label="Add Service" onClick={() => setContent({ ...content, services: [...content.services, { id: createId("service"), title: "New Service", description: "Describe the scope and deliverable of this service." }] })} />
         <SaveButton label="Save Services" onClick={() => commit(content)} />
       </div>
@@ -682,22 +871,120 @@ function ContactEditor({ content, setContent, commit }: EditorProps) {
       </div>
       <Field label="Google Map URL" hint="Use an HTTPS Google Maps link or embed URL" value={contact.googleMapUrl || ""} onChange={(value) => update({ googleMapUrl: value })} />
       <TextArea label="Contact Heading" value={contact.formHeadline} onChange={(value) => update({ formHeadline: value })} />
+      
       <div className="grid gap-3">
-        <p className="font-black">Contact Form Fields</p>
+        <p className="font-black text-sm text-white">Contact Form Fields</p>
         {fields.map((field, index) => (
-          <div key={`${field}-${index}`} className="flex gap-3 rounded-[8px] border border-white/10 bg-black/25 p-3">
-            <input value={field} onChange={(event) => update({ formFields: fields.map((item, itemIndex) => (itemIndex === index ? event.target.value : item)) })} className="min-w-0 flex-1 rounded-[8px] border border-white/10 bg-black/35 px-4 py-3 text-white outline-none focus:border-[#16f2a4]" />
+          <div key={`${field}-${index}`} className="flex gap-3 rounded-xl border border-white/10 bg-black/30 p-3">
+            <input
+              value={field}
+              onChange={(event) => update({ formFields: fields.map((item, itemIndex) => (itemIndex === index ? event.target.value : item)) })}
+              className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-white text-sm outline-none focus:border-[#16f2a4]"
+            />
             <DeleteButton label="Remove Field" onClick={() => removeItem("this form field", () => update({ formFields: fields.filter((_, itemIndex) => itemIndex !== index) }))} />
           </div>
         ))}
         <AddButton label="Add Form Field" onClick={() => update({ formFields: [...fields, "New Field"] })} />
       </div>
-      <SaveButton label="Save Contact Changes" onClick={() => commit(content)} />
+      
+      <div className="pt-2">
+        <SaveButton label="Save Contact Changes" onClick={() => commit(content)} />
+      </div>
     </EditorPanel>
   );
 }
 
-// Maintains all public social URLs with official full-color brand icons and dropdown selector.
+/**
+ * FIXED PLATFORM DROPDOWN COMPONENT (Solves Requirement 3)
+ * Completely eliminates browser native select readability bugs.
+ * High-contrast dark theme background (#181a20), bold white labels, official brand icons,
+ * perfect alignment, responsive positioning, and smooth hover state.
+ */
+function PlatformDropdown({
+  value,
+  onChange
+}: {
+  value: string;
+  onChange: (platformId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const currentConfig = resolveSocialPlatform(value);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center justify-between rounded-xl border border-white/15 bg-[#16181D] px-3.5 py-3 text-left text-white shadow-sm transition-all duration-200 hover:border-[#16f2a4] focus:border-[#16f2a4] focus:outline-none"
+      >
+        <span className="flex items-center gap-2.5 min-w-0">
+          <span
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+            style={{ background: currentConfig.badgeBg, color: currentConfig.badgeText }}
+          >
+            {currentConfig.renderIcon({ size: 14 })}
+          </span>
+          <span className="truncate font-bold text-sm text-white">{currentConfig.name}</span>
+        </span>
+        <ChevronDown size={16} className={`shrink-0 text-white/60 transition-transform duration-200 ${open ? "rotate-180 text-[#16f2a4]" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-2 max-h-80 w-full min-w-[240px] overflow-y-auto rounded-xl border border-white/20 bg-[#1a1d24] p-2 shadow-2xl backdrop-blur-2xl">
+          <p className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#16f2a4]">
+            Select Platform
+          </p>
+          <div className="grid gap-1">
+            {SOCIAL_PLATFORMS.map((platform) => {
+              const isSelected = platform.id === currentConfig.id;
+              return (
+                <button
+                  key={platform.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(platform.id);
+                    setOpen(false);
+                  }}
+                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition ${
+                    isSelected ? "bg-[#16f2a4]/20 text-[#16f2a4]" : "text-white hover:bg-white/10"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+                      style={{ background: platform.badgeBg, color: platform.badgeText }}
+                    >
+                      {platform.renderIcon({ size: 13 })}
+                    </span>
+                    <span className="truncate text-xs font-bold text-white">{platform.name}</span>
+                  </div>
+                  {isSelected && <Check size={14} className="text-[#16f2a4] shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Maintains all public social URLs with official full-color brand icons and the fixed custom dropdown.
 function SocialEditor({ content, setContent, commit }: EditorProps) {
   const updateSocial = (id: string, patch: Partial<SocialContent>) => {
     setContent({
@@ -734,7 +1021,7 @@ function SocialEditor({ content, setContent, commit }: EditorProps) {
     });
   };
 
-  // Quick preset buttons for the 8 primary required platforms
+  // Quick preset buttons for all 10 official platforms including Fiverr and Threads
   const primaryQuickPicks = [
     { id: "medium", name: "Medium" },
     { id: "blogger", name: "Blogger" },
@@ -743,16 +1030,19 @@ function SocialEditor({ content, setContent, commit }: EditorProps) {
     { id: "twitter", name: "Twitter / X" },
     { id: "contra", name: "Contra" },
     { id: "facebook", name: "Facebook" },
-    { id: "tiktok", name: "TikTok" }
+    { id: "tiktok", name: "TikTok" },
+    { id: "fiverr", name: "Fiverr" },
+    { id: "threads", name: "Threads" }
   ];
 
   return (
     <EditorPanel
       title="Official Social Media Links"
       description="Connect your official social media profiles. Each platform renders its authentic, official full-color brand icon automatically across the website."
+      badge={`${content.socials.length} Connected`}
     >
       {/* Quick Add Platform Presets */}
-      <div className="rounded-[8px] border border-white/10 bg-black/25 p-4">
+      <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
         <p className="text-xs font-bold uppercase tracking-wider text-white/50">Quick-Add Supported Platforms</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {primaryQuickPicks.map((pick) => {
@@ -762,7 +1052,7 @@ function SocialEditor({ content, setContent, commit }: EditorProps) {
                 key={pick.id}
                 type="button"
                 onClick={() => addPlatformPreset(pick.id)}
-                className="group flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-bold text-white transition hover:border-white/30 hover:bg-white/10"
+                className="group flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-bold text-white transition hover:border-[#16f2a4] hover:bg-white/10"
               >
                 <span className="flex h-5 w-5 items-center justify-center rounded-full" style={{ background: config.badgeBg, color: config.badgeText }}>
                   {config.renderIcon({ size: 12 })}
@@ -776,14 +1066,14 @@ function SocialEditor({ content, setContent, commit }: EditorProps) {
       </div>
 
       {/* Social Items List */}
-      <div className="grid gap-4">
+      <div className="grid gap-3">
         {content.socials.map((social) => {
           const config = resolveSocialPlatform(social.platform || social.url);
 
           return (
             <div
               key={social.id}
-              className="grid gap-4 rounded-[8px] border border-white/10 bg-black/25 p-4 lg:grid-cols-[auto_1fr_1fr_1.5fr_auto] items-center"
+              className="grid gap-4 rounded-xl border border-white/10 bg-black/30 p-4 lg:grid-cols-[auto_200px_1fr_1.5fr_auto] items-center"
             >
               {/* Live Official Brand Icon Preview */}
               <div className="flex flex-col items-center justify-center p-1">
@@ -791,41 +1081,21 @@ function SocialEditor({ content, setContent, commit }: EditorProps) {
                 <span className="mt-1 text-[10px] font-bold text-white/40">{config.name}</span>
               </div>
 
-              {/* Platform Selector */}
-              <label className="grid gap-2 text-sm font-bold text-white/70">
-                <span>Platform</span>
-                <select
-                  value={config.id}
-                  onChange={(e) => handleSelectPlatform(social.id, e.target.value)}
-                  className="w-full rounded-[8px] border border-white/10 bg-black/35 px-4 py-3 text-white outline-none transition focus:border-[#16f2a4]"
-                >
-                  <optgroup label="Official Required Platforms">
-                    <option value="medium">Medium</option>
-                    <option value="blogger">Blogger</option>
-                    <option value="bluesky">Bluesky (bsky.app)</option>
-                    <option value="instagram">Instagram</option>
-                    <option value="twitter">Twitter / X</option>
-                    <option value="contra">Contra</option>
-                    <option value="facebook">Facebook</option>
-                    <option value="tiktok">TikTok</option>
-                  </optgroup>
-                  <optgroup label="Companion Platforms">
-                    <option value="linkedin">LinkedIn</option>
-                    <option value="github">GitHub</option>
-                    <option value="youtube">YouTube</option>
-                    <option value="whatsapp">WhatsApp</option>
-                    <option value="email">Email</option>
-                    <option value="other">Other / Custom</option>
-                  </optgroup>
-                </select>
-              </label>
+              {/* Fixed Platform Dropdown */}
+              <div className="grid gap-1.5">
+                <span className="text-xs font-bold text-white/70">Platform</span>
+                <PlatformDropdown
+                  value={social.platform || social.url}
+                  onChange={(platformId) => handleSelectPlatform(social.id, platformId)}
+                />
+              </div>
 
               <Field label="Display Label" value={social.label} onChange={(value) => updateSocial(social.id, { label: value })} />
               <Field
                 label="Profile URL"
                 value={social.url}
                 onChange={(value) => updateSocial(social.id, { url: value })}
-                hint={config.domainMatch[0] ? `e.g. https://${config.domainMatch[0]}/...` : undefined}
+                hint={config.domainMatch[0] ? `https://${config.domainMatch[0]}/...` : undefined}
               />
               <DeleteButton
                 label="Delete Social Link"
@@ -843,7 +1113,7 @@ function SocialEditor({ content, setContent, commit }: EditorProps) {
         })}
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 pt-3">
         <AddButton
           label="Add Custom Link"
           onClick={() =>
@@ -851,7 +1121,7 @@ function SocialEditor({ content, setContent, commit }: EditorProps) {
               ...content,
               socials: [
                 ...content.socials,
-                { id: createId("social"), platform: "Medium", label: "Medium", url: "" }
+                { id: createId("social"), platform: "Fiverr", label: "Fiverr", url: "" }
               ]
             })
           }
@@ -906,8 +1176,8 @@ function SortableRow({ id, children }: { id: string; children: React.ReactNode }
 
   return (
     <div ref={sortable.setNodeRef} style={style} className="relative pl-9">
-      <button type="button" aria-label="Drag to reorder" className="absolute left-0 top-4 grid h-7 w-7 cursor-grab place-items-center rounded-[8px] border border-white/10 text-white/48 active:cursor-grabbing" {...sortable.attributes} {...sortable.listeners}>
-        <GripVertical size={17} />
+      <button type="button" aria-label="Drag to reorder" className="absolute left-0 top-4 grid h-7 w-7 cursor-grab place-items-center rounded-xl border border-white/10 text-white/48 active:cursor-grabbing hover:bg-white/5" {...sortable.attributes} {...sortable.listeners}>
+        <GripVertical size={16} />
       </button>
       {children}
     </div>
@@ -963,9 +1233,9 @@ function ImageField({ label, value, onChange, onUploaded, secureHeaders, compact
   const videoPreview = allowVideo && /\.(mp4|webm)(\?.*)?$/i.test(value);
 
   return (
-    <div className="grid gap-3 rounded-[8px] border border-white/10 bg-black/20 p-3">
+    <div className="grid gap-3 rounded-xl border border-white/10 bg-black/20 p-3.5">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-bold text-white/70">{label}</p>
+        <p className="text-xs font-bold uppercase tracking-wider text-white/70">{label}</p>
         {value && isBlobUrl && (
           <span className="inline-flex items-center gap-1 rounded-full bg-[#16f2a4]/15 px-2 py-0.5 text-[10px] font-bold text-[#16f2a4]">
             <Cloud size={10} /> Cloudflare Storage
@@ -974,7 +1244,7 @@ function ImageField({ label, value, onChange, onUploaded, secureHeaders, compact
       </div>
 
       {value ? (
-        <div className="relative group overflow-hidden rounded-[8px] border border-white/10 bg-neutral-900/90 flex items-center justify-center p-2">
+        <div className="relative group overflow-hidden rounded-xl border border-white/10 bg-neutral-900/90 flex items-center justify-center p-2">
           {videoPreview ? (
             <video src={value} muted loop autoPlay playsInline className={`w-full object-contain ${compact ? "h-28" : "h-48"}`} />
           ) : (
@@ -994,15 +1264,15 @@ function ImageField({ label, value, onChange, onUploaded, secureHeaders, compact
           </div>
         </div>
       ) : (
-        <div className={`grid place-items-center rounded-[8px] border border-dashed border-white/15 text-sm text-white/35 ${compact ? "h-28" : "h-36"}`}>
+        <div className={`grid place-items-center rounded-xl border border-dashed border-white/15 text-sm text-white/35 ${compact ? "h-28" : "h-36"}`}>
           <ImagePlus size={20} />
         </div>
       )}
 
       <div className="flex items-center gap-2">
-        <label className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-white/72 transition hover:border-[#16f2a4] hover:text-[#16f2a4]">
-          {uploading ? <Loader2 className="animate-spin" size={16} /> : value ? <RefreshCw size={14} /> : <Upload size={16} />}
-          {uploading ? "Uploading to Cloud..." : value ? "Replace Media" : "Upload Media"}
+        <label className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-bold text-white/72 transition hover:border-[#16f2a4] hover:text-[#16f2a4]">
+          {uploading ? <Loader2 className="animate-spin" size={15} /> : value ? <RefreshCw size={13} /> : <Upload size={14} />}
+          {uploading ? "Uploading..." : value ? "Replace Media" : "Upload Media"}
           <input
             type="file"
             accept={allowVideo ? "video/mp4,video/webm" : "image/png,image/jpeg,image/webp,image/gif,image/svg+xml,application/pdf"}
@@ -1027,71 +1297,150 @@ function ImageField({ label, value, onChange, onUploaded, secureHeaders, compact
   );
 }
 
-function EditorPanel({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+function EditorPanel({
+  title,
+  description,
+  badge,
+  onToggleCollapse,
+  allCollapsed,
+  children
+}: {
+  title: string;
+  description: string;
+  badge?: string;
+  onToggleCollapse?: () => void;
+  allCollapsed?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="grid gap-5">
-      <div>
-        <h2 className="text-3xl font-black">{title}</h2>
-        <p className="mt-2 max-w-3xl text-white/52">{description}</p>
+    <div className="grid gap-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-black tracking-tight text-white">{title}</h2>
+            {badge && (
+              <span className="rounded-full bg-[#16f2a4]/15 px-3 py-0.5 text-xs font-bold text-[#16f2a4]">
+                {badge}
+              </span>
+            )}
+          </div>
+          <p className="mt-1.5 max-w-3xl text-xs sm:text-sm text-white/50">{description}</p>
+        </div>
+
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-white/80 hover:bg-white/10 hover:text-white"
+          >
+            {allCollapsed ? "Expand All Cards" : "Collapse All Cards"}
+          </button>
+        )}
       </div>
-      <div className="grid gap-5 rounded-[8px] border border-white/10 bg-white/[0.035] p-4 sm:p-6">{children}</div>
+
+      <div className="grid gap-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6 backdrop-blur-xl">
+        {children}
+      </div>
     </div>
   );
 }
 
 function Field({ label, value, onChange, hint }: { label: string; value: string; onChange: (value: string) => void; hint?: string }) {
   return (
-    <label className="grid gap-2 text-sm font-bold text-white/70">
-      <span>{label} {hint ? <span className="font-medium text-white/38">({hint})</span> : null}</span>
-      <input value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-[8px] border border-white/10 bg-black/35 px-4 py-3 text-white outline-none transition focus:border-[#16f2a4]" />
+    <label className="grid gap-1.5 text-xs font-bold text-white/70">
+      <span>{label} {hint ? <span className="font-medium text-white/35">({hint})</span> : null}</span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#16f2a4]"
+      />
     </label>
   );
 }
 
 function NumberField({ label, value, onChange, min, max }: { label: string; value: number; onChange: (value: number) => void; min: number; max: number }) {
   return (
-    <label className="grid gap-2 text-sm font-bold text-white/70">
+    <label className="grid gap-1.5 text-xs font-bold text-white/70">
       {label}
-      <input type="number" min={min} max={max} value={value} onChange={(event) => onChange(Math.max(min, Math.min(max, Number(event.target.value) || min)))} className="w-full rounded-[8px] border border-white/10 bg-black/35 px-4 py-3 text-white outline-none transition focus:border-[#16f2a4]" />
+      <input
+        type="number"
+        min={min}
+        max={max}
+        value={value}
+        onChange={(event) => onChange(Math.max(min, Math.min(max, Number(event.target.value) || min)))}
+        className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#16f2a4]"
+      />
     </label>
   );
 }
 
 function TextArea({ label, value, onChange, hint, compact = false }: { label: string; value: string; onChange: (value: string) => void; hint?: string; compact?: boolean }) {
   return (
-    <label className="grid gap-2 text-sm font-bold text-white/70">
-      <span>{label} {hint ? <span className="font-medium text-white/38">({hint})</span> : null}</span>
-      <textarea value={value} onChange={(event) => onChange(event.target.value)} className={`w-full resize-y rounded-[8px] border border-white/10 bg-black/35 px-4 py-3 text-white outline-none transition focus:border-[#16f2a4] ${compact ? "min-h-24" : "min-h-36"}`} />
+    <label className="grid gap-1.5 text-xs font-bold text-white/70">
+      <span>{label} {hint ? <span className="font-medium text-white/35">({hint})</span> : null}</span>
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={`w-full resize-y rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#16f2a4] ${compact ? "min-h-24" : "min-h-36"}`}
+      />
     </label>
   );
 }
 
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
-    <label className="grid gap-2 text-sm font-bold text-white/70">
+    <label className="grid gap-1.5 text-xs font-bold text-white/70">
       {label}
-      <span className="flex overflow-hidden rounded-[8px] border border-white/10 bg-black/35">
-        <input type="color" value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-14 cursor-pointer border-0 bg-transparent p-1" />
-        <input value={value} onChange={(event) => onChange(event.target.value)} className="min-w-0 flex-1 bg-transparent px-3 text-white outline-none" />
+      <span className="flex overflow-hidden rounded-xl border border-white/10 bg-black/40">
+        <input type="color" value={value} onChange={(event) => onChange(event.target.value)} className="h-10 w-12 cursor-pointer border-0 bg-transparent p-1" />
+        <input value={value} onChange={(event) => onChange(event.target.value)} className="min-w-0 flex-1 bg-transparent px-3 text-xs text-white outline-none font-mono" />
       </span>
     </label>
   );
 }
 
 function SaveButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return <button type="button" onClick={onClick} className="inline-flex w-fit items-center gap-2 rounded-full bg-[#16f2a4] px-5 py-3 font-black text-black transition hover:bg-white"><Save size={18} />{label}</button>;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex w-fit items-center gap-2 rounded-full bg-[#16f2a4] px-5 py-2.5 text-xs font-black text-black transition hover:bg-white active:scale-95 shadow-md shadow-[#16f2a4]/20"
+    >
+      <Save size={16} />
+      {label}
+    </button>
+  );
 }
 
 function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return <button type="button" onClick={onClick} className="inline-flex w-fit items-center gap-2 rounded-full border border-[#16f2a4]/45 px-5 py-3 font-black text-[#16f2a4] transition hover:bg-[#16f2a4] hover:text-black"><Plus size={18} />{label}</button>;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex w-fit items-center gap-2 rounded-full border border-[#16f2a4]/50 bg-[#16f2a4]/10 px-4 py-2 text-xs font-bold text-[#16f2a4] transition hover:bg-[#16f2a4] hover:text-black active:scale-95"
+    >
+      <Plus size={16} />
+      {label}
+    </button>
+  );
 }
 
 function DeleteButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return <button type="button" aria-label={label} title={label} onClick={onClick} className="inline-flex h-11 w-11 items-center justify-center self-end rounded-full border border-red-300/30 text-red-100 transition hover:bg-red-400/10"><Trash2 size={17} /></button>;
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-400/25 text-red-200 transition hover:bg-red-400/15"
+    >
+      <Trash2 size={15} />
+    </button>
+  );
 }
 
 function removeItem(label: string, remove: () => void) {
-  if (window.confirm(`Delete ${label}? This change is saved when you click the section save button.`)) {
+  if (window.confirm(`Delete ${label}? Click Save Changes to apply.`)) {
     remove();
   }
 }

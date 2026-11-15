@@ -266,12 +266,31 @@ export default function PortfolioClient({ content: initialContent, initialSectio
             </motion.div>
 
             <motion.p {...heroIn(shouldAnimate, loading, 0.3)} className="mb-4 text-sm font-bold uppercase text-[var(--primary)]">NURAXTECH</motion.p>
-            <motion.h1 {...heroIn(shouldAnimate, loading, 0.36, true)} className={`text-balance break-words text-4xl font-black leading-[1.02] sm:text-5xl lg:line-clamp-2 lg:text-5xl ${darkMode ? "text-white" : "text-[#111111]"}`}>
-              Usman Iqbal
-            </motion.h1>
-            <motion.h2 {...heroIn(shouldAnimate, loading, 0.46)} className="mt-3 max-w-[320px] text-balance text-2xl font-black leading-tight text-[var(--primary)] sm:max-w-none sm:text-3xl lg:line-clamp-2 lg:text-3xl">
-              {content.home.subtitle}
-            </motion.h2>
+            {/* Interactive Hero Heading with elegant floating & gradient shimmer on hover */}
+            <motion.div
+              whileHover={{ y: -5 }}
+              transition={{ type: "spring", stiffness: 350, damping: 25 }}
+              className="group/hero-title relative inline-block cursor-default select-none"
+            >
+              <motion.h1
+                {...heroIn(shouldAnimate, loading, 0.36, true)}
+                className={`relative inline-block text-balance break-words text-4xl font-black leading-[1.02] sm:text-5xl lg:text-6xl tracking-tight transition-all duration-300 ${
+                  darkMode
+                    ? "text-white group-hover/hero-title:text-transparent group-hover/hero-title:bg-clip-text group-hover/hero-title:bg-gradient-to-r group-hover/hero-title:from-white group-hover/hero-title:via-[#16f2a4] group-hover/hero-title:to-[#00DCA0]"
+                    : "text-[#111111] group-hover/hero-title:text-transparent group-hover/hero-title:bg-clip-text group-hover/hero-title:bg-gradient-to-r group-hover/hero-title:from-[#111111] group-hover/hero-title:via-[#008ba8] group-hover/hero-title:to-[#00A3C4]"
+                }`}
+              >
+                Usman Iqbal
+              </motion.h1>
+              <motion.h2
+                {...heroIn(shouldAnimate, loading, 0.46)}
+                className="mt-3 max-w-[380px] text-balance text-2xl font-black leading-tight sm:max-w-none sm:text-3xl lg:text-3xl transition-all duration-300 text-transparent bg-clip-text bg-gradient-to-r from-[#00DCA0] via-[#16f2a4] to-[#22d3ee] drop-shadow-sm group-hover/hero-title:brightness-110"
+              >
+                {content.home.subtitle}
+              </motion.h2>
+              {/* Subtle accent indicator that elongates on hover */}
+              <span className="block h-1 w-16 rounded-full bg-gradient-to-r from-[#16f2a4] to-[#00A3C4] transition-all duration-500 ease-out group-hover/hero-title:w-32 mt-2.5 opacity-80 group-hover/hero-title:opacity-100" />
+            </motion.div>
             <motion.p {...heroIn(shouldAnimate, loading, 0.52)} className={`mt-5 max-w-[310px] text-base leading-7 sm:max-w-2xl lg:line-clamp-3 ${darkMode ? "text-white/65" : "text-black/65"}`}>
               {content.home.description}
             </motion.p>
