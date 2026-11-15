@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { recordVisitor } from "@/lib/visitor-store";
 import { parseUserAgent } from "@/lib/user-agent";
+import { dispatchVisitorNotification } from "@/lib/whatsapp-store";
 
 export const dynamic = "force-dynamic";
 
@@ -122,6 +123,21 @@ export async function POST(request: Request) {
       screenResolution,
       language,
       timezone
+    });
+
+    // 7. Dispatch WhatsApp visitor notification if configured
+    dispatchVisitorNotification({
+      pathname,
+      referrer,
+      deviceType: parsedUA.deviceType,
+      browserName: parsedUA.browserName,
+      osName: parsedUA.osName,
+      country,
+      ip,
+      visitorId,
+      sessionId
+    }).catch((err) => {
+      console.warn("[track-api] WhatsApp notification skipped:", err);
     });
 
     return NextResponse.json({ ok: true });

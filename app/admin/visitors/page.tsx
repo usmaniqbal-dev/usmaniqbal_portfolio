@@ -21,6 +21,7 @@ import {
   Loader2,
   Lock,
   LogOut,
+  MessageSquare,
   Monitor,
   RefreshCw,
   Search,
@@ -514,6 +515,14 @@ export default function VisitorsAdminPage() {
             >
               <Bot size={16} />
               Chatbot
+            </Link>
+
+            <Link
+              href="/admin1122?view=whatsapp"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs font-bold text-white/80 transition hover:border-[#16f2a4] hover:text-[#16f2a4] sm:text-sm"
+            >
+              <MessageSquare size={16} className="text-[#16f2a4]" />
+              WhatsApp Alerts
             </Link>
 
             <a

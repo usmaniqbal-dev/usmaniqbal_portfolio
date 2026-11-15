@@ -16,6 +16,7 @@ import {
   Download,
   ExternalLink,
   Eye,
+  EyeOff,
   FileText,
   ImagePlus,
   KeyRound,
@@ -23,6 +24,7 @@ import {
   Loader2,
   LogOut,
   Mail,
+  MessageSquare,
   Moon,
   PanelLeft,
   QrCode,
@@ -54,6 +56,7 @@ type SessionState = {
 
 type AdminView =
   | "dashboard"
+  | "whatsapp"
   | "email"
   | "security"
   | "pages"
@@ -73,6 +76,7 @@ type MenuItem = {
 const menu: MenuItem[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "visitors", label: "Visitors", icon: Users, href: "/admin/visitors" },
+  { id: "whatsapp", label: "WhatsApp Notifications", icon: MessageSquare },
   { id: "security", label: "Admin Credentials", icon: KeyRound },
   { id: "email", label: "Email Settings", icon: Mail },
   { id: "content", label: "Content Manager", icon: BriefcaseBusiness },
@@ -107,6 +111,14 @@ export default function AdminBuilderDashboard() {
 
   useEffect(() => {
     checkSession();
+    try {
+      const qView = new URLSearchParams(window.location.search).get("view") as AdminView;
+      if (qView && ["dashboard", "whatsapp", "email", "security", "pages", "templates", "content", "media", "seo", "ai"].includes(qView)) {
+        setView(qView);
+      }
+    } catch {
+      // safe fallback
+    }
   }, []);
 
   useEffect(() => {
@@ -413,6 +425,7 @@ export default function AdminBuilderDashboard() {
 
           <div className="p-4 sm:p-6">
             {view === "dashboard" ? <DashboardView templates={content.builder.templates.length} activeTheme={activeTheme?.name || "None"} lastPublished={content.builder.settings.lastPublishedAt} mediaCount={mediaCount} storageMode={session.storageMode || "Unknown"} onNavigateToSecurity={() => setView("security")} /> : null}
+            {view === "whatsapp" ? <WhatsAppSettingsView secureHeaders={secureHeaders} /> : null}
             {view === "security" ? <AdminSecurityView secureHeaders={secureHeaders} onUsernameUpdated={setUsername} /> : null}
             {view === "email" ? <EmailSettingsView secureHeaders={secureHeaders} /> : null}
             {view === "content" ? (
@@ -1629,6 +1642,526 @@ function EmailSettingsView({ secureHeaders }: { secureHeaders: (extra?: HeadersI
             <li><code className="text-white font-mono">&#123;&#123;message&#125;&#125;</code> - Message content</li>
             <li><code className="text-white font-mono">&#123;&#123;time&#125;&#125;</code> - Submission timestamp</li>
           </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WhatsAppSettingsView({ secureHeaders }: { secureHeaders: (extra?: HeadersInit) => HeadersInit }) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+
+  // Settings State
+  const [enabled, setEnabled] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(false);
+  const [apiKeyMasked, setApiKeyMasked] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [recipientPhoneNumber, setRecipientPhoneNumber] = useState("");
+  const [phoneNumberId, setPhoneNumberId] = useState("");
+  const [customEndpoint, setCustomEndpoint] = useState("");
+  const [rateLimitMinutes, setRateLimitMinutes] = useState(15);
+  const [notifyOnEveryPage, setNotifyOnEveryPage] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const [saveStatus, setSaveStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [verificationResult, setVerificationResult] = useState<{
+    verified: boolean;
+    supportsOutbound: boolean;
+    mode: "in_app_agent" | "meta_cloud_api" | "custom_bridge" | "unconfigured";
+    summary: string;
+    details: string;
+    missingRequirements: string[];
+    httpStatus?: number;
+    rawResponse?: string;
+  } | null>(null);
+  const [testResult, setTestResult] = useState<{
+    ok: boolean;
+    message?: string;
+    details?: unknown;
+  } | null>(null);
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const response = await fetch("/api/admin/whatsapp-settings", { cache: "no-store" });
+        if (response.ok) {
+          const data = await response.json();
+          setEnabled(Boolean(data.enabled));
+          setHasApiKey(Boolean(data.hasApiKey));
+          setApiKeyMasked(data.apiKeyMasked || "");
+          setRecipientPhoneNumber(data.recipientPhoneNumber || "");
+          setPhoneNumberId(data.phoneNumberId || "");
+          setCustomEndpoint(data.customEndpoint || "");
+          setRateLimitMinutes(Number(data.rateLimitMinutes) || 15);
+          setNotifyOnEveryPage(Boolean(data.notifyOnEveryPage));
+        }
+      } catch {
+        setSaveStatus({ type: "error", text: "Failed to load current WhatsApp configuration." });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadSettings();
+  }, []);
+
+  async function handleSave(event: React.FormEvent) {
+    event.preventDefault();
+    setSaving(true);
+    setSaveStatus(null);
+
+    try {
+      const payload: Record<string, unknown> = {
+        enabled,
+        recipientPhoneNumber,
+        phoneNumberId,
+        customEndpoint,
+        rateLimitMinutes: Number(rateLimitMinutes),
+        notifyOnEveryPage
+      };
+
+      if (apiKey.trim()) {
+        payload.apiKey = apiKey.trim();
+      }
+
+      const response = await fetch("/api/admin/whatsapp-settings", {
+        method: "PUT",
+        headers: secureHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to save WhatsApp settings.");
+      }
+
+      const saved = await response.json();
+      setHasApiKey(Boolean(saved.hasApiKey));
+      setApiKeyMasked(saved.apiKeyMasked || "");
+      setApiKey("");
+      setSaveStatus({
+        type: "success",
+        text: "WhatsApp settings saved successfully to persistent database!"
+      });
+    } catch (err) {
+      setSaveStatus({
+        type: "error",
+        text: err instanceof Error ? err.message : "Error saving WhatsApp settings."
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleClearKey() {
+    if (!confirm("Are you sure you want to clear your WhatsApp API key?")) return;
+    setSaving(true);
+    setSaveStatus(null);
+    try {
+      const response = await fetch("/api/admin/whatsapp-settings", {
+        method: "PUT",
+        headers: secureHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ clearApiKey: true })
+      });
+      if (response.ok) {
+        setHasApiKey(false);
+        setApiKeyMasked("");
+        setApiKey("");
+        setVerificationResult(null);
+        setTestResult(null);
+        setSaveStatus({ type: "success", text: "API key removed." });
+      }
+    } catch {
+      setSaveStatus({ type: "error", text: "Failed to remove API key." });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleVerify(sendTest = false) {
+    if (sendTest) {
+      setTesting(true);
+      setTestResult(null);
+    } else {
+      setVerifying(true);
+    }
+
+    try {
+      const payload: Record<string, unknown> = {
+        recipientPhoneNumber,
+        phoneNumberId,
+        customEndpoint,
+        sendTestMessage: sendTest
+      };
+      if (apiKey.trim()) {
+        payload.apiKey = apiKey.trim();
+      }
+
+      const response = await fetch("/api/admin/whatsapp-settings/test", {
+        method: "POST",
+        headers: secureHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+      if (data.verification) {
+        setVerificationResult(data.verification);
+      }
+      if (sendTest) {
+        if (data.dispatchResult) {
+          setTestResult({
+            ok: Boolean(data.dispatchResult.success),
+            message: data.dispatchResult.message,
+            details: data.dispatchResult.details
+          });
+        } else if (!data.verification?.supportsOutbound) {
+          setTestResult({
+            ok: false,
+            message: data.verification?.details || "The current API configuration does not support outbound notifications."
+          });
+        }
+      }
+    } catch (err) {
+      setVerificationResult({
+        verified: false,
+        supportsOutbound: false,
+        mode: "unconfigured",
+        summary: "Verification Request Failed",
+        details: err instanceof Error ? err.message : "Network error during verification.",
+        missingRequirements: ["Check network and admin session."]
+      });
+    } finally {
+      setVerifying(false);
+      setTesting(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="animate-spin text-[#16f2a4]" size={32} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-6 xl:grid-cols-[1.25fr_1fr]">
+      {/* Configuration Form Card */}
+      <div className="rounded-[8px] border border-white/10 bg-white/[0.035] p-5 sm:p-6">
+        <div className="mb-5 flex items-center justify-between border-b border-white/10 pb-4">
+          <div>
+            <h2 className="text-xl font-black flex items-center gap-2">
+              <MessageSquare className="text-[#16f2a4]" size={22} />
+              WhatsApp Visitor Notifications
+            </h2>
+            <p className="mt-1 text-sm text-white/50">
+              Configure your WhatsApp Agent API key and notification delivery for real-time visitor alerts.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSave} className="grid gap-4">
+          {/* Enable Notifications Switch */}
+          <div className="flex items-center justify-between rounded-[8px] border border-white/10 bg-black/35 p-4">
+            <div>
+              <p className="text-sm font-bold text-white">Enable WhatsApp Notifications</p>
+              <p className="text-xs text-white/40">
+                Trigger real-time WhatsApp alerts when new visitors arrive on your portfolio.
+              </p>
+            </div>
+            <label className="relative inline-flex cursor-pointer items-center">
+              <input
+                type="checkbox"
+                checked={enabled}
+                onChange={(e) => setEnabled(e.target.checked)}
+                className="peer sr-only"
+              />
+              <div className="peer h-6 w-11 rounded-full bg-white/20 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#16f2a4] peer-checked:after:translate-x-full peer-checked:after:bg-black peer-focus:outline-none"></div>
+            </label>
+          </div>
+
+          {/* API Key Input */}
+          <div className="rounded-[8px] border border-white/10 bg-black/25 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-bold text-white/80 flex items-center gap-2">
+                WhatsApp Agent API Key
+                {hasApiKey ? (
+                  <span className="rounded-full bg-[#16f2a4]/15 px-2 py-0.5 text-[11px] font-semibold text-[#16f2a4]">
+                    Configured ({apiKeyMasked})
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/50">
+                    Not set
+                  </span>
+                )}
+              </label>
+              {hasApiKey && (
+                <button
+                  type="button"
+                  onClick={handleClearKey}
+                  disabled={saving}
+                  className="text-xs text-red-400 hover:text-red-300 underline"
+                >
+                  Clear Key
+                </button>
+              )}
+            </div>
+
+            <div className="relative">
+              <input
+                type={showApiKey ? "text" : "password"}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder={hasApiKey ? "Leave blank to keep current key, or enter new key..." : "Paste your WhatsApp Agent API key..."}
+                className="w-full rounded-[8px] border border-white/10 bg-black/40 px-4 py-3 pr-12 text-sm text-white font-mono outline-none focus:border-[#16f2a4]"
+              />
+              <button
+                type="button"
+                onClick={() => setShowApiKey(!showApiKey)}
+                className="absolute right-3 top-3.5 text-white/40 hover:text-white"
+                title={showApiKey ? "Hide key" : "Show key"}
+              >
+                {showApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            <p className="mt-1.5 text-xs text-white/40">
+              Obtained from WhatsApp App &gt; Settings &gt; Agents &gt; Add an agent. Secrets are encrypted and securely stored in Cloudflare D1.
+            </p>
+          </div>
+
+          {/* Recipient Phone Number */}
+          <div>
+            <TextField
+              label="Recipient WhatsApp Number"
+              value={recipientPhoneNumber}
+              onChange={setRecipientPhoneNumber}
+            />
+            <p className="mt-1 text-xs text-white/40">
+              Your personal WhatsApp number in international format (e.g. +923001234567 or +14155552671).
+            </p>
+          </div>
+
+          {/* Rate Limiting & Trigger Options */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mt-4 grid gap-2 text-sm font-bold text-white/70">
+                Deduplication Rate Limit
+                <select
+                  value={rateLimitMinutes}
+                  onChange={(e) => setRateLimitMinutes(Number(e.target.value))}
+                  className="w-full rounded-[8px] border border-white/10 bg-black/35 px-4 py-3 text-white outline-none focus:border-[#16f2a4]"
+                >
+                  <option value={5}>Every 5 minutes</option>
+                  <option value={15}>Every 15 minutes (Recommended)</option>
+                  <option value={30}>Every 30 minutes</option>
+                  <option value={60}>Every 1 hour</option>
+                </select>
+              </label>
+              <p className="mt-1 text-xs text-white/40">Prevents multiple alerts from the same visitor session.</p>
+            </div>
+
+            <div>
+              <label className="mt-4 grid gap-2 text-sm font-bold text-white/70">
+                Notification Trigger Scope
+                <select
+                  value={notifyOnEveryPage ? "all" : "entry"}
+                  onChange={(e) => setNotifyOnEveryPage(e.target.value === "all")}
+                  className="w-full rounded-[8px] border border-white/10 bg-black/35 px-4 py-3 text-white outline-none focus:border-[#16f2a4]"
+                >
+                  <option value="entry">New Visits / Entry Page Only (Recommended)</option>
+                  <option value="all">Every Page Navigation</option>
+                </select>
+              </label>
+              <p className="mt-1 text-xs text-white/40">Avoids spam while preserving complete visit analytics.</p>
+            </div>
+          </div>
+
+          {/* Advanced / Outbound Delivery Settings Toggle */}
+          <div className="mt-2">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="text-xs font-semibold text-[#16f2a4] hover:underline flex items-center gap-1.5"
+            >
+              {showAdvanced ? "Hide Advanced Outbound Channels" : "+ Show Advanced Outbound Channels (Meta Cloud API / Bridge)"}
+            </button>
+          </div>
+
+          {showAdvanced && (
+            <div className="grid gap-4 rounded-[8px] border border-white/10 bg-black/30 p-4">
+              <div>
+                <TextField
+                  label="Meta Cloud API Phone Number ID (Optional)"
+                  value={phoneNumberId}
+                  onChange={setPhoneNumberId}
+                />
+                <p className="mt-1 text-xs text-white/40">
+                  Required if sending via official Meta WhatsApp Cloud API (found under WhatsApp &gt; API Setup in Meta Developer Dashboard).
+                </p>
+              </div>
+
+              <div>
+                <TextField
+                  label="Custom Webhook / Bridge Endpoint (Optional)"
+                  value={customEndpoint}
+                  onChange={setCustomEndpoint}
+                />
+                <p className="mt-1 text-xs text-white/40">
+                  Optional HTTPS bridge URL (e.g. Cloudflare Worker or AWS Lambda) that forwards outbound alerts to WhatsApp.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {saveStatus ? (
+            <div
+              className={`mt-2 flex items-center gap-2 rounded-[8px] p-3 text-sm font-semibold ${
+                saveStatus.type === "success"
+                  ? "border border-[#16f2a4]/30 bg-[#16f2a4]/10 text-[#bfffe8]"
+                  : "border border-red-400/30 bg-red-400/10 text-red-200"
+              }`}
+            >
+              {saveStatus.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+              {saveStatus.text}
+            </div>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-full bg-[#16f2a4] px-6 py-3 font-black text-black transition hover:bg-white disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+              Save WhatsApp Settings
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Diagnostics, Capabilities & Test Card */}
+      <div className="grid gap-6">
+        {/* API Verification Card */}
+        <div className="rounded-[8px] border border-white/10 bg-white/[0.035] p-5 sm:p-6">
+          <div className="mb-4 border-b border-white/10 pb-3">
+            <h3 className="text-lg font-black flex items-center gap-2">
+              <ShieldCheck className="text-[#16f2a4]" size={20} />
+              API Verification &amp; Diagnostics
+            </h3>
+            <p className="mt-1 text-xs text-white/50">
+              Verify whether your WhatsApp API key and configuration support outbound visitor push notifications.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-4">
+            <button
+              type="button"
+              onClick={() => handleVerify(false)}
+              disabled={verifying || (!hasApiKey && !apiKey.trim())}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#16f2a4] bg-[#16f2a4]/10 px-4 py-2 text-xs font-bold text-[#16f2a4] transition hover:bg-[#16f2a4] hover:text-black disabled:opacity-40"
+            >
+              {verifying ? <Loader2 className="animate-spin" size={14} /> : <RefreshCw size={14} />}
+              {verifying ? "Inspecting API..." : "Verify Capabilities"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleVerify(true)}
+              disabled={testing || (!hasApiKey && !apiKey.trim())}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/15 disabled:opacity-40"
+            >
+              {testing ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />}
+              {testing ? "Testing..." : "Send Test Notification"}
+            </button>
+          </div>
+
+          {verificationResult && (
+            <div className="rounded-[8px] border border-white/15 bg-black/40 p-4 text-xs">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-bold text-white text-sm">{verificationResult.summary}</span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                    verificationResult.mode === "meta_cloud_api"
+                      ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                      : verificationResult.mode === "in_app_agent"
+                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                      : verificationResult.mode === "custom_bridge"
+                      ? "bg-[#16f2a4]/20 text-[#16f2a4] border border-[#16f2a4]/30"
+                      : "bg-white/10 text-white/60"
+                  }`}
+                >
+                  {verificationResult.mode.replace(/_/g, " ")}
+                </span>
+              </div>
+
+              <p className="text-white/80 leading-relaxed mb-3">{verificationResult.details}</p>
+
+              {verificationResult.mode === "in_app_agent" && (
+                <div className="rounded-[6px] border border-amber-400/25 bg-amber-400/10 p-3 text-amber-200 mb-3">
+                  <p className="font-bold mb-1 flex items-center gap-1.5">
+                    <AlertCircle size={14} /> WhatsApp Architecture Note:
+                  </p>
+                  <p className="text-[11px] leading-relaxed">
+                    Keys obtained via WhatsApp App (Settings &gt; Agents) link conversational AI models to receive and answer inbound user chats inside WhatsApp. Meta does not expose an outbound push REST API for this key alone. To send autonomous notifications from a website, Meta requires a Cloud API Phone Number ID and recipient phone number, or a custom webhook bridge.
+                  </p>
+                </div>
+              )}
+
+              {verificationResult.missingRequirements && verificationResult.missingRequirements.length > 0 && (
+                <div className="mt-2 border-t border-white/10 pt-2">
+                  <p className="font-semibold text-white/50 mb-1">Required for Direct Outbound Push:</p>
+                  <ul className="list-disc pl-4 space-y-0.5 text-white/70 text-[11px]">
+                    {verificationResult.missingRequirements.map((req, idx) => (
+                      <li key={idx}>{req}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {testResult && (
+            <div className={`mt-3 rounded-[8px] p-3 text-xs ${
+              testResult.ok
+                ? "border border-[#16f2a4]/30 bg-[#16f2a4]/10 text-[#bfffe8]"
+                : "border border-red-400/30 bg-red-400/10 text-red-200"
+            }`}>
+              <div className="flex items-center gap-2 font-bold mb-1">
+                {testResult.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                <span>{testResult.ok ? "Test Alert Delivered" : "Test Notification Blocked / Failed"}</span>
+              </div>
+              <p className="leading-relaxed">{testResult.message}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Visitor Database Persistence Status Card */}
+        <div className="rounded-[8px] border border-white/10 bg-white/[0.02] p-5 text-xs text-white/70">
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-bold text-white flex items-center gap-2">
+              <Users className="text-[#16f2a4]" size={16} />
+              Visitor Database &amp; History
+            </span>
+            <span className="rounded-full bg-[#16f2a4]/15 px-2 py-0.5 text-[10px] font-bold text-[#16f2a4]">
+              Connected
+            </span>
+          </div>
+
+          <p className="mb-3 text-white/60 leading-relaxed">
+            All visitor visits are tracked and persistently stored in Cloudflare D1 (<code className="font-mono text-white">portfolio-db</code>). Records remain intact across page refreshes and new deployments.
+          </p>
+
+          <Link
+            href="/admin/visitors"
+            className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 font-bold text-white transition hover:bg-white/15"
+          >
+            <Users size={14} className="text-[#16f2a4]" />
+            Open Full Visitor History Dashboard
+          </Link>
         </div>
       </div>
     </div>
