@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: production-deployment
   cancel-in-progress: false
@@ -13,6 +16,7 @@ concurrency:
 jobs:
   deploy:
     name: Build & Deploy Production Worker
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
